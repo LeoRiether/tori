@@ -1,0 +1,18 @@
+[package]
+name = "tori"
+description = "Terminal based music player"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tui = "0.19"
+crossterm = "0.25"
+
+# libmpv isn't working for mpv v0.35 :(
+# So I'm using a fork :)
+# The changes have already been pulled though, so I should be able to switch back soon
+# https://github.com/ParadoxSpiral/libmpv-rs/pull/28
+libmpv-sirno = "2.0.2-fork.1"
+clipboard = "0.5.0"
