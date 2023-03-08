@@ -1,28 +1,30 @@
+use std::io::{BufRead, BufReader, Read};
 use std::{
     error::Error,
     path::{Path, PathBuf},
 };
 
-use crate::app::{App, MyBackend};
+use crate::app::{filtered_list::FilteredList, App, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers, KeyEvent};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Table, Row, TableState, Cell},
+    widgets::{Block, BorderType, Borders, Row, Table, TableState},
     Frame,
 };
 
 #[derive(Debug, Default)]
-pub struct SongsPane {
+pub struct SongsPane<'a> {
     title: String,
     songs: Vec<m3u::Song>,
-    table_state: TableState,
+    shown: FilteredList<'a, m3u::Song, TableState>,
+    filter: String,
 }
 
-impl SongsPane {
+impl<'a> SongsPane<'a> {
     pub fn new() -> Self {
         Self {
             title: " songs ".into(),
@@ -30,7 +32,7 @@ impl SongsPane {
         }
     }
 
-    pub fn from_playlist_pane(playlists: &super::playlists::PlaylistsPane) -> SongsPane {
+    pub fn from_playlist_pane(playlists: &super::playlists::PlaylistsPane) -> Self {
         match playlists.selected_item() {
             Some(playlist) => SongsPane::from_playlist_named(playlist),
             None => SongsPane::new(),
@@ -46,24 +48,37 @@ impl SongsPane {
 
     pub fn from_playlist<P: AsRef<Path>>(path: P) -> Self {
         // TODO: maybe return Result?
-        let file = std::fs::File::open(&path).expect(&format!(
+        let file = std::fs::File::open(&path).unwrap_or_else(|_| panic!(
             "Couldn't open playlist file {}",
             path.as_ref().display()
         ));
 
         let title = path.as_ref().file_stem().unwrap().to_string_lossy();
         let songs = m3u::parse(file);
+        let shown = FilteredList::default();
 
-        let mut table_state = TableState::default();
-        if !songs.is_empty() {
-            table_state.select(Some(0));
-        }
-
-        SongsPane {
+        let mut me = Self {
             title: format!(" {} ", title),
             songs,
-            table_state,
-        }
+            shown,
+            filter: String::new(),
+        };
+
+        me.refresh_shown();
+        me
+    }
+
+    fn refresh_shown(&mut self) {
+        // SAFETY: if we ever change `self.playlists`, the filtered list will point to
+        // garbage memory.
+        // So... not very safe. But it's fine for this module for now I think.
+        let songs_slice =
+            unsafe { std::slice::from_raw_parts(self.songs.as_ptr(), self.songs.len()) };
+        self.shown.filter(songs_slice, |s| {
+            self.filter.is_empty()
+                || s.title.to_lowercase().contains(&self.filter[1..].to_lowercase())
+                || s.path.to_lowercase().contains(&self.filter[1..].to_lowercase())
+        });
     }
 
     pub fn render(
@@ -72,8 +87,14 @@ impl SongsPane {
         frame: &mut Frame<'_, MyBackend>,
         chunk: layout::Rect,
     ) {
+        let title = if !self.filter.is_empty() {
+            format!(" {} ", self.filter)
+        } else {
+            format!(" {} ", self.title)
+        };
+
         let mut block = Block::default()
-            .title(self.title.clone())
+            .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Plain);
 
@@ -82,12 +103,19 @@ impl SongsPane {
         }
 
         let songlist: Vec<_> = self
-            .songs
+            .shown
+            .items
             .iter()
-            .map(|song| Row::new(vec![
-                 format!(" {}", song.title),
-                 format!("{}:{:02}", song.duration.as_secs() / 60, song.duration.as_secs() % 60),
-            ]))
+            .map(|song| {
+                Row::new(vec![
+                    format!(" {}", song.title),
+                    format!(
+                        "{}:{:02}",
+                        song.duration.as_secs() / 60,
+                        song.duration.as_secs() % 60
+                    ),
+                ])
+            })
             .collect();
 
         let widget = Table::new(songlist)
@@ -95,83 +123,106 @@ impl SongsPane {
             .widths(&[Constraint::Percentage(95), Constraint::Length(10)])
             .highlight_style(Style::default().bg(Color::LightYellow).fg(Color::Black))
             .highlight_symbol("»");
-        frame.render_stateful_widget(widget, chunk, &mut self.table_state);
+        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
+    #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
         let has_mod = |event: event::KeyEvent, mods: KeyModifiers| {
             event.modifiers & mods != KeyModifiers::NONE
         };
 
         match event {
-            Event::Key(event) => match event.code {
-                KeyCode::Enter if has_mod(event, KeyModifiers::SHIFT) => {
-                    if let Some(song) = self.selected_item() {
-                        app.mpv
-                            .playlist_load_files(&[(
-                                &song.path,
-                                libmpv::FileState::AppendPlay,
-                                None,
-                            )])
-                            .unwrap();
-                    }
+            Event::Key(event) => {
+                if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                    self.refresh_shown();
+                    return Ok(());
                 }
-                KeyCode::Enter => {
-                    if let Some(song) = self.selected_item() {
-                        app.mpv
-                            .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])
-                            .unwrap();
+
+                match event.code {
+                    KeyCode::Enter if has_mod(event, KeyModifiers::SHIFT) => {
+                        if let Some(song) = self.selected_item() {
+                            app.mpv
+                                .playlist_load_files(&[(
+                                    &song.path,
+                                    libmpv::FileState::AppendPlay,
+                                    None,
+                                )])
+                                .unwrap();
+                        }
                     }
-                }
-                // yank, like in vim
-                KeyCode::Char('y') => {
-                    if let Some(song) = self.selected_item() {
-                        let mut ctx: ClipboardContext = ClipboardProvider::new()?;
-                        ctx.set_contents(song.path.clone())?;
+                    KeyCode::Enter => {
+                        if let Some(song) = self.selected_item() {
+                            app.mpv
+                                .playlist_load_files(&[(
+                                    &song.path,
+                                    libmpv::FileState::Replace,
+                                    None,
+                                )])
+                                .unwrap();
+                        }
                     }
+                    // yank, like in vim
+                    KeyCode::Char('y') => {
+                        if let Some(song) = self.selected_item() {
+                            let mut ctx: ClipboardContext = ClipboardProvider::new()?;
+                            ctx.set_contents(song.path.clone())?;
+                        }
+                    }
+                    // open in browser
+                    KeyCode::Char('o') => {
+                        if let Some(song) = self.selected_item() {
+                            // TODO: this is not cross-platform
+                            std::process::Command::new("xdg-open")
+                                .arg(&song.path)
+                                .output()?;
+                        }
+                    }
+                    // Go to the bottom, also like in vim
+                    KeyCode::Char('G') => {
+                        if !self.shown.items.is_empty() {
+                            self.shown.state.select(Some(self.shown.items.len() - 1));
+                        }
+                    }
+                    KeyCode::Up => self.select_prev(),
+                    KeyCode::Down => self.select_next(),
+                    KeyCode::Char('/') => self.filter = "/".into(),
+                    _ => {}
                 }
-                KeyCode::Up => self.select_prev(),
-                KeyCode::Down => self.select_next(),
-                _ => {}
-            },
+            }
             _ => {}
         }
 
         Ok(())
     }
 
+    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
+        match event.code {
+            KeyCode::Char(c) => {
+                self.filter.push(c);
+                Ok(true)
+            }
+            KeyCode::Backspace => {
+                self.filter.pop();
+                Ok(true)
+            }
+            KeyCode::Esc => {
+                self.filter.clear();
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
+    }
+
     pub fn select_next(&mut self) {
-        self.table_state.select(match self.table_state.selected() {
-            Some(x) => Some(wrap_inc(x, self.songs.len())),
-            None => Some(0),
-        });
+        self.shown.select_next();
     }
 
     pub fn select_prev(&mut self) {
-        self.table_state.select(match self.table_state.selected() {
-            Some(x) => Some(wrap_dec(x, self.songs.len())),
-            None => Some(0),
-        });
+        self.shown.select_prev();
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.table_state.selected().map(|i| &self.songs[i])
-    }
-}
-
-// TODO: uhm I just copied this code from playlists.rs
-fn wrap_inc(x: usize, modulo: usize) -> usize {
-    if x == modulo - 1 {
-        0
-    } else {
-        x + 1
-    }
-}
-
-fn wrap_dec(x: usize, modulo: usize) -> usize {
-    if x == 0 {
-        modulo - 1
-    } else {
-        x - 1
+        self.shown.state.selected().map(|i| &self.songs[i])
     }
 }

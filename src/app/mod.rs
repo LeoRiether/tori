@@ -9,6 +9,7 @@ use std::{io, time::Duration};
 use tui::{backend::CrosstermBackend, Frame, Terminal};
 
 pub mod browse_screen;
+pub mod filtered_list;
 
 pub trait Screen {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);

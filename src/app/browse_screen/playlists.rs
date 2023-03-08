@@ -1,6 +1,6 @@
-use crate::app::MyBackend;
+use crate::app::{filtered_list::FilteredList, MyBackend};
 
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{Event, KeyCode, KeyEvent};
 use std::{borrow::Cow, error::Error, path::Path};
 use tui::{
     layout,
@@ -10,25 +10,17 @@ use tui::{
 };
 
 #[derive(Debug, Default)]
-pub struct PlaylistsPane {
-    pub playlists: Vec<String>,
-    list_state: ListState,
+pub struct PlaylistsPane<'a> {
+    playlists: Vec<String>,
+    shown: FilteredList<'a, String, ListState>,
+    filter: String,
 }
 
-impl PlaylistsPane {
+impl<'a> PlaylistsPane<'a> {
     pub fn from_dir<P: AsRef<Path>>(path: P) -> Self {
         let mut me = Self::default();
         me.reload_from_dir(path);
-        if !me.playlists.is_empty() {
-            me.list_state.select(Some(0));
-        }
         me
-    }
-
-    pub fn selected_item(&self) -> Option<&str> {
-        self.list_state
-            .selected()
-            .map(|i| self.playlists[i].as_str())
     }
 
     pub fn reload_from_dir<P: AsRef<Path>>(&mut self, path: P) {
@@ -47,6 +39,18 @@ impl PlaylistsPane {
         };
 
         self.playlists = dir.into_iter().map(extract_playlist_name).collect();
+        self.refresh_shown();
+    }
+
+    fn refresh_shown(&mut self) {
+        // SAFETY: if we ever change `self.playlists`, the filtered list will point to
+        // garbage memory.
+        // So... not very safe. But it's fine for this module for now I think.
+        let playlist_slice =
+            unsafe { std::slice::from_raw_parts(self.playlists.as_ptr(), self.playlists.len()) };
+        self.shown.filter(playlist_slice, |s| {
+            self.filter.is_empty() || s.to_lowercase().contains(&self.filter[1..].to_lowercase())
+        });
     }
 
     pub fn render(
@@ -55,8 +59,14 @@ impl PlaylistsPane {
         frame: &mut Frame<'_, MyBackend>,
         chunk: layout::Rect,
     ) {
+        let title = if !self.filter.is_empty() {
+            format!(" {} ", self.filter)
+        } else {
+            " playlists ".into()
+        };
+
         let mut block = Block::default()
-            .title(" playlists ")
+            .title(title)
             .borders(Borders::LEFT | Borders::BOTTOM | Borders::TOP)
             .border_type(BorderType::Plain);
 
@@ -64,58 +74,84 @@ impl PlaylistsPane {
             block = block.border_style(Style::default().fg(Color::LightBlue));
         }
 
-        let mut playlists: Vec<_> = self
-            .playlists
+        let playlists: Vec<_> = self
+            .shown
+            .items
             .iter()
-            .map(|s| ListItem::new(Cow::from(s)))
+            .map(|&s| ListItem::new(Cow::from(s)))
             .collect();
 
         let widget = List::new(playlists)
             .block(block)
             .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
-        frame.render_stateful_widget(widget, chunk, &mut self.list_state);
+        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
+    #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
         match event {
-            Event::Key(event) => match event.code {
-                KeyCode::Up => self.select_prev(),
-                KeyCode::Down => self.select_next(),
-                _ => {}
-            },
+            Event::Key(event) => {
+                if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                    self.refresh_shown();
+                    return Ok(());
+                }
+
+                match event.code {
+                    KeyCode::Up => self.select_prev(),
+                    KeyCode::Down => self.select_next(),
+                    KeyCode::Char('e') => self.open_editor_for_selected(),
+                    KeyCode::Char('/') => self.filter = "/".into(),
+                    _ => {}
+                }
+            }
             _ => {}
         }
 
         Ok(())
     }
 
+    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
+        match event.code {
+            KeyCode::Char(c) => {
+                self.filter.push(c);
+                Ok(true)
+            }
+            KeyCode::Backspace => {
+                self.filter.pop();
+                Ok(true)
+            }
+            KeyCode::Esc => {
+                self.filter.clear();
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
+    }
+
     pub fn select_next(&mut self) {
-        self.list_state.select(match self.list_state.selected() {
-            Some(x) => Some(wrap_inc(x, self.playlists.len())),
-            None => Some(0),
-        });
+        self.shown.select_next();
     }
 
     pub fn select_prev(&mut self) {
-        self.list_state.select(match self.list_state.selected() {
-            Some(x) => Some(wrap_dec(x, self.playlists.len())),
-            None => Some(0),
-        });
+        self.shown.select_prev();
     }
-}
 
-fn wrap_inc(x: usize, modulo: usize) -> usize {
-    if x == modulo - 1 {
-        0
-    } else {
-        x + 1
+    pub fn selected_item(&self) -> Option<&'a String> {
+        self.shown.selected_item()
     }
-}
 
-fn wrap_dec(x: usize, modulo: usize) -> usize {
-    if x == 0 {
-        modulo - 1
-    } else {
-        x - 1
+    pub fn open_editor_for_selected(&mut self) {
+        if let Some(selected) = self.selected_item() {
+            crate::app::reset_terminal().unwrap();
+
+            let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
+            std::process::Command::new(editor)
+                .arg(format!("playlists/{}.m3u", selected))
+                .status()
+                .expect("Failed to execute editor");
+            self.reload_from_dir("playlists");
+
+            crate::app::setup_terminal().unwrap();
+        }
     }
 }

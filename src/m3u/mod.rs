@@ -1,8 +1,8 @@
 use std::io::{BufRead, BufReader, Read};
-use std::mem::replace;
+use std::mem;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Song {
     pub title: String,
     pub duration: Duration,
@@ -23,7 +23,7 @@ pub fn parse<R: Read>(reader: R) -> Vec<Song> {
         if line.is_empty() {
 
         // Parse EXT
-        } else if line.starts_with("#") {
+        } else if line.starts_with('#') {
             use Ext::*;
             match parse_extline(line) {
                 Extm3u => {}
@@ -36,8 +36,8 @@ pub fn parse<R: Read>(reader: R) -> Vec<Song> {
         // Parse song path/url
         } else {
             songs.push(Song {
-                title: replace(&mut title, String::default()),
-                duration: replace(&mut duration, Duration::default()),
+                title: mem::take(&mut title),
+                duration: mem::take(&mut duration),
                 path: line.into(),
             });
         }
@@ -56,8 +56,7 @@ fn parse_extline(line: &str) -> Ext {
         return Extm3u;
     }
 
-    if line.starts_with("#EXTINF:") {
-        let line = &line["#EXTINF:".len()..];
+    if let Some(line) = line.strip_prefix("#EXTINF:") {
         let mut parts = line.splitn(2, ',');
         let duration = Duration::from_secs(parts.next().unwrap().parse::<f64>().unwrap() as u64);
         let title = parts.next().unwrap().to_string();

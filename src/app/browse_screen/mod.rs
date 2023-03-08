@@ -24,13 +24,13 @@ enum BrowsePane {
 }
 
 #[derive(Debug, Default)]
-pub struct BrowseScreen {
-    playlists: PlaylistsPane,
-    songs: SongsPane,
+pub struct BrowseScreen<'a> {
+    playlists: PlaylistsPane<'a>,
+    songs: SongsPane<'a>,
     selected_pane: BrowsePane,
 }
 
-impl BrowseScreen {
+impl<'a> BrowseScreen<'a> {
     pub fn new() -> Self {
         let playlists = PlaylistsPane::from_dir("playlists");
         let songs = SongsPane::from_playlist_pane(&playlists);
@@ -50,7 +50,7 @@ impl BrowseScreen {
     }
 }
 
-impl Screen for BrowseScreen {
+impl Screen for BrowseScreen<'_> {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
         let size = frame.size();
 
@@ -77,10 +77,6 @@ impl Screen for BrowseScreen {
         match event {
             Event::Key(event) => {
                 match event.code {
-                    KeyCode::Esc => {
-                        app.change_state(None);
-                        return Ok(());
-                    }
                     KeyCode::Char('d') | KeyCode::Char('c')
                         if has_mod(event, KeyModifiers::CONTROL) =>
                     {
@@ -89,7 +85,7 @@ impl Screen for BrowseScreen {
                     }
                     // HACK: for some reason, ctrl+backspace is actually sending a ctrl+h
                     KeyCode::Char('h') if has_mod(event, KeyModifiers::CONTROL) => {}
-                    KeyCode::Up | KeyCode::Down => {
+                    KeyCode::Up | KeyCode::Down | KeyCode::Enter => {
                         self.pass_event_down(app, Event::Key(event))?;
                         if let Playlists = self.selected_pane {
                             self.songs = SongsPane::from_playlist_pane(&self.playlists);
