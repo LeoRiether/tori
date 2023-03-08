@@ -5,25 +5,30 @@ use std::{borrow::Cow, error::Error, path::Path};
 use tui::{
     layout,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState},
     Frame,
 };
 
 #[derive(Debug, Default)]
 pub struct PlaylistsPane {
     pub playlists: Vec<String>,
-    selected: usize,
+    list_state: ListState,
 }
 
 impl PlaylistsPane {
     pub fn from_dir<P: AsRef<Path>>(path: P) -> Self {
         let mut me = Self::default();
         me.reload_from_dir(path);
+        if !me.playlists.is_empty() {
+            me.list_state.select(Some(0));
+        }
         me
     }
 
-    pub fn selected_item(&self) -> &str {
-        &self.playlists[self.selected] 
+    pub fn selected_item(&self) -> Option<&str> {
+        self.list_state
+            .selected()
+            .map(|i| self.playlists[i].as_str())
     }
 
     pub fn reload_from_dir<P: AsRef<Path>>(&mut self, path: P) {
@@ -41,10 +46,7 @@ impl PlaylistsPane {
                 .to_string()
         };
 
-        self.playlists = dir
-            .into_iter()
-            .map(extract_playlist_name)
-            .collect();
+        self.playlists = dir.into_iter().map(extract_playlist_name).collect();
     }
 
     pub fn render(
@@ -68,13 +70,10 @@ impl PlaylistsPane {
             .map(|s| ListItem::new(Cow::from(s)))
             .collect();
 
-        // Highlight selected playlists
-        playlists[self.selected] =
-            std::mem::replace(&mut playlists[self.selected], ListItem::new(""))
-                .style(Style::default().bg(Color::Blue).fg(Color::White));
-
-        let widget = List::new(playlists).block(block);
-        frame.render_widget(widget, chunk);
+        let widget = List::new(playlists)
+            .block(block)
+            .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
+        frame.render_stateful_widget(widget, chunk, &mut self.list_state);
     }
 
     pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
@@ -91,11 +90,17 @@ impl PlaylistsPane {
     }
 
     pub fn select_next(&mut self) {
-        self.selected = wrap_inc(self.selected, self.playlists.len());
+        self.list_state.select(match self.list_state.selected() {
+            Some(x) => Some(wrap_inc(x, self.playlists.len())),
+            None => Some(0),
+        });
     }
 
     pub fn select_prev(&mut self) {
-        self.selected = wrap_dec(self.selected, self.playlists.len());
+        self.list_state.select(match self.list_state.selected() {
+            Some(x) => Some(wrap_dec(x, self.playlists.len())),
+            None => Some(0),
+        });
     }
 }
 

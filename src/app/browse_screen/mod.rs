@@ -33,11 +33,7 @@ pub struct BrowseScreen {
 impl BrowseScreen {
     pub fn new() -> Self {
         let playlists = PlaylistsPane::from_dir("playlists");
-        let songs = if playlists.playlists.is_empty() {
-            SongsPane::new()
-        } else {
-            SongsPane::from_playlist_named(playlists.selected_item())
-        };
+        let songs = SongsPane::from_playlist_pane(&playlists);
         Self {
             playlists, songs,
             ..Default::default()
@@ -51,10 +47,6 @@ impl BrowseScreen {
             Playlists => self.playlists.handle_event(event),
             Songs => self.songs.handle_event(app, event),
         }
-    }
-
-    fn pull_songs_from_playlist(&mut self) {
-        self.songs = SongsPane::from_playlist_named(self.playlists.selected_item());
     }
 }
 
@@ -100,7 +92,7 @@ impl Screen for BrowseScreen {
                     KeyCode::Up | KeyCode::Down => {
                         self.pass_event_down(app, Event::Key(event))?;
                         if let Playlists = self.selected_pane {
-                            self.pull_songs_from_playlist();
+                            self.songs = SongsPane::from_playlist_pane(&self.playlists);
                         }
                     }
                     KeyCode::Right | KeyCode::Left => {

@@ -9,9 +9,9 @@ use crate::m3u;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use tui::{
-    layout,
+    layout::{self, Constraint},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState},
+    widgets::{Block, BorderType, Borders, Table, Row, TableState, Cell},
     Frame,
 };
 
@@ -19,7 +19,7 @@ use tui::{
 pub struct SongsPane {
     title: String,
     songs: Vec<m3u::Song>,
-    list_state: ListState,
+    table_state: TableState,
 }
 
 impl SongsPane {
@@ -27,6 +27,13 @@ impl SongsPane {
         Self {
             title: " songs ".into(),
             ..Default::default()
+        }
+    }
+
+    pub fn from_playlist_pane(playlists: &super::playlists::PlaylistsPane) -> SongsPane {
+        match playlists.selected_item() {
+            Some(playlist) => SongsPane::from_playlist_named(playlist),
+            None => SongsPane::new(),
         }
     }
 
@@ -47,15 +54,15 @@ impl SongsPane {
         let title = path.as_ref().file_stem().unwrap().to_string_lossy();
         let songs = m3u::parse(file);
 
-        let mut list_state = ListState::default();
+        let mut table_state = TableState::default();
         if !songs.is_empty() {
-            list_state.select(Some(0));
+            table_state.select(Some(0));
         }
 
         SongsPane {
             title: format!(" {} ", title),
             songs,
-            list_state,
+            table_state,
         }
     }
 
@@ -77,14 +84,18 @@ impl SongsPane {
         let songlist: Vec<_> = self
             .songs
             .iter()
-            .map(|song| ListItem::new(format!(" {}", song.title)))
+            .map(|song| Row::new(vec![
+                 format!(" {}", song.title),
+                 format!("{}:{:02}", song.duration.as_secs() / 60, song.duration.as_secs() % 60),
+            ]))
             .collect();
 
-        let widget = List::new(songlist)
+        let widget = Table::new(songlist)
             .block(block)
+            .widths(&[Constraint::Percentage(95), Constraint::Length(10)])
             .highlight_style(Style::default().bg(Color::LightYellow).fg(Color::Black))
             .highlight_symbol("»");
-        frame.render_stateful_widget(widget, chunk, &mut self.list_state);
+        frame.render_stateful_widget(widget, chunk, &mut self.table_state);
     }
 
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
@@ -130,21 +141,21 @@ impl SongsPane {
     }
 
     pub fn select_next(&mut self) {
-        self.list_state.select(match self.list_state.selected() {
+        self.table_state.select(match self.table_state.selected() {
             Some(x) => Some(wrap_inc(x, self.songs.len())),
             None => Some(0),
         });
     }
 
     pub fn select_prev(&mut self) {
-        self.list_state.select(match self.list_state.selected() {
+        self.table_state.select(match self.table_state.selected() {
             Some(x) => Some(wrap_dec(x, self.songs.len())),
             None => Some(0),
         });
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.list_state.selected().map(|i| &self.songs[i])
+        self.table_state.selected().map(|i| &self.songs[i])
     }
 }
 
