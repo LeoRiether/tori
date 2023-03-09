@@ -1,7 +1,7 @@
 use std::{error::Error, mem};
 
-use clipboard::{ClipboardProvider, ClipboardContext};
-use crossterm::event::{Event, KeyCode, KeyModifiers, self};
+use clipboard::{ClipboardProvider};
+use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
