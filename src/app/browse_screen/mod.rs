@@ -1,6 +1,7 @@
 use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
+use crate::app::browse_screen::add::AddState;
 
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::error::Error;
@@ -15,20 +16,25 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
+mod add;
+use add::AddPane;
+
+use super::Mode;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]
 enum BrowsePane {
     #[default]
     Playlists,
     Songs,
-    // Add,
+    Add,
 }
 
 #[derive(Debug, Default)]
 pub struct BrowseScreen<'a> {
     playlists: PlaylistsPane<'a>,
     songs: SongsPane<'a>,
-    // add: AddPane,
+    add: AddPane,
     selected_pane: BrowsePane,
 }
 
@@ -49,6 +55,16 @@ impl<'a> BrowseScreen<'a> {
         match self.selected_pane {
             Playlists => self.playlists.handle_event(event),
             Songs => self.songs.handle_event(app, event),
+            Add => self.add.handle_event(event),
+        }
+    }
+
+    pub fn mode(&self) -> Mode {
+        use BrowsePane::*;
+        match self.selected_pane {
+            Playlists => self.playlists.mode(),
+            Songs => self.songs.mode(),
+            Add => self.add.mode(),
         }
     }
 }
@@ -69,6 +85,10 @@ impl Screen for BrowseScreen<'_> {
         );
         self.songs
             .render(self.selected_pane == BrowsePane::Songs, frame, chunks[1]);
+
+        if self.selected_pane == BrowsePane::Add {
+            self.add.render(frame);
+        }
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
@@ -85,8 +105,10 @@ impl Screen for BrowseScreen<'_> {
                         app.change_state(None);
                         return Ok(());
                     }
-                    // HACK: for some reason, ctrl+backspace is actually sending a ctrl+h
-                    Char('h') if has_mod(event, KeyModifiers::CONTROL) => {}
+                    Esc | Enter if self.selected_pane == Add => {
+                        self.pass_event_down(app, Event::Key(event))?;
+                        self.selected_pane = Playlists;
+                    }
                     Up | Down | Enter | Char('k') | Char('j') | Char('e') | Char('n') => {
                         self.pass_event_down(app, Event::Key(event))?;
                         if let Playlists = self.selected_pane {
@@ -97,7 +119,12 @@ impl Screen for BrowseScreen<'_> {
                         self.selected_pane = match self.selected_pane {
                             Playlists => Songs,
                             Songs => Playlists,
+                            Add => Add,
                         };
+                    }
+                    Char('a') if self.mode() == Mode::Normal => {
+                        self.selected_pane = Add;
+                        self.add = AddPane::new();
                     }
                     _ => self.pass_event_down(app, Event::Key(event))?,
                 }

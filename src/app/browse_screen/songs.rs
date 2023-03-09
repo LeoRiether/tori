@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::app::{filtered_list::FilteredList, App, MyBackend};
+use crate::app::{filtered_list::FilteredList, App, MyBackend, Mode};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -234,5 +234,13 @@ impl<'a> SongsPane<'a> {
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
         self.shown.state.selected().map(|i| &self.songs[i])
+    }
+
+    pub fn mode(&self) -> Mode {
+        if self.filter.is_empty() {
+            Mode::Normal
+        } else {
+            Mode::Insert
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::app::{filtered_list::FilteredList, MyBackend};
+use crate::app::{filtered_list::FilteredList, MyBackend, Mode};
 
 use crossterm::event::{Event, KeyCode, KeyEvent, MouseEventKind};
 use std::{borrow::Cow, error::Error, path::Path};
@@ -158,6 +158,14 @@ impl<'a> PlaylistsPane<'a> {
             self.reload_from_dir("playlists");
 
             crate::app::setup_terminal().unwrap();
+        }
+    }
+
+    pub fn mode(&self) -> Mode {
+        if self.filter.is_empty() {
+            Mode::Normal
+        } else {
+            Mode::Insert
         }
     }
 }
