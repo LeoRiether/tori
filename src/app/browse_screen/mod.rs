@@ -21,12 +21,14 @@ enum BrowsePane {
     #[default]
     Playlists,
     Songs,
+    // Add,
 }
 
 #[derive(Debug, Default)]
 pub struct BrowseScreen<'a> {
     playlists: PlaylistsPane<'a>,
     songs: SongsPane<'a>,
+    // add: AddPane,
     selected_pane: BrowsePane,
 }
 
@@ -35,7 +37,8 @@ impl<'a> BrowseScreen<'a> {
         let playlists = PlaylistsPane::from_dir("playlists");
         let songs = SongsPane::from_playlist_pane(&playlists);
         Self {
-            playlists, songs,
+            playlists,
+            songs,
             ..Default::default()
         }
     }
@@ -74,24 +77,23 @@ impl Screen for BrowseScreen<'_> {
         };
 
         use BrowsePane::*;
+        use KeyCode::*;
         match event {
             Event::Key(event) => {
                 match event.code {
-                    KeyCode::Char('d') | KeyCode::Char('c')
-                        if has_mod(event, KeyModifiers::CONTROL) =>
-                    {
+                    Char('d') | Char('c') if has_mod(event, KeyModifiers::CONTROL) => {
                         app.change_state(None);
                         return Ok(());
                     }
                     // HACK: for some reason, ctrl+backspace is actually sending a ctrl+h
-                    KeyCode::Char('h') if has_mod(event, KeyModifiers::CONTROL) => {}
-                    KeyCode::Up | KeyCode::Down | KeyCode::Enter => {
+                    Char('h') if has_mod(event, KeyModifiers::CONTROL) => {}
+                    Up | Down | Enter | Char('k') | Char('j') | Char('e') | Char('n') => {
                         self.pass_event_down(app, Event::Key(event))?;
                         if let Playlists = self.selected_pane {
                             self.songs = SongsPane::from_playlist_pane(&self.playlists);
                         }
                     }
-                    KeyCode::Right | KeyCode::Left => {
+                    Right | Left => {
                         self.selected_pane = match self.selected_pane {
                             Playlists => Songs,
                             Songs => Playlists,

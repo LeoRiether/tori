@@ -8,7 +8,7 @@ use crate::app::{filtered_list::FilteredList, App, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{self, Event, KeyCode, KeyModifiers, KeyEvent};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers, KeyEvent, MouseEventKind};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
@@ -53,12 +53,12 @@ impl<'a> SongsPane<'a> {
             path.as_ref().display()
         ));
 
-        let title = path.as_ref().file_stem().unwrap().to_string_lossy();
-        let songs = m3u::parse(file);
+        let title = path.as_ref().file_stem().unwrap().to_string_lossy().to_string();
+        let songs = m3u::Song::parse_m3u(file);
         let shown = FilteredList::default();
 
         let mut me = Self {
-            title: format!(" {} ", title),
+            title,
             songs,
             shown,
             filter: String::new(),
@@ -69,7 +69,7 @@ impl<'a> SongsPane<'a> {
     }
 
     fn refresh_shown(&mut self) {
-        // SAFETY: if we ever change `self.playlists`, the filtered list will point to
+        // SAFETY: if we ever change `self.songs`, the filtered list will point to
         // garbage memory.
         // So... not very safe. But it's fine for this module for now I think.
         let songs_slice =
@@ -118,6 +118,9 @@ impl<'a> SongsPane<'a> {
             })
             .collect();
 
+        // BUG: I would like to make the first width Constraint::Min(0), but it's currently not
+        // working for some reason
+        // See https://github.com/fdehau/tui-rs/issues/637
         let widget = Table::new(songlist)
             .block(block)
             .widths(&[Constraint::Percentage(95), Constraint::Length(10)])
@@ -184,9 +187,16 @@ impl<'a> SongsPane<'a> {
                             self.shown.state.select(Some(self.shown.items.len() - 1));
                         }
                     }
-                    KeyCode::Up => self.select_prev(),
-                    KeyCode::Down => self.select_next(),
+                    KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('e') => self.select_prev(),
+                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('n') => self.select_next(),
                     KeyCode::Char('/') => self.filter = "/".into(),
+                    _ => {}
+                }
+            }
+            Event::Mouse(event) => {
+                match event.kind {
+                    MouseEventKind::ScrollUp => self.select_prev(),
+                    MouseEventKind::ScrollDown => self.select_next(),
                     _ => {}
                 }
             }

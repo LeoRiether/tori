@@ -1,6 +1,6 @@
 use crate::app::{filtered_list::FilteredList, MyBackend};
 
-use crossterm::event::{Event, KeyCode, KeyEvent};
+use crossterm::event::{Event, KeyCode, KeyEvent, MouseEventKind};
 use std::{borrow::Cow, error::Error, path::Path};
 use tui::{
     layout,
@@ -97,13 +97,19 @@ impl<'a> PlaylistsPane<'a> {
                 }
 
                 match event.code {
-                    KeyCode::Up => self.select_prev(),
-                    KeyCode::Down => self.select_next(),
-                    KeyCode::Char('e') => self.open_editor_for_selected(),
+                    KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('e') => self.select_prev(),
+                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('n') => self.select_next(),
+                    // 'c'hange
+                    KeyCode::Char('c') => self.open_editor_for_selected(),
                     KeyCode::Char('/') => self.filter = "/".into(),
                     _ => {}
                 }
             }
+            Event::Mouse(event) => match event.kind {
+                MouseEventKind::ScrollUp => self.select_prev(),
+                MouseEventKind::ScrollDown => self.select_next(),
+                _ => {}
+            },
             _ => {}
         }
 

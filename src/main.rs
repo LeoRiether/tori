@@ -1,5 +1,5 @@
 pub mod m3u;
-mod app;
+pub mod app;
 
 use app::{App, browse_screen::BrowseScreen};
 use std::error::Error;
