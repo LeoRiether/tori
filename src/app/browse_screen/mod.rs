@@ -2,8 +2,7 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
-
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, KeyCode, KeyModifiers};
 use std::error::Error;
 use tui::{
     layout::{Constraint, Direction, Layout},
@@ -19,6 +18,8 @@ use songs::SongsPane;
 mod add;
 use add::AddPane;
 
+use super::event_channel;
+use super::event_channel::ToriEvent;
 use super::Mode;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -50,7 +51,11 @@ impl<'a> BrowseScreen<'a> {
     }
 
     /// Passes the event down to the currently selected pane.
-    fn pass_event_down(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn pass_event_down(
+        &mut self,
+        app: &mut App,
+        event: crossterm::event::Event,
+    ) -> Result<(), Box<dyn Error>> {
         use BrowsePane::*;
         match self.selected_pane {
             Playlists => self.playlists.handle_event(event),
@@ -91,7 +96,11 @@ impl Screen for BrowseScreen<'_> {
         }
     }
 
-    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn handle_terminal_event(
+        &mut self,
+        app: &mut App,
+        event: event::Event,
+    ) -> Result<(), Box<dyn Error>> {
         let has_mod = |event: event::KeyEvent, mods: KeyModifiers| {
             event.modifiers & mods != KeyModifiers::NONE
         };
@@ -99,38 +108,51 @@ impl Screen for BrowseScreen<'_> {
         use BrowsePane::*;
         use KeyCode::*;
         match event {
-            Event::Key(event) => {
-                match event.code {
-                    Char('d') | Char('c') if has_mod(event, KeyModifiers::CONTROL) => {
-                        app.change_state(None);
-                        return Ok(());
-                    }
-                    Esc | Enter if self.selected_pane == Add => {
-                        self.pass_event_down(app, Event::Key(event))?;
-                        self.selected_pane = Playlists;
-                    }
-                    Up | Down | Enter | Char('k') | Char('j') | Char('e') | Char('n') => {
-                        self.pass_event_down(app, Event::Key(event))?;
-                        if let Playlists = self.selected_pane {
-                            self.songs = SongsPane::from_playlist_pane(&self.playlists);
-                        }
-                    }
-                    Right | Left => {
-                        self.selected_pane = match self.selected_pane {
-                            Playlists => Songs,
-                            Songs => Playlists,
-                            Add => Add,
-                        };
-                    }
-                    Char('a') if self.mode() == Mode::Normal => {
-                        self.selected_pane = Add;
-                        self.add = AddPane::new();
-                    }
-                    _ => self.pass_event_down(app, Event::Key(event))?,
+            crossterm::event::Event::Key(event) => match event.code {
+                Char('d') | Char('c') if has_mod(event, KeyModifiers::CONTROL) => {
+                    app.change_state(None);
+                    return Ok(());
                 }
-            }
+                Esc | Enter if self.selected_pane == Add => {
+                    self.pass_event_down(app, crossterm::event::Event::Key(event))?;
+                    self.selected_pane = Songs;
+                }
+                Up | Down | Enter | Char('k') | Char('j') | Char('e') | Char('n') => {
+                    self.pass_event_down(app, crossterm::event::Event::Key(event))?;
+                    if let Playlists = self.selected_pane {
+                        self.songs = SongsPane::from_playlist_pane(&self.playlists);
+                    }
+                }
+                Right | Left => {
+                    self.selected_pane = match self.selected_pane {
+                        Playlists => Songs,
+                        Songs => Playlists,
+                        Add => Add,
+                    };
+                }
+                Char('a') if self.mode() == Mode::Normal => {
+                    self.selected_pane = Add;
+                    self.add = AddPane::new();
+                }
+                _ => self.pass_event_down(app, crossterm::event::Event::Key(event))?,
+            },
             _ => self.pass_event_down(app, event)?,
         }
         Ok(())
+    }
+
+    fn handle_tori_event(
+        &mut self,
+        app: &mut App,
+        event: event_channel::ToriEvent,
+    ) -> Result<(), Box<dyn Error>> {
+        match event {
+            ToriEvent::SongAdded {
+                playlist_name,
+                song,
+            } => {
+                todo!()
+            }
+        }
     }
 }
