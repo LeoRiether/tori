@@ -5,6 +5,7 @@ use std::{
 
 use crate::m3u;
 
+#[derive(Debug, Clone)]
 pub enum ToriEvent {
     SongAdded {
         playlist_name: String,

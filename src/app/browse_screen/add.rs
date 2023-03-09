@@ -1,4 +1,4 @@
-use std::{error::Error, mem};
+use std::{error::Error, mem, thread};
 
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -8,20 +8,17 @@ use tui::{
     Frame,
 };
 
-use crate::app::{MyBackend, Mode};
-
-#[derive(Debug, Default)]
-pub enum AddState {
-    #[default]
-    Waiting,
-    Selected(String),
-    Canceled,
-}
+use crate::{
+    app::{
+        event_channel::{self, ToriEvent},
+        App, Mode, MyBackend,
+    },
+    m3u,
+};
 
 #[derive(Debug, Default)]
 pub struct AddPane {
     pub path: String,
-    pub state: AddState,
 }
 
 impl AddPane {
@@ -30,25 +27,29 @@ impl AddPane {
     }
 
     #[allow(clippy::single_match)]
-    pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
+    pub fn handle_event(
+        &mut self,
+        app: &mut App,
+        selected_playlist: Option<&str>,
+        event: Event,
+    ) -> Result<(), Box<dyn Error>> {
         use KeyCode::*;
         match event {
-            Event::Key(event) => {
-                match event.code {
-                    Char(c) => self.path.push(c),
-                    Backspace => {
-                        self.path.pop();
-                    }
-                    Esc => {
-                        self.path.clear();
-                        self.state = AddState::Canceled;
-                    }
-                    Enter => {
-                        self.state = AddState::Selected(mem::take(&mut self.path));
-                    }
-                    _ => {}
+            Event::Key(event) => match event.code {
+                Char(c) => self.path.push(c),
+                Backspace => {
+                    self.path.pop();
                 }
-            }
+                Esc => {
+                    self.path.clear();
+                }
+                Enter => {
+                    if let Some(playlist) = selected_playlist {
+                        self.commit(app, playlist);
+                    }
+                }
+                _ => {}
+            },
             _ => {}
         }
         Ok(())
@@ -86,6 +87,25 @@ impl AddPane {
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
+    }
+
+    /// Adds the song to the current playlist
+    fn commit(&mut self, app: &mut App, playlist: &str) {
+        let path = mem::take(&mut self.path);
+        let sender = app.channel.sender.clone();
+        let playlist_name = playlist.to_string();
+        thread::spawn(move || {
+            let song = m3u::Song::from_path(&path).expect("Failed to parse song");
+            song.add_to_playlist(&playlist_name).expect("Failed to add song to playlist");
+
+            let event = ToriEvent::SongAdded {
+                playlist_name,
+                song,
+            };
+            sender
+                .send(event_channel::Event::Internal(event))
+                .expect("Failed to send ");
+        });
     }
 
     pub fn mode(&self) -> Mode {

@@ -60,7 +60,11 @@ impl<'a> BrowseScreen<'a> {
         match self.selected_pane {
             Playlists => self.playlists.handle_event(event),
             Songs => self.songs.handle_event(app, event),
-            Add => self.add.handle_event(event),
+            Add => self.add.handle_event(
+                app,
+                self.playlists.selected_item().map(|s| s.as_str()),
+                event,
+            ),
         }
     }
 
@@ -148,11 +152,13 @@ impl Screen for BrowseScreen<'_> {
     ) -> Result<(), Box<dyn Error>> {
         match event {
             ToriEvent::SongAdded {
-                playlist_name,
-                song,
+                playlist_name: _,
+                song: _,
             } => {
-                todo!()
+                // Reload songs pane
+                self.songs = SongsPane::from_playlist_pane(&self.playlists);
             }
         }
+        Ok(())
     }
 }
