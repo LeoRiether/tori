@@ -3,7 +3,9 @@ use crate::app::Screen;
 use crate::App;
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
+use tui::style::Color;
 use std::error::Error;
+use std::time::Duration;
 use tui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -17,6 +19,9 @@ use songs::SongsPane;
 
 mod add;
 use add::AddPane;
+
+mod notification;
+use notification::Notification;
 
 use super::event_channel;
 use super::event_channel::ToriEvent;
@@ -37,6 +42,7 @@ pub struct BrowseScreen<'a> {
     songs: SongsPane<'a>,
     add: AddPane,
     selected_pane: BrowsePane,
+    notification: Notification,
 }
 
 impl<'a> BrowseScreen<'a> {
@@ -94,6 +100,8 @@ impl Screen for BrowseScreen<'_> {
         );
         self.songs
             .render(self.selected_pane == BrowsePane::Songs, frame, chunks[1]);
+
+        self.notification.render(frame);
 
         if self.selected_pane == BrowsePane::Add {
             self.add.render(frame);
@@ -162,6 +170,8 @@ impl Screen for BrowseScreen<'_> {
             } => {
                 // Reload songs pane
                 self.songs = SongsPane::from_playlist_pane(&self.playlists);
+                self.notification = Notification::new("Song added".into(), Duration::from_secs(3))
+                    .colored(Color::LightGreen);
             }
         }
         Ok(())

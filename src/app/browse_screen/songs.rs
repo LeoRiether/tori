@@ -143,7 +143,7 @@ impl<'a> SongsPane<'a> {
                 }
 
                 match event.code {
-                    KeyCode::Enter if has_mod(event, KeyModifiers::SHIFT) => {
+                    KeyCode::Tab => {
                         if let Some(song) = self.selected_item() {
                             app.mpv
                                 .playlist_load_files(&[(
