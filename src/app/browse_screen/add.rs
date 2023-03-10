@@ -1,4 +1,4 @@
-use std::{error::Error, mem, sync::mpsc, thread};
+use std::{error::Error, mem, thread};
 
 use crossterm::event::{Event, KeyCode};
 use tui::{

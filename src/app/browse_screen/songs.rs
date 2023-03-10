@@ -7,7 +7,7 @@ use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
+use crossterm::event::{Event, KeyCode, KeyEvent, MouseEventKind};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},

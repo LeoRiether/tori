@@ -1,11 +1,11 @@
-use std::time::Duration;
+
 
 use libmpv::Mpv;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Paragraph},
     Frame,
 };
 
