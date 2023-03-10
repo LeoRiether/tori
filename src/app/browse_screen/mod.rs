@@ -3,9 +3,9 @@ use crate::app::Screen;
 use crate::App;
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
-use tui::style::Color;
 use std::error::Error;
 use std::time::Duration;
+use tui::style::Color;
 use tui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -20,11 +20,12 @@ use songs::SongsPane;
 mod add;
 use add::AddPane;
 
-mod notification;
-use notification::Notification;
+mod now_playing;
+use now_playing::NowPlaying;
 
 use super::event_channel;
 use super::event_channel::ToriEvent;
+use super::notification::Notification;
 use super::Mode;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -41,8 +42,8 @@ pub struct BrowseScreen<'a> {
     playlists: PlaylistsPane<'a>,
     songs: SongsPane<'a>,
     add: AddPane,
+    now_playing: NowPlaying,
     selected_pane: BrowsePane,
-    notification: Notification,
 }
 
 impl<'a> BrowseScreen<'a> {
@@ -88,20 +89,25 @@ impl Screen for BrowseScreen<'_> {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
         let size = frame.size();
 
-        let chunks = Layout::default()
+        let vchunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
+            .split(size);
+
+        let hchunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
-            .split(size);
+            .split(vchunks[0]);
 
         self.playlists.render(
             self.selected_pane == BrowsePane::Playlists,
             frame,
-            chunks[0],
+            hchunks[0],
         );
         self.songs
-            .render(self.selected_pane == BrowsePane::Songs, frame, chunks[1]);
+            .render(self.selected_pane == BrowsePane::Songs, frame, hchunks[1]);
 
-        self.notification.render(frame);
+        self.now_playing.render(frame, vchunks[1]);
 
         if self.selected_pane == BrowsePane::Add {
             self.add.render(frame);
@@ -160,18 +166,21 @@ impl Screen for BrowseScreen<'_> {
 
     fn handle_tori_event(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         event: event_channel::ToriEvent,
     ) -> Result<(), Box<dyn Error>> {
         match event {
-            ToriEvent::SongAdded {
-                playlist_name: _,
-                song: _,
-            } => {
+            ToriEvent::SongAdded { playlist, song } => {
                 // Reload songs pane
                 self.songs = SongsPane::from_playlist_pane(&self.playlists);
-                self.notification = Notification::new("Song added".into(), Duration::from_secs(3))
-                    .colored(Color::LightGreen);
+                app.notification = Notification::new(
+                    format!("\"{}\" was added to {}", song, playlist),
+                    Duration::from_secs(3),
+                )
+                .colored(Color::LightGreen);
+            }
+            ToriEvent::SecondTick => {
+                self.now_playing.update(&app.mpv);
             }
         }
         Ok(())

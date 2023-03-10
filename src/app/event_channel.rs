@@ -1,15 +1,15 @@
+use std::time;
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread,
 };
 
-use crate::m3u;
-
 #[derive(Debug, Clone)]
 pub enum ToriEvent {
+    SecondTick,
     SongAdded {
-        playlist_name: String,
-        song: m3u::Song,
+        playlist: String,
+        song: String, 
     },
 }
 
@@ -37,6 +37,14 @@ impl Channel {
             if let Ok(event) = crossterm::event::read() {
                 sender.send(Event::Terminal(event)).unwrap();
             }
+        });
+    }
+
+    pub fn spawn_ticks(&self) {
+        let sender = self.sender.clone();
+        thread::spawn(move || loop {
+            thread::sleep(time::Duration::from_secs(1));
+            sender.send(Event::Internal(ToriEvent::SecondTick)).unwrap();
         });
     }
 }

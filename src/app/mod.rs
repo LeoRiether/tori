@@ -4,6 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use libmpv::Mpv;
+use notification::Notification;
 use std::{cell::RefCell, error::Error, rc::Rc, sync::mpsc};
 use std::{
     io,
@@ -16,6 +17,7 @@ use event_channel::Channel;
 pub mod browse_screen;
 pub mod event_channel;
 pub mod filtered_list;
+pub mod notification;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]
@@ -27,8 +29,16 @@ pub enum Mode {
 
 pub trait Screen {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
-    fn handle_terminal_event(&mut self, app: &mut App, event: crossterm::event::Event) -> Result<(), Box<dyn Error>>;
-    fn handle_tori_event(&mut self, app: &mut App, event: event_channel::ToriEvent) -> Result<(), Box<dyn Error>>;
+    fn handle_terminal_event(
+        &mut self,
+        app: &mut App,
+        event: crossterm::event::Event,
+    ) -> Result<(), Box<dyn Error>>;
+    fn handle_tori_event(
+        &mut self,
+        app: &mut App,
+        event: event_channel::ToriEvent,
+    ) -> Result<(), Box<dyn Error>>;
 }
 
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
@@ -40,6 +50,7 @@ pub struct App {
     pub channel: Channel,
     next_render: time::Instant,
     next_poll_timeout: u16,
+    pub notification: Notification,
 }
 
 impl App {
@@ -58,6 +69,8 @@ impl App {
         let next_render = time::Instant::now();
         let next_poll_timeout = 1000;
 
+        let notification = Notification::default();
+
         Ok(App {
             terminal,
             mpv,
@@ -65,6 +78,7 @@ impl App {
             channel,
             next_render,
             next_poll_timeout,
+            notification,
         })
     }
 
@@ -73,6 +87,7 @@ impl App {
         setup_terminal()?;
 
         self.channel.spawn_terminal_event_getter();
+        self.channel.spawn_ticks();
 
         while let Some(state_rc) = &self.state {
             let state_rc = state_rc.clone();
@@ -89,7 +104,11 @@ impl App {
     #[inline]
     fn render(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
         if time::Instant::now() >= self.next_render {
-            self.terminal.draw(|f| state.render(f))?;
+            self.terminal.draw(|f| {
+                state.render(f);
+                self.notification.render(f);
+            })?;
+
             self.next_render = time::Instant::now()
                 .checked_add(Duration::from_millis(8))
                 .unwrap();
@@ -114,9 +133,11 @@ impl App {
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 self.next_poll_timeout = 1000;
             }
-            Err(e) => { return Err(e.into()); },
-        } 
-        
+            Err(e) => {
+                return Err(e.into());
+            }
+        }
+
         Ok(())
     }
 

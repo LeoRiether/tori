@@ -1,4 +1,4 @@
-use std::{error::Error, mem, thread};
+use std::{error::Error, mem, sync::mpsc, thread};
 
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -93,22 +93,39 @@ impl AddPane {
     fn commit(&mut self, app: &mut App, playlist: &str) {
         let path = mem::take(&mut self.path);
         let sender = app.channel.sender.clone();
-        let playlist_name = playlist.to_string();
+        let playlist = playlist.to_string();
         thread::spawn(move || {
-            let song = m3u::Song::from_path(&path).expect("Failed to parse song");
-            song.add_to_playlist(&playlist_name).expect("Failed to add song to playlist");
+            add_recursively(&path, &playlist);
 
-            let event = ToriEvent::SongAdded {
-                playlist_name,
-                song,
-            };
+            let song = path.rsplitn(1, '/').next().unwrap_or(&path).to_string();
+            let event = ToriEvent::SongAdded { playlist, song };
             sender
                 .send(event_channel::Event::Internal(event))
-                .expect("Failed to send ");
+                .expect("Failed to send internal event");
         });
     }
 
     pub fn mode(&self) -> Mode {
         Mode::Insert
+    }
+}
+
+/// Adds songs from some path. If the path points to a directory, it'll traverse the directory
+/// recursively, adding all songs inside it. If the path points to a file, it'll add that file.
+/// If it points to a URL, it adds the url.
+/// We do not traverse symlinks, to avoid infinite loops.
+fn add_recursively(path: &str, playlist_name: &str) {
+    let file = std::path::Path::new(&path);
+    if file.is_dir() && !file.is_symlink() {
+        for entry in std::fs::read_dir(path).expect("Failed to read dir") {
+            let entry = entry.expect("Failed to read entry");
+            let path = entry.path();
+            let path = path.to_str().expect("Failed to convert path to str");
+            add_recursively(path, playlist_name);
+        }
+    } else {
+        let song = m3u::Song::from_path(path).expect("Failed to parse song");
+        song.add_to_playlist(playlist_name)
+            .expect("Failed to add song to playlist");
     }
 }

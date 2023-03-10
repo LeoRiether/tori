@@ -125,16 +125,13 @@ impl<'a> SongsPane<'a> {
             .block(block)
             .widths(&[Constraint::Percentage(95), Constraint::Length(10)])
             .highlight_style(Style::default().bg(Color::LightYellow).fg(Color::Black))
-            .highlight_symbol("»");
+            .highlight_symbol(" ◇");
+            // .highlight_symbol("»");
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        let has_mod = |event: event::KeyEvent, mods: KeyModifiers| {
-            event.modifiers & mods != KeyModifiers::NONE
-        };
-
         match event {
             Event::Key(event) => {
                 if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
