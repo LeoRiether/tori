@@ -206,6 +206,7 @@ impl<'a> SongsPane<'a> {
         Ok(())
     }
 
+    /// Handles a key event when the filter is active.
     pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
         match event.code {
             KeyCode::Char(c) => {

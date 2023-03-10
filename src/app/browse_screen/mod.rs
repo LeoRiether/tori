@@ -134,9 +134,14 @@ impl Screen for BrowseScreen<'_> {
                         Add => Add,
                     };
                 }
+                // 'a'dd
                 Char('a') if self.mode() == Mode::Normal => {
                     self.selected_pane = Add;
                     self.add = AddPane::new();
+                }
+                // 'c'hange
+                KeyCode::Char('c') if self.mode() == Mode::Normal => {
+                    self.playlists.open_editor_for_selected()
                 }
                 _ => self.pass_event_down(app, crossterm::event::Event::Key(event))?,
             },
@@ -147,7 +152,7 @@ impl Screen for BrowseScreen<'_> {
 
     fn handle_tori_event(
         &mut self,
-        app: &mut App,
+        _app: &mut App,
         event: event_channel::ToriEvent,
     ) -> Result<(), Box<dyn Error>> {
         match event {

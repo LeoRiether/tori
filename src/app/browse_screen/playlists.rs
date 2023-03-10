@@ -99,8 +99,6 @@ impl<'a> PlaylistsPane<'a> {
                 match event.code {
                     KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('e') => self.select_prev(),
                     KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('n') => self.select_next(),
-                    // 'c'hange
-                    KeyCode::Char('c') => self.open_editor_for_selected(),
                     KeyCode::Char('/') => self.filter = "/".into(),
                     _ => {}
                 }
