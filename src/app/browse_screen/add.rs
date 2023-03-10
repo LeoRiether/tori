@@ -97,7 +97,8 @@ impl AddPane {
         thread::spawn(move || {
             add_recursively(&path, &playlist);
 
-            let song = path.rsplitn(1, '/').next().unwrap_or(&path).to_string();
+            let mut rsplit = path.trim_end_matches('/').rsplit('/');
+            let song = rsplit.next().unwrap_or(&path).to_string();
             let event = ToriEvent::SongAdded { playlist, song };
             sender
                 .send(event_channel::Event::Internal(event))
