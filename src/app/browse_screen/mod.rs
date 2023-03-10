@@ -148,6 +148,11 @@ impl Screen for BrowseScreen<'_> {
                         Add => Add,
                     };
                 }
+                // play/pause
+                Char(' ') => {
+                    app.mpv.command("cycle", &["pause"])?;
+                    self.now_playing.update(&app.mpv);
+                }
                 // 'a'dd
                 Char('a') if self.mode() == Mode::Normal => {
                     self.selected_pane = Add;

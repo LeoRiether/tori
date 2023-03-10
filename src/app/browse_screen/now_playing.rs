@@ -4,6 +4,7 @@ use libmpv::Mpv;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -16,6 +17,7 @@ pub struct NowPlaying {
     pub percentage: i64,
     pub time_pos: i64,
     pub time_rem: i64,
+    pub paused: bool,
 }
 
 impl NowPlaying {
@@ -24,6 +26,7 @@ impl NowPlaying {
         self.percentage = mpv.get_property("percent-pos").unwrap_or_default();
         self.time_pos = mpv.get_property("time-pos").unwrap_or_default();
         self.time_rem = mpv.get_property("time-remaining").unwrap_or_default();
+        self.paused = mpv.get_property("pause").unwrap_or_default();
     }
 
     pub fn render(&self, frame: &mut Frame<'_, MyBackend>, chunk: Rect) {
@@ -46,9 +49,23 @@ impl NowPlaying {
             ])
             .split(lines[1]);
 
-        let media_title = Paragraph::new(self.media_title.as_ref())
-            .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::LightYellow));
+        let media_title = {
+            let mut parts = vec![];
+
+            if self.paused {
+                parts.push(Span::styled(
+                    "[paused] ",
+                    Style::default().fg(Color::DarkGray),
+                ));
+            }
+
+            parts.push(Span::styled(
+                &self.media_title,
+                Style::default().fg(Color::LightYellow),
+            ));
+
+            Paragraph::new(Spans::from(parts)).alignment(Alignment::Center)
+        };
 
         let playback_bar_str: String = {
             let mut s: Vec<_> = "─".repeat(chunks[2].width as usize).chars().collect();
