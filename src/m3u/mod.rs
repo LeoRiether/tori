@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::io::{BufRead, BufReader, Read, Write, self, Seek, ErrorKind};
+use std::io::{self, BufRead, BufReader, ErrorKind, Read, Seek, Write};
 use std::mem;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -76,10 +76,11 @@ impl Song {
         if path.starts_with("http://") || path.starts_with("https://") {
             Song::parse_ytdlp(path)
         } else {
-            todo!("parse local file")
+            Song::parse_local_file(path)
         }
     }
 
+    /// Parses the song using yt-dlp
     pub fn parse_ytdlp(url: &str) -> Result<Song, Box<dyn Error>> {
         // TODO: maybe the user doesn't want to use yt-dlp?
         let output = std::process::Command::new("yt-dlp")
@@ -98,6 +99,42 @@ impl Song {
             title,
             duration,
             path: url.into(),
+        })
+    }
+
+    /// Parses song from a local file using audiotags.
+    /// Currently audiotags only supports mp3, flac and MPEG-4 (m4a/mp4/...)
+    pub fn parse_local_file(path: &str) -> Result<Song, Box<dyn Error>> {
+        use audiotags::{
+            Error::{ReadError, UnknownFileExtension, UnsupportedFormat, UnsupportedMimeType},
+            Tag,
+        };
+
+        let default_title = || "Unknown title".into();
+
+        let (title, duration) = match Tag::new().read_from_path(path) {
+            Ok(tag) => {
+                let title = tag
+                    .title()
+                    .map(|x| x.to_owned())
+                    .unwrap_or_else(default_title);
+                let duration = tag
+                    .duration()
+                    .map(Duration::from_secs_f64)
+                    .unwrap_or_default();
+                (title, duration)
+            }
+            Err(UnknownFileExtension(_))
+            | Err(UnsupportedFormat(_))
+            | Err(UnsupportedMimeType(_))
+            | Err(ReadError { source: _ }) => (default_title(), Duration::default()),
+            Err(e) => return Err(Box::new(e)),
+        };
+
+        Ok(Song {
+            title,
+            duration,
+            path: path.into(),
         })
     }
 
@@ -121,7 +158,9 @@ impl Song {
             Ok(()) if buf == b"#EXTM3U" => true,
             Ok(()) => false,
             Err(e) if e.kind() == ErrorKind::UnexpectedEof => false,
-            Err(e) => { return Err(Box::new(e)); }
+            Err(e) => {
+                return Err(Box::new(e));
+            }
         };
 
         if !has_extm3u {
@@ -140,7 +179,9 @@ impl Song {
             Ok(()) if buf == b"\n" => true,
             Ok(()) => false,
             Err(e) if e.kind() == ErrorKind::UnexpectedEof => false,
-            Err(e) => { return Err(Box::new(e)); }
+            Err(e) => {
+                return Err(Box::new(e));
+            }
         };
 
         if !ends_with_newline {
