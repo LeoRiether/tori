@@ -114,10 +114,12 @@ impl Song {
 
         let (title, duration) = match Tag::new().read_from_path(path) {
             Ok(tag) => {
-                let title = tag
-                    .title()
-                    .map(|x| x.to_owned())
-                    .unwrap_or_else(default_title);
+                let title = match (tag.artist(), tag.title()) {
+                    (Some(artist), Some(title)) => format!("{} - {}", artist, title),
+                    (Some(artist), None) => format!("{} - ?", artist),
+                    (None, Some(title)) => title.to_string(),
+                    (None, None) => default_title(),
+                };
                 let duration = tag
                     .duration()
                     .map(Duration::from_secs_f64)

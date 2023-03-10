@@ -58,11 +58,11 @@ impl NowPlaying {
         };
 
         let playback_left =
-            Paragraph::new(playback_left_str).style(Style::default().fg(Color::LightYellow));
+            Paragraph::new(playback_left_str).style(Style::default().fg(Color::White));
         let playback_bar =
-            Paragraph::new(playback_bar_str).style(Style::default().fg(Color::LightYellow));
+            Paragraph::new(playback_bar_str).style(Style::default().fg(Color::White));
         let playback_right =
-            Paragraph::new(playback_right_str).style(Style::default().fg(Color::LightYellow));
+            Paragraph::new(playback_right_str).style(Style::default().fg(Color::White));
 
         frame.render_widget(media_title, lines[0]);
         frame.render_widget(playback_left, chunks[1]);
