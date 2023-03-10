@@ -110,7 +110,13 @@ impl Song {
             Tag,
         };
 
-        let default_title = || "Unknown title".into();
+        let default_title = || {
+            path.trim_end_matches('/')
+                .rsplit('/')
+                .next()
+                .unwrap_or("Unknown title")
+                .to_string()
+        };
 
         let (title, duration) = match Tag::new().read_from_path(path) {
             Ok(tag) => {
