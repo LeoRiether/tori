@@ -1,14 +1,13 @@
-
 use std::{
     error::Error,
     path::{Path, PathBuf},
 };
 
-use crate::app::{filtered_list::FilteredList, App, MyBackend, Mode};
+use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{self, Event, KeyCode, KeyModifiers, KeyEvent, MouseEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
@@ -48,12 +47,15 @@ impl<'a> SongsPane<'a> {
 
     pub fn from_playlist<P: AsRef<Path>>(path: P) -> Self {
         // TODO: maybe return Result?
-        let file = std::fs::File::open(&path).unwrap_or_else(|_| panic!(
-            "Couldn't open playlist file {}",
-            path.as_ref().display()
-        ));
+        let file = std::fs::File::open(&path)
+            .unwrap_or_else(|_| panic!("Couldn't open playlist file {}", path.as_ref().display()));
 
-        let title = path.as_ref().file_stem().unwrap().to_string_lossy().to_string();
+        let title = path
+            .as_ref()
+            .file_stem()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let songs = m3u::Song::parse_m3u(file);
         let shown = FilteredList::default();
 
@@ -76,8 +78,12 @@ impl<'a> SongsPane<'a> {
             unsafe { std::slice::from_raw_parts(self.songs.as_ptr(), self.songs.len()) };
         self.shown.filter(songs_slice, |s| {
             self.filter.is_empty()
-                || s.title.to_lowercase().contains(&self.filter[1..].to_lowercase())
-                || s.path.to_lowercase().contains(&self.filter[1..].to_lowercase())
+                || s.title
+                    .to_lowercase()
+                    .contains(&self.filter[1..].to_lowercase())
+                || s.path
+                    .to_lowercase()
+                    .contains(&self.filter[1..].to_lowercase())
         });
     }
 
@@ -118,15 +124,12 @@ impl<'a> SongsPane<'a> {
             })
             .collect();
 
-        // BUG: I would like to make the first width Constraint::Min(0), but it's currently not
-        // working for some reason
-        // See https://github.com/fdehau/tui-rs/issues/637
+        let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
         let widget = Table::new(songlist)
             .block(block)
-            .widths(&[Constraint::Percentage(95), Constraint::Length(10)])
+            .widths(widths)
             .highlight_style(Style::default().bg(Color::LightYellow).fg(Color::Black))
             .highlight_symbol(" ◇");
-            // .highlight_symbol("»");
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
@@ -190,13 +193,11 @@ impl<'a> SongsPane<'a> {
                     _ => {}
                 }
             }
-            Event::Mouse(event) => {
-                match event.kind {
-                    MouseEventKind::ScrollUp => self.select_prev(),
-                    MouseEventKind::ScrollDown => self.select_next(),
-                    _ => {}
-                }
-            }
+            Event::Mouse(event) => match event.kind {
+                MouseEventKind::ScrollUp => self.select_prev(),
+                MouseEventKind::ScrollDown => self.select_next(),
+                _ => {}
+            },
             _ => {}
         }
 
