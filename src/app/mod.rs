@@ -19,6 +19,8 @@ pub mod event_channel;
 pub mod filtered_list;
 pub mod notification;
 
+const FRAME_DELAY_MS: u16 = 16;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]
 pub enum Mode {
@@ -110,7 +112,7 @@ impl App {
             })?;
 
             self.next_render = time::Instant::now()
-                .checked_add(Duration::from_millis(8))
+                .checked_add(Duration::from_millis(FRAME_DELAY_MS as u64))
                 .unwrap();
         }
         Ok(())
@@ -128,7 +130,7 @@ impl App {
                     event_channel::Event::Terminal(e) => state.handle_terminal_event(self, e)?,
                     event_channel::Event::Internal(e) => state.handle_tori_event(self, e)?,
                 }
-                self.next_poll_timeout = 8;
+                self.next_poll_timeout = FRAME_DELAY_MS;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 self.next_poll_timeout = 1000;
