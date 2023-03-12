@@ -95,8 +95,12 @@ impl App {
             let state_rc = state_rc.clone();
             let mut state = state_rc.borrow_mut();
 
-            self.render(&mut *state)?;
-            self.handle_event(&mut *state)?;
+            self.render(&mut *state)
+                .map_err(|e| self.notify_dyn_err(e))
+                .ok();
+            self.handle_event(&mut *state)
+                .map_err(|e| self.notify_dyn_err(e))
+                .ok();
         }
 
         reset_terminal()?;
@@ -154,6 +158,11 @@ impl App {
 
     pub fn change_state(&mut self, state: Option<Rc<RefCell<dyn Screen>>>) {
         self.state = state;
+    }
+
+    pub fn notify_dyn_err(&mut self, e: Box<dyn Error>) {
+        self.notification = Notification::new(e.to_string(), Duration::from_secs(5))
+            .colored(tui::style::Color::LightRed);
     }
 }
 
