@@ -179,11 +179,7 @@ impl Screen for BrowseScreen<'_> {
             ToriEvent::SongAdded { playlist, song } => {
                 // Reload songs pane
                 self.songs = SongsPane::from_playlist_pane(&self.playlists);
-                app.notification = Notification::new(
-                    format!("\"{}\" was added to {}", song, playlist),
-                    Duration::from_secs(3),
-                )
-                .colored(Color::LightGreen);
+                app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             ToriEvent::SecondTick => {
                 self.now_playing.update(&app.mpv);

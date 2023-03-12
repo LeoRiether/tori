@@ -10,7 +10,7 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, Frame, Terminal};
+use tui::{backend::CrosstermBackend, Frame, Terminal, style::Color};
 
 use event_channel::Channel;
 
@@ -52,7 +52,7 @@ pub struct App {
     pub channel: Channel,
     next_render: time::Instant,
     next_poll_timeout: u16,
-    pub notification: Notification,
+    notification: Notification,
 }
 
 impl App {
@@ -160,10 +160,24 @@ impl App {
         self.state = state;
     }
 
+    ////////////////////////////////
+    //        Notification        //
+    ////////////////////////////////
     pub fn notify_dyn_err(&mut self, e: Box<dyn Error>) {
         self.notification = Notification::new(e.to_string(), Duration::from_secs(5))
-            .colored(tui::style::Color::LightRed);
+            .colored(Color::LightRed);
     }
+
+    pub fn notify_info(&mut self, info: String) {
+        self.notification = Notification::new(info, Duration::from_secs(4))
+            .colored(Color::LightCyan);
+    }
+
+    pub fn notify_ok(&mut self, text: String) {
+        self.notification = Notification::new(text, Duration::from_secs(4))
+            .colored(Color::LightGreen);
+    }
+
 }
 
 pub fn setup_terminal() -> Result<(), Box<dyn Error>> {

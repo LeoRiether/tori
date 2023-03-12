@@ -1,9 +1,10 @@
 use std::{
     error::Error,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
-use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::app::{filtered_list::FilteredList, notification::Notification, App, Mode, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -172,6 +173,7 @@ impl<'a> SongsPane<'a> {
                         if let Some(song) = self.selected_item() {
                             let mut ctx: ClipboardContext = ClipboardProvider::new()?;
                             ctx.set_contents(song.path.clone())?;
+                            app.notify_info(format!("Copied {} to the clipboard", song.path));
                         }
                     }
                     // open in browser
