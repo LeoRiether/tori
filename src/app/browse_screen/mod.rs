@@ -149,7 +149,8 @@ impl Screen for BrowseScreen<'_> {
                     };
                 }
                 // play/pause
-                Char(' ') => {
+                // TODO: I really need a better event system
+                Char(' ') if self.mode() == Mode::Normal => {
                     app.mpv.command("cycle", &["pause"])?;
                     self.now_playing.update(&app.mpv);
                 }

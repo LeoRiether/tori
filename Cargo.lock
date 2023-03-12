@@ -447,6 +447,7 @@ dependencies = [
  "libmpv-sirno",
  "serde_json",
  "tui",
+ "unicode-width",
 ]
 
 [[package]]

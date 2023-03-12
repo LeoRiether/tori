@@ -135,6 +135,8 @@ impl<'a> SongsPane<'a> {
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use KeyCode::*;
+
         match event {
             Event::Key(event) => {
                 if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
@@ -143,7 +145,7 @@ impl<'a> SongsPane<'a> {
                 }
 
                 match event.code {
-                    KeyCode::Tab => {
+                    Tab => {
                         if let Some(song) = self.selected_item() {
                             app.mpv
                                 .playlist_load_files(&[(
@@ -154,7 +156,7 @@ impl<'a> SongsPane<'a> {
                                 .unwrap();
                         }
                     }
-                    KeyCode::Enter => {
+                    Enter => {
                         if let Some(song) = self.selected_item() {
                             app.mpv
                                 .playlist_load_files(&[(
@@ -166,14 +168,14 @@ impl<'a> SongsPane<'a> {
                         }
                     }
                     // yank, like in vim
-                    KeyCode::Char('y') => {
+                    Char('y') => {
                         if let Some(song) = self.selected_item() {
                             let mut ctx: ClipboardContext = ClipboardProvider::new()?;
                             ctx.set_contents(song.path.clone())?;
                         }
                     }
                     // open in browser
-                    KeyCode::Char('o') => {
+                    Char('o') => {
                         if let Some(song) = self.selected_item() {
                             // TODO: this is not cross-platform
                             std::process::Command::new("xdg-open")
@@ -182,14 +184,14 @@ impl<'a> SongsPane<'a> {
                         }
                     }
                     // Go to the bottom, also like in vim
-                    KeyCode::Char('G') => {
+                    Char('G') => {
                         if !self.shown.items.is_empty() {
                             self.shown.state.select(Some(self.shown.items.len() - 1));
                         }
                     }
-                    KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('e') => self.select_prev(),
-                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('n') => self.select_next(),
-                    KeyCode::Char('/') => self.filter = "/".into(),
+                    Up | Char('k') | Char('e') => self.select_prev(),
+                    Down | Char('j') | Char('n') => self.select_next(),
+                    Char('/') => self.filter = "/".into(),
                     _ => {}
                 }
             }
