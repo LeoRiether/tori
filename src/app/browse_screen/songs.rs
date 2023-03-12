@@ -1,10 +1,9 @@
 use std::{
     error::Error,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
-use crate::app::{filtered_list::FilteredList, notification::Notification, App, Mode, MyBackend};
+use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};

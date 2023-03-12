@@ -4,8 +4,8 @@ use crate::App;
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use std::error::Error;
-use std::time::Duration;
-use tui::style::Color;
+
+
 use tui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -25,7 +25,7 @@ use now_playing::NowPlaying;
 
 use super::event_channel;
 use super::event_channel::ToriEvent;
-use super::notification::Notification;
+
 use super::Mode;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
