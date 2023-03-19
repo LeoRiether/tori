@@ -1,6 +1,6 @@
-use crate::app::{filtered_list::FilteredList, MyBackend, Mode};
+use crate::app::{event_channel::Event, filtered_list::FilteredList, Mode, MyBackend};
 
-use crossterm::event::{Event, KeyCode, KeyEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
 use std::{borrow::Cow, error::Error, path::Path};
 use tui::{
     layout,
@@ -91,23 +91,29 @@ impl<'a> PlaylistsPane<'a> {
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
-        match event {
-            Event::Key(event) => {
-                if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
-                    self.refresh_shown();
-                    return Ok(());
-                }
+        use Event::*;
+        use KeyCode::*;
 
-                match event.code {
-                    KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('e') => self.select_prev(),
-                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('n') => self.select_next(),
-                    KeyCode::Char('/') => self.filter = "/".into(),
-                    _ => {}
+        match event {
+            Terminal(event) => match event {
+                crossterm::event::Event::Key(event) => {
+                    if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                        self.refresh_shown();
+                        return Ok(());
+                    }
+
+                    match event.code {
+                        Up | Char('k') | Char('e') => self.select_prev(),
+                        Down | Char('j') | Char('n') => self.select_next(),
+                        Char('/') => self.filter = "/".into(),
+                        _ => {}
+                    }
                 }
-            }
-            Event::Mouse(event) => match event.kind {
-                MouseEventKind::ScrollUp => self.select_prev(),
-                MouseEventKind::ScrollDown => self.select_next(),
+                crossterm::event::Event::Mouse(event) => match event.kind {
+                    MouseEventKind::ScrollUp => self.select_prev(),
+                    MouseEventKind::ScrollDown => self.select_next(),
+                    _ => {}
+                },
                 _ => {}
             },
             _ => {}

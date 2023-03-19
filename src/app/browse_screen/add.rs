@@ -1,6 +1,6 @@
 use std::{error::Error, mem, thread};
 
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::KeyCode;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
@@ -10,7 +10,7 @@ use tui::{
 
 use crate::{
     app::{
-        event_channel::{self, ToriEvent},
+        event_channel::Event,
         App, Mode, MyBackend,
     },
     m3u,
@@ -33,21 +33,25 @@ impl AddPane {
         selected_playlist: Option<&str>,
         event: Event,
     ) -> Result<(), Box<dyn Error>> {
+        use Event::*;
         use KeyCode::*;
         match event {
-            Event::Key(event) => match event.code {
-                Char(c) => self.path.push(c),
-                Backspace => {
-                    self.path.pop();
-                }
-                Esc => {
-                    self.path.clear();
-                }
-                Enter => {
-                    if let Some(playlist) = selected_playlist {
-                        self.commit(app, playlist);
+            Terminal(event) => match event {
+                crossterm::event::Event::Key(event) => match event.code {
+                    Char(c) => self.path.push(c),
+                    Backspace => {
+                        self.path.pop();
                     }
-                }
+                    Esc => {
+                        self.path.clear();
+                    }
+                    Enter => {
+                        if let Some(playlist) = selected_playlist {
+                            self.commit(app, playlist);
+                        }
+                    }
+                    _ => {}
+                },
                 _ => {}
             },
             _ => {}
@@ -99,9 +103,9 @@ impl AddPane {
 
             let mut rsplit = path.trim_end_matches('/').rsplit('/');
             let song = rsplit.next().unwrap_or(&path).to_string();
-            let event = ToriEvent::SongAdded { playlist, song };
+            let event = Event::SongAdded { playlist, song };
             sender
-                .send(event_channel::Event::Internal(event))
+                .send(event)
                 .expect("Failed to send internal event");
         });
     }

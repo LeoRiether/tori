@@ -5,17 +5,19 @@ use std::{
 };
 
 #[derive(Debug, Clone)]
-pub enum ToriEvent {
+pub enum Command {
+    Quit,
+}
+
+#[derive(Debug, Clone)]
+pub enum Event {
     SecondTick,
     SongAdded {
         playlist: String,
         song: String, 
     },
-}
-
-pub enum Event {
+    Command(Command),
     Terminal(crossterm::event::Event),
-    Internal(ToriEvent),
 }
 
 pub struct Channel {
@@ -44,7 +46,7 @@ impl Channel {
         let sender = self.sender.clone();
         thread::spawn(move || loop {
             thread::sleep(time::Duration::from_secs(1));
-            sender.send(Event::Internal(ToriEvent::SecondTick)).unwrap();
+            sender.send(Event::SecondTick).unwrap();
         });
     }
 }

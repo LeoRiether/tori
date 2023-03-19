@@ -10,7 +10,7 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, Frame, Terminal, style::Color};
+use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
 
 use event_channel::Channel;
 
@@ -31,15 +31,10 @@ pub enum Mode {
 
 pub trait Screen {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
-    fn handle_terminal_event(
+    fn handle_event(
         &mut self,
         app: &mut App,
-        event: crossterm::event::Event,
-    ) -> Result<(), Box<dyn Error>>;
-    fn handle_tori_event(
-        &mut self,
-        app: &mut App,
-        event: event_channel::ToriEvent,
+        event: event_channel::Event,
     ) -> Result<(), Box<dyn Error>>;
 }
 
@@ -130,10 +125,7 @@ impl App {
         let timeout = Duration::from_millis(self.next_poll_timeout as u64);
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
-                match event {
-                    event_channel::Event::Terminal(e) => state.handle_terminal_event(self, e)?,
-                    event_channel::Event::Internal(e) => state.handle_tori_event(self, e)?,
-                }
+                state.handle_event(self, event)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
@@ -164,20 +156,19 @@ impl App {
     //        Notification        //
     ////////////////////////////////
     pub fn notify_dyn_err(&mut self, e: Box<dyn Error>) {
-        self.notification = Notification::new(e.to_string(), Duration::from_secs(5))
-            .colored(Color::LightRed);
+        self.notification =
+            Notification::new(e.to_string(), Duration::from_secs(5)).colored(Color::LightRed);
     }
 
     pub fn notify_info(&mut self, info: String) {
-        self.notification = Notification::new(info, Duration::from_secs(4))
-            .colored(Color::LightCyan);
+        self.notification =
+            Notification::new(info, Duration::from_secs(4)).colored(Color::LightCyan);
     }
 
     pub fn notify_ok(&mut self, text: String) {
-        self.notification = Notification::new(text, Duration::from_secs(4))
-            .colored(Color::LightGreen);
+        self.notification =
+            Notification::new(text, Duration::from_secs(4)).colored(Color::LightGreen);
     }
-
 }
 
 pub fn setup_terminal() -> Result<(), Box<dyn Error>> {

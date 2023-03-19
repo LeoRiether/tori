@@ -3,11 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::app::{event_channel::Event, filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{Event, KeyCode, KeyEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
@@ -135,70 +135,74 @@ impl<'a> SongsPane<'a> {
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use Event::*;
         use KeyCode::*;
 
         match event {
-            Event::Key(event) => {
-                if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
-                    self.refresh_shown();
-                    return Ok(());
-                }
+            Terminal(event) => match event {
+                crossterm::event::Event::Key(event) => {
+                    if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                        self.refresh_shown();
+                        return Ok(());
+                    }
 
-                match event.code {
-                    Tab => {
-                        if let Some(song) = self.selected_item() {
-                            app.mpv
-                                .playlist_load_files(&[(
-                                    &song.path,
-                                    libmpv::FileState::AppendPlay,
-                                    None,
-                                )])
-                                .unwrap();
+                    match event.code {
+                        Tab => {
+                            if let Some(song) = self.selected_item() {
+                                app.mpv
+                                    .playlist_load_files(&[(
+                                        &song.path,
+                                        libmpv::FileState::AppendPlay,
+                                        None,
+                                    )])
+                                    .unwrap();
+                            }
                         }
-                    }
-                    Enter => {
-                        if let Some(song) = self.selected_item() {
-                            app.mpv
-                                .playlist_load_files(&[(
-                                    &song.path,
-                                    libmpv::FileState::Replace,
-                                    None,
-                                )])
-                                .unwrap();
+                        Enter => {
+                            if let Some(song) = self.selected_item() {
+                                app.mpv
+                                    .playlist_load_files(&[(
+                                        &song.path,
+                                        libmpv::FileState::Replace,
+                                        None,
+                                    )])
+                                    .unwrap();
+                            }
                         }
-                    }
-                    // yank, like in vim
-                    Char('y') => {
-                        if let Some(song) = self.selected_item() {
-                            let mut ctx: ClipboardContext = ClipboardProvider::new()?;
-                            ctx.set_contents(song.path.clone())?;
-                            app.notify_info(format!("Copied {} to the clipboard", song.path));
+                        // yank, like in vim
+                        Char('y') => {
+                            if let Some(song) = self.selected_item() {
+                                let mut ctx: ClipboardContext = ClipboardProvider::new()?;
+                                ctx.set_contents(song.path.clone())?;
+                                app.notify_info(format!("Copied {} to the clipboard", song.path));
+                            }
                         }
-                    }
-                    // open in browser
-                    Char('o') => {
-                        if let Some(song) = self.selected_item() {
-                            // TODO: this is not cross-platform
-                            std::process::Command::new("xdg-open")
-                                .arg(&song.path)
-                                .output()?;
+                        // open in browser
+                        Char('o') => {
+                            if let Some(song) = self.selected_item() {
+                                // TODO: this is not cross-platform
+                                std::process::Command::new("xdg-open")
+                                    .arg(&song.path)
+                                    .output()?;
+                            }
                         }
-                    }
-                    // Go to the bottom, also like in vim
-                    Char('G') => {
-                        if !self.shown.items.is_empty() {
-                            self.shown.state.select(Some(self.shown.items.len() - 1));
+                        // Go to the bottom, also like in vim
+                        Char('G') => {
+                            if !self.shown.items.is_empty() {
+                                self.shown.state.select(Some(self.shown.items.len() - 1));
+                            }
                         }
+                        Up | Char('k') | Char('e') => self.select_prev(),
+                        Down | Char('j') | Char('n') => self.select_next(),
+                        Char('/') => self.filter = "/".into(),
+                        _ => {}
                     }
-                    Up | Char('k') | Char('e') => self.select_prev(),
-                    Down | Char('j') | Char('n') => self.select_next(),
-                    Char('/') => self.filter = "/".into(),
-                    _ => {}
                 }
-            }
-            Event::Mouse(event) => match event.kind {
-                MouseEventKind::ScrollUp => self.select_prev(),
-                MouseEventKind::ScrollDown => self.select_next(),
+                crossterm::event::Event::Mouse(event) => match event.kind {
+                    MouseEventKind::ScrollUp => self.select_prev(),
+                    MouseEventKind::ScrollDown => self.select_next(),
+                    _ => {}
+                },
                 _ => {}
             },
             _ => {}
