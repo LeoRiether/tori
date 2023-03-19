@@ -5,7 +5,6 @@ use crate::App;
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use std::error::Error;
 
-
 use tui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -47,14 +46,14 @@ pub struct BrowseScreen<'a> {
 }
 
 impl<'a> BrowseScreen<'a> {
-    pub fn new() -> Self {
-        let playlists = PlaylistsPane::from_dir("playlists");
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        let playlists = PlaylistsPane::from_dir("playlists")?;
         let songs = SongsPane::from_playlist_pane(&playlists);
-        Self {
+        Ok(Self {
             playlists,
             songs,
             ..Default::default()
-        }
+        })
     }
 
     /// Passes the event down to the currently selected pane.
@@ -161,7 +160,7 @@ impl Screen for BrowseScreen<'_> {
                 }
                 // 'c'hange
                 KeyCode::Char('c') if self.mode() == Mode::Normal => {
-                    self.playlists.open_editor_for_selected()
+                    self.playlists.open_editor_for_selected()?;
                 }
                 _ => self.pass_event_down(app, crossterm::event::Event::Key(event))?,
             },

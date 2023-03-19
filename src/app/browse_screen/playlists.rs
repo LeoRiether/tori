@@ -17,14 +17,15 @@ pub struct PlaylistsPane<'a> {
 }
 
 impl<'a> PlaylistsPane<'a> {
-    pub fn from_dir<P: AsRef<Path>>(path: P) -> Self {
+    pub fn from_dir<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let mut me = Self::default();
-        me.reload_from_dir(path);
-        me
+        me.reload_from_dir(path)?;
+        Ok(me)
     }
 
-    pub fn reload_from_dir<P: AsRef<Path>>(&mut self, path: P) {
-        let dir = std::fs::read_dir(path).unwrap();
+    pub fn reload_from_dir<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Box<dyn Error>> {
+        let dir = std::fs::read_dir(path)
+            .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
         use std::fs::DirEntry;
         use std::io::Error;
@@ -40,6 +41,7 @@ impl<'a> PlaylistsPane<'a> {
 
         self.playlists = dir.into_iter().map(extract_playlist_name).collect();
         self.refresh_shown();
+        Ok(())
     }
 
     fn refresh_shown(&mut self) {
@@ -144,7 +146,7 @@ impl<'a> PlaylistsPane<'a> {
         self.shown.selected_item()
     }
 
-    pub fn open_editor_for_selected(&mut self) {
+    pub fn open_editor_for_selected(&mut self) -> Result<(), Box<dyn Error>> {
         if let Some(selected) = self.selected_item() {
             crate::app::reset_terminal().unwrap();
 
@@ -153,10 +155,11 @@ impl<'a> PlaylistsPane<'a> {
                 .arg(format!("playlists/{}.m3u", selected))
                 .status()
                 .expect("Failed to execute editor");
-            self.reload_from_dir("playlists");
+            self.reload_from_dir("playlists")?;
 
             crate::app::setup_terminal().unwrap();
         }
+        Ok(())
     }
 
     pub fn mode(&self) -> Mode {
