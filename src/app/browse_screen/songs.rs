@@ -153,6 +153,12 @@ impl<'a> SongsPane<'a> {
                         webbrowser::open(&song.path)?;
                     }
                 }
+                NextSong => {
+                    app.mpv.playlist_next_weak()?
+                }
+                PrevSong => {
+                    app.mpv.playlist_next_weak()?
+                }
                 _ => {}
             },
             SongAdded {
@@ -174,24 +180,20 @@ impl<'a> SongsPane<'a> {
                     match event.code {
                         Tab => {
                             if let Some(song) = self.selected_item() {
-                                app.mpv
-                                    .playlist_load_files(&[(
-                                        &song.path,
-                                        libmpv::FileState::AppendPlay,
-                                        None,
-                                    )])
-                                    .unwrap();
+                                app.mpv.playlist_load_files(&[(
+                                    &song.path,
+                                    libmpv::FileState::AppendPlay,
+                                    None,
+                                )])?;
                             }
                         }
                         Enter => {
                             if let Some(song) = self.selected_item() {
-                                app.mpv
-                                    .playlist_load_files(&[(
-                                        &song.path,
-                                        libmpv::FileState::Replace,
-                                        None,
-                                    )])
-                                    .unwrap();
+                                app.mpv.playlist_load_files(&[(
+                                    &song.path,
+                                    libmpv::FileState::Replace,
+                                    None,
+                                )])?;
                             }
                         }
                         // yank, like in vim

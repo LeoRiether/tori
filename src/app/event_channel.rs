@@ -41,6 +41,8 @@ parseable_enum! {
         SelectNext,
         SelectPrev,
         OpenInBrowser,
+        NextSong,
+        PrevSong,
     }
 }
 
