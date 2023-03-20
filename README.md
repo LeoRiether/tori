@@ -1,5 +1,9 @@
 # tori
-## Terminal-based playlist player
+## Terminal-based music player
+
+## Dependencies
+- [mpv](https://mpv.io/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) (or youtube-dl)
 
 ## yt-dlp
 If you want to use yt-dlp instead of youtube-dl, edit your `mpv.conf` and paste the following line:
