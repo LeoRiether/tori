@@ -155,6 +155,15 @@ impl<'a> SongsPane<'a> {
                 }
                 _ => {}
             },
+            SongAdded {
+                playlist: _,
+                song: _,
+            } => {
+                // scroll to the bottom
+                if !self.shown.items.is_empty() {
+                    self.shown.state.select(Some(self.shown.items.len() - 1));
+                }
+            }
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => {
                     if !self.filter.is_empty() && self.handle_filter_key_event(event)? {

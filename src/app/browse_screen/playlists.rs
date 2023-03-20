@@ -155,7 +155,7 @@ impl<'a> PlaylistsPane<'a> {
     }
 
     pub fn commit_filter(&mut self, app: &mut App) {
-        // TODO: select song
+        // TODO: select playlist
         self.filter.clear();
         app.channel.send(Event::ChangedPlaylist).unwrap();
     }

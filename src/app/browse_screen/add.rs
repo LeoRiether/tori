@@ -90,6 +90,7 @@ impl AddPane {
     /// Adds the song to the current playlist
     fn commit(&mut self, app: &mut App, playlist: &str) {
         let path = mem::take(&mut self.path);
+        app.notify_info(format!("Adding {}...", path));
         let sender = app.channel.sender.clone();
         let playlist = playlist.to_string();
         thread::spawn(move || {
