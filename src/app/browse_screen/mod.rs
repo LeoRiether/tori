@@ -2,7 +2,7 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
-use crossterm::event::{self, KeyCode, KeyModifiers};
+use crossterm::event::{KeyCode};
 use event_channel::Event;
 use std::error::Error;
 

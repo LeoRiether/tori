@@ -13,7 +13,7 @@ use tui::{
     Frame,
 };
 
-use super::BrowseScreen;
+
 
 #[derive(Debug, Default)]
 pub struct PlaylistsPane<'a> {
