@@ -3,7 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::app::{event_channel::Event, filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::app::{
+    event_channel::{self, Event},
+    filtered_list::FilteredList,
+    App, Mode, MyBackend,
+};
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -135,10 +139,22 @@ impl<'a> SongsPane<'a> {
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use event_channel::Command::*;
         use Event::*;
         use KeyCode::*;
 
         match event {
+            Command(cmd) => match cmd {
+                SelectNext => self.select_next(),
+                SelectPrev => self.select_prev(),
+                OpenInBrowser => {
+                    if let Some(song) = self.selected_item() {
+                        // TODO: reconsider if I really need a library to write this one line
+                        webbrowser::open(&song.path)?;
+                    }
+                }
+                _ => {}
+            },
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => {
                     if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
@@ -177,23 +193,14 @@ impl<'a> SongsPane<'a> {
                                 app.notify_info(format!("Copied {} to the clipboard", song.path));
                             }
                         }
-                        // open in browser
-                        Char('o') => {
-                            if let Some(song) = self.selected_item() {
-                                // TODO: this is not cross-platform
-                                std::process::Command::new("xdg-open")
-                                    .arg(&song.path)
-                                    .output()?;
-                            }
-                        }
                         // Go to the bottom, also like in vim
                         Char('G') => {
                             if !self.shown.items.is_empty() {
                                 self.shown.state.select(Some(self.shown.items.len() - 1));
                             }
                         }
-                        Up | Char('k') | Char('e') => self.select_prev(),
-                        Down | Char('j') | Char('n') => self.select_next(),
+                        Up => self.select_prev(),
+                        Down => self.select_next(),
                         Char('/') => self.filter = "/".into(),
                         _ => {}
                     }

@@ -39,6 +39,7 @@ parseable_enum! {
         Quit,
         SelectNext,
         SelectPrev,
+        OpenInBrowser,
     }
 }
 
