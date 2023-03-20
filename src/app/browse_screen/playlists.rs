@@ -111,12 +111,14 @@ impl<'a> PlaylistsPane<'a> {
                 crossterm::event::Event::Key(event) => {
                     if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
                         self.refresh_shown();
+                        app.channel.send(Event::ChangedPlaylist).unwrap();
                         return Ok(());
                     }
 
                     match event.code {
                         Up => self.select_prev(app),
                         Down => self.select_next(app),
+                        Enter if !self.filter.is_empty() => self.commit_filter(app),
                         Char('/') => self.filter = "/".into(),
                         _ => {}
                     }
@@ -152,20 +154,20 @@ impl<'a> PlaylistsPane<'a> {
         }
     }
 
+    pub fn commit_filter(&mut self, app: &mut App) {
+        // TODO: select song
+        self.filter.clear();
+        app.channel.send(Event::ChangedPlaylist).unwrap();
+    }
+
     pub fn select_next(&mut self, app: &mut App) {
         self.shown.select_next();
-        app.channel
-            .sender
-            .send(event_channel::Event::ChangedPlaylist)
-            .unwrap();
+        app.channel.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn select_prev(&mut self, app: &mut App) {
         self.shown.select_prev();
-        app.channel
-            .sender
-            .send(event_channel::Event::ChangedPlaylist)
-            .unwrap();
+        app.channel.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn selected_item(&self) -> Option<&'a String> {

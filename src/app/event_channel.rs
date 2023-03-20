@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::sync::mpsc;
 use std::time;
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
@@ -80,5 +81,9 @@ impl Channel {
             thread::sleep(time::Duration::from_secs(1));
             sender.send(Event::SecondTick).unwrap();
         });
+    }
+
+    pub fn send(&mut self, event: Event) -> Result<(), mpsc::SendError<Event>> {
+        self.sender.send(event)
     }
 }

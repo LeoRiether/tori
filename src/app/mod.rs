@@ -1,5 +1,5 @@
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyEvent},
+    event::{DisableMouseCapture, EnableMouseCapture, KeyEvent, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -157,13 +157,17 @@ impl App {
         use Event::*;
         match event {
             Terminal(crossterm::event::Event::Key(key_event)) => {
+                let has_mods = key_event.modifiers & (KeyModifiers::CONTROL | KeyModifiers::ALT)
+                    != KeyModifiers::NONE;
                 match state.mode() {
-                    // In normal mode, events may be transformed into commands
-                    Mode::Normal => self.transform_normal_mode_key(key_event),
-                    // In insert mode, key events pass through untransformed 
-                    Mode::Insert => event,
+                    // In insert mode, key events pass through untransformed, unless there's a
+                    // control or alt modifier
+                    Mode::Insert if !has_mods => event,
+
+                    // Otherwise, events may be transformed into commands
+                    _ => self.transform_normal_mode_key(key_event),
                 }
-            },
+            }
             _ => event,
         }
     }
@@ -171,8 +175,8 @@ impl App {
     /// Transforms a key event into the corresponding command, if there is one.
     /// Assumes state is in normal mode
     fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
-        use Event::*;
         use crossterm::event::Event::Key;
+        use Event::*;
         match self.shortcuts.get_from_event(key_event) {
             Some(cmd) => Command(cmd),
             None => Terminal(Key(key_event)),
