@@ -70,14 +70,6 @@ impl<'a> BrowseScreen<'a> {
         }
     }
 
-    pub fn mode(&self) -> Mode {
-        use BrowsePane::*;
-        match self.selected_pane {
-            Playlists => self.playlists.mode(),
-            Songs => self.songs.mode(),
-            Add => self.add.mode(),
-        }
-    }
 }
 
 impl Screen for BrowseScreen<'_> {
@@ -176,5 +168,14 @@ impl Screen for BrowseScreen<'_> {
             _ => {}
         }
         Ok(())
+    }
+
+    fn mode(&self) -> Mode {
+        use BrowsePane::*;
+        match self.selected_pane {
+            Playlists => self.playlists.mode(),
+            Songs => self.songs.mode(),
+            Add => self.add.mode(),
+        }
     }
 }

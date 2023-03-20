@@ -1,5 +1,5 @@
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{DisableMouseCapture, EnableMouseCapture, KeyEvent},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -18,6 +18,11 @@ pub mod browse_screen;
 pub mod event_channel;
 pub mod filtered_list;
 pub mod notification;
+pub mod shortcuts;
+
+use shortcuts::Shortcuts;
+
+use self::event_channel::Event;
 
 const FRAME_DELAY_MS: u16 = 16;
 
@@ -30,6 +35,7 @@ pub enum Mode {
 }
 
 pub trait Screen {
+    fn mode(&self) -> Mode;
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
     fn handle_event(
         &mut self,
@@ -44,10 +50,11 @@ pub struct App {
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
     state: Option<Rc<RefCell<dyn Screen>>>,
-    pub channel: Channel,
+    channel: Channel,
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification,
+    shortcuts: Shortcuts,
 }
 
 impl App {
@@ -67,6 +74,7 @@ impl App {
         let next_poll_timeout = 1000;
 
         let notification = Notification::default();
+        let shortcuts = Shortcuts::default();
 
         Ok(App {
             terminal,
@@ -76,6 +84,7 @@ impl App {
             next_render,
             next_poll_timeout,
             notification,
+            shortcuts,
         })
     }
 
@@ -121,10 +130,11 @@ impl App {
     fn handle_event(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
-        // just after the last event, which triggers a fast render.
+        // immediately after the last event, which triggers a fast render.
         let timeout = Duration::from_millis(self.next_poll_timeout as u64);
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
+                let event = self.transform_event(state, event);
                 state.handle_event(self, event)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
@@ -137,6 +147,38 @@ impl App {
         }
 
         Ok(())
+    }
+
+    /// Transforms an event, according to the current app state.
+    #[allow(clippy::match_single_binding)]
+    #[allow(unused_variables)]
+    fn transform_event(&self, state: &mut dyn Screen, event: Event) -> Event {
+        use Event::*;
+        match event {
+            Terminal(event) => match event {
+                crossterm::event::Event::Key(key_event) => {
+                    match state.mode() {
+                        // In normal mode, events may be transformed into commands
+                        Mode::Normal => self.transform_normal_mode_key(key_event),
+                        // In insert mode, key events pass through untransformed 
+                        Mode::Insert => Terminal(event),
+                    }
+                }
+                _ => Terminal(event),
+            },
+            _ => event,
+        }
+    }
+
+    /// Transforms a key event into the corresponding command, if there is one.
+    /// Assumes state is in normal mode
+    fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
+        use Event::*;
+        use crossterm::event::Event::Key;
+        match self.shortcuts.get_from_event(key_event) {
+            Some(cmd) => Command(cmd),
+            None => Terminal(Key(key_event)),
+        }
     }
 
     fn chain_hook(&mut self) {
