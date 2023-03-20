@@ -138,9 +138,6 @@ impl App {
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
                 let event = self.transform_event(state, event);
-                if !matches!(event, Event::SecondTick) {
-                    self.notify_info(format!("~ {:?}", event));
-                }
                 state.handle_event(self, event)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
