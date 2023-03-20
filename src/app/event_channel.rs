@@ -9,8 +9,9 @@ use std::{
 macro_rules! parseable_enum {
     ($vis:vis enum $enum:ident { $($item:ident),* $(,)? }) => {
         // I have to put the derive here because it doesn't work outside the macro?
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone)]
         $vis enum $enum {
+            #[default] // ...it's the first item, always...
             $($item),*
         }
 
@@ -37,12 +38,16 @@ macro_rules! parseable_enum {
 
 parseable_enum! {
     pub enum Command {
+        Nop,
         Quit,
         SelectNext,
         SelectPrev,
         OpenInBrowser,
         NextSong,
         PrevSong,
+        QueueSong,
+        SeekForward,
+        SeekBackward,
     }
 }
 

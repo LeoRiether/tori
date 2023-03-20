@@ -154,10 +154,29 @@ impl<'a> SongsPane<'a> {
                     }
                 }
                 NextSong => {
-                    app.mpv.playlist_next_weak()?
+                    app.mpv
+                        .playlist_next_weak()
+                        .unwrap_or_else(|_| app.notify_err("No next song".into()));
                 }
                 PrevSong => {
-                    app.mpv.playlist_next_weak()?
+                    app.mpv
+                        .playlist_previous_weak()
+                        .unwrap_or_else(|_| app.notify_err("No previous song".into()));
+                }
+                QueueSong => {
+                    if let Some(song) = self.selected_item() {
+                        app.mpv.playlist_load_files(&[(
+                            &song.path,
+                            libmpv::FileState::AppendPlay,
+                            None,
+                        )])?;
+                    }
+                }
+                SeekForward => {
+                    app.mpv.seek_forward(10.).ok();
+                }
+                SeekBackward => {
+                    app.mpv.seek_backward(10.).ok();
                 }
                 _ => {}
             },
@@ -178,15 +197,6 @@ impl<'a> SongsPane<'a> {
                     }
 
                     match event.code {
-                        Tab => {
-                            if let Some(song) = self.selected_item() {
-                                app.mpv.playlist_load_files(&[(
-                                    &song.path,
-                                    libmpv::FileState::AppendPlay,
-                                    None,
-                                )])?;
-                            }
-                        }
                         Enter => {
                             if let Some(song) = self.selected_item() {
                                 app.mpv.playlist_load_files(&[(
@@ -257,7 +267,7 @@ impl<'a> SongsPane<'a> {
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.shown.state.selected().map(|i| &self.songs[i])
+        self.shown.selected_item()
     }
 
     pub fn mode(&self) -> Mode {

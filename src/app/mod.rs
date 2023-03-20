@@ -103,10 +103,10 @@ impl App {
             let mut state = state_rc.borrow_mut();
 
             self.render(&mut *state)
-                .map_err(|e| self.notify_dyn_err(e))
+                .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
             self.handle_event(&mut *state)
-                .map_err(|e| self.notify_dyn_err(e))
+                .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
         }
 
@@ -199,9 +199,9 @@ impl App {
     ////////////////////////////////
     //        Notification        //
     ////////////////////////////////
-    pub fn notify_dyn_err(&mut self, e: Box<dyn Error>) {
+    pub fn notify_err(&mut self, err: String) {
         self.notification =
-            Notification::new(e.to_string(), Duration::from_secs(5)).colored(Color::LightRed);
+            Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed);
     }
 
     pub fn notify_info(&mut self, info: String) {
