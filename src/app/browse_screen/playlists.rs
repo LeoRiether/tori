@@ -1,4 +1,8 @@
-use crate::app::{event_channel::Event, filtered_list::FilteredList, Mode, MyBackend};
+use crate::app::{
+    event_channel::{self, Event},
+    filtered_list::FilteredList,
+    App, Mode, MyBackend,
+};
 
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
 use std::{borrow::Cow, error::Error, path::Path};
@@ -8,6 +12,8 @@ use tui::{
     widgets::{Block, BorderType, Borders, List, ListItem, ListState},
     Frame,
 };
+
+use super::BrowseScreen;
 
 #[derive(Debug, Default)]
 pub struct PlaylistsPane<'a> {
@@ -90,11 +96,17 @@ impl<'a> PlaylistsPane<'a> {
     }
 
     #[allow(clippy::single_match)]
-    pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
+    pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use event_channel::Command::*;
         use Event::*;
         use KeyCode::*;
 
         match event {
+            Command(cmd) => match cmd {
+                SelectNext => self.select_next(app),
+                SelectPrev => self.select_prev(app),
+                _ => {}
+            },
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => {
                     if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
@@ -103,15 +115,15 @@ impl<'a> PlaylistsPane<'a> {
                     }
 
                     match event.code {
-                        Up | Char('k') | Char('e') => self.select_prev(),
-                        Down | Char('j') | Char('n') => self.select_next(),
+                        Up => self.select_prev(app),
+                        Down => self.select_next(app),
                         Char('/') => self.filter = "/".into(),
                         _ => {}
                     }
                 }
                 crossterm::event::Event::Mouse(event) => match event.kind {
-                    MouseEventKind::ScrollUp => self.select_prev(),
-                    MouseEventKind::ScrollDown => self.select_next(),
+                    MouseEventKind::ScrollUp => self.select_prev(app),
+                    MouseEventKind::ScrollDown => self.select_next(app),
                     _ => {}
                 },
                 _ => {}
@@ -140,12 +152,20 @@ impl<'a> PlaylistsPane<'a> {
         }
     }
 
-    pub fn select_next(&mut self) {
+    pub fn select_next(&mut self, app: &mut App) {
         self.shown.select_next();
+        app.channel
+            .sender
+            .send(event_channel::Event::ChangedPlaylist)
+            .unwrap();
     }
 
-    pub fn select_prev(&mut self) {
+    pub fn select_prev(&mut self, app: &mut App) {
         self.shown.select_prev();
+        app.channel
+            .sender
+            .send(event_channel::Event::ChangedPlaylist)
+            .unwrap();
     }
 
     pub fn selected_item(&self) -> Option<&'a String> {

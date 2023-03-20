@@ -9,10 +9,7 @@ use tui::{
 };
 
 use crate::{
-    app::{
-        event_channel::Event,
-        App, Mode, MyBackend,
-    },
+    app::{event_channel::Event, App, Mode, MyBackend},
     m3u,
 };
 
@@ -36,22 +33,19 @@ impl AddPane {
         use Event::*;
         use KeyCode::*;
         match event {
-            Terminal(event) => match event {
-                crossterm::event::Event::Key(event) => match event.code {
-                    Char(c) => self.path.push(c),
-                    Backspace => {
-                        self.path.pop();
+            Terminal(crossterm::event::Event::Key(event)) => match event.code {
+                Char(c) => self.path.push(c),
+                Backspace => {
+                    self.path.pop();
+                }
+                Esc => {
+                    self.path.clear();
+                }
+                Enter => {
+                    if let Some(playlist) = selected_playlist {
+                        self.commit(app, playlist);
                     }
-                    Esc => {
-                        self.path.clear();
-                    }
-                    Enter => {
-                        if let Some(playlist) = selected_playlist {
-                            self.commit(app, playlist);
-                        }
-                    }
-                    _ => {}
-                },
+                }
                 _ => {}
             },
             _ => {}
@@ -104,9 +98,7 @@ impl AddPane {
             let mut rsplit = path.trim_end_matches('/').rsplit('/');
             let song = rsplit.next().unwrap_or(&path).to_string();
             let event = Event::SongAdded { playlist, song };
-            sender
-                .send(event)
-                .expect("Failed to send internal event");
+            sender.send(event).expect("Failed to send internal event");
         });
     }
 

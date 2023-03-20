@@ -74,7 +74,10 @@ impl App {
         let next_poll_timeout = 1000;
 
         let notification = Notification::default();
-        let shortcuts = Shortcuts::default();
+
+        // TODO: if we fail to load the shortcuts, we should load some default ones and notify the
+        // user
+        let shortcuts = Shortcuts::from_default_location()?;
 
         Ok(App {
             terminal,
@@ -135,6 +138,9 @@ impl App {
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
                 let event = self.transform_event(state, event);
+                if !matches!(event, Event::SecondTick) {
+                    self.notify_info(format!("~ {:?}", event));
+                }
                 state.handle_event(self, event)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
@@ -150,21 +156,16 @@ impl App {
     }
 
     /// Transforms an event, according to the current app state.
-    #[allow(clippy::match_single_binding)]
-    #[allow(unused_variables)]
     fn transform_event(&self, state: &mut dyn Screen, event: Event) -> Event {
         use Event::*;
         match event {
-            Terminal(event) => match event {
-                crossterm::event::Event::Key(key_event) => {
-                    match state.mode() {
-                        // In normal mode, events may be transformed into commands
-                        Mode::Normal => self.transform_normal_mode_key(key_event),
-                        // In insert mode, key events pass through untransformed 
-                        Mode::Insert => Terminal(event),
-                    }
+            Terminal(crossterm::event::Event::Key(key_event)) => {
+                match state.mode() {
+                    // In normal mode, events may be transformed into commands
+                    Mode::Normal => self.transform_normal_mode_key(key_event),
+                    // In insert mode, key events pass through untransformed 
+                    Mode::Insert => event,
                 }
-                _ => Terminal(event),
             },
             _ => event,
         }

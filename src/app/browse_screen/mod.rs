@@ -56,11 +56,15 @@ impl<'a> BrowseScreen<'a> {
         })
     }
 
+    pub fn reload_songs(&mut self) {
+        self.songs = SongsPane::from_playlist_pane(&self.playlists);
+    }
+
     /// Passes the event down to the currently selected pane.
     fn pass_event_down(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
         use BrowsePane::*;
         match self.selected_pane {
-            Playlists => self.playlists.handle_event(event),
+            Playlists => self.playlists.handle_event(app, event),
             Songs => self.songs.handle_event(app, event),
             Add => self.add.handle_event(
                 app,
@@ -69,7 +73,6 @@ impl<'a> BrowseScreen<'a> {
             ),
         }
     }
-
 }
 
 impl Screen for BrowseScreen<'_> {
@@ -102,30 +105,32 @@ impl Screen for BrowseScreen<'_> {
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        let has_mod = |event: event::KeyEvent, mods: KeyModifiers| {
-            event.modifiers & mods != KeyModifiers::NONE
-        };
-
+        use event_channel::Command::*;
         use BrowsePane::*;
         use Event::*;
         use KeyCode::*;
 
         match event {
+            Command(cmd) => match cmd {
+                Quit => {
+                    app.change_state(None);
+                }
+                _ => self.pass_event_down(app, Command(cmd))?,
+            },
+            SongAdded { playlist, song } => {
+                // Reload songs pane
+                self.songs = SongsPane::from_playlist_pane(&self.playlists);
+                app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
+            }
+            SecondTick => {
+                self.now_playing.update(&app.mpv);
+            }
+            ChangedPlaylist => self.reload_songs(),
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => match event.code {
-                    Char('d') | Char('c') if has_mod(event, KeyModifiers::CONTROL) => {
-                        app.change_state(None);
-                        return Ok(());
-                    }
                     Esc | Enter if self.selected_pane == Add => {
                         self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?;
                         self.selected_pane = Songs;
-                    }
-                    Up | Down | Enter | Char('k') | Char('j') | Char('e') | Char('n') => {
-                        self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?;
-                        if let Playlists = self.selected_pane {
-                            self.songs = SongsPane::from_playlist_pane(&self.playlists);
-                        }
                     }
                     Right | Left => {
                         self.selected_pane = match self.selected_pane {
@@ -157,15 +162,6 @@ impl Screen for BrowseScreen<'_> {
                     self.pass_event_down(app, Terminal(event))?;
                 }
             },
-            SongAdded { playlist, song } => {
-                // Reload songs pane
-                self.songs = SongsPane::from_playlist_pane(&self.playlists);
-                app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
-            }
-            SecondTick => {
-                self.now_playing.update(&app.mpv);
-            }
-            _ => {}
         }
         Ok(())
     }

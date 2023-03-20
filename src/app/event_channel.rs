@@ -1,21 +1,52 @@
+use std::str::FromStr;
 use std::time;
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread,
 };
 
-#[derive(Debug, Clone)]
-pub enum Command {
-    Quit,
+macro_rules! parseable_enum {
+    ($vis:vis enum $enum:ident { $($item:ident),* $(,)? }) => {
+        // I have to put the derive here because it doesn't work outside the macro?
+        #[derive(Debug, Clone)]
+        $vis enum $enum {
+            $($item),*
+        }
+
+        impl FromStr for $enum {
+            type Err = String;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $(stringify!($item) => Ok($enum::$item)),*,
+                    _ => Err(format!("No such variant: {}", s)),
+                }
+            }
+        }
+
+        impl From<$enum> for String {
+            fn from(e: $enum) -> String {
+                match e {
+                    $($enum::$item => stringify!($item).to_string()),*,
+                }
+            }
+        }
+
+    };
+}
+
+parseable_enum! {
+    pub enum Command {
+        Quit,
+        SelectNext,
+        SelectPrev,
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
     SecondTick,
-    SongAdded {
-        playlist: String,
-        song: String, 
-    },
+    SongAdded { playlist: String, song: String },
+    ChangedPlaylist,
     Command(Command),
     Terminal(crossterm::event::Event),
 }
