@@ -2,8 +2,6 @@ use std::{collections::HashMap, error::Error};
 
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use super::event_channel;
-
 /// Encapsulates a string representing some key event.
 ///
 /// For example:
@@ -63,7 +61,7 @@ impl From<crossterm::event::KeyEvent> for InputStr {
 /// Stores a table of [Command](app/event_channel/enum.Command.html) shortcuts.
 #[derive(Default)]
 pub struct Shortcuts {
-    pub normal: HashMap<InputStr, event_channel::Command>,
+    pub normal: HashMap<InputStr, crate::command::Command>,
 }
 
 impl Shortcuts {
@@ -92,7 +90,7 @@ impl Shortcuts {
                     let k = k.as_str().unwrap().into();
                     let v = v.as_str().unwrap();
                     let v = v
-                        .parse::<event_channel::Command>()
+                        .parse::<crate::command::Command>()
                         .map_err(|_| format!("Unrecognized command in config yaml: {}", v))?;
                     Ok((InputStr(k), v))
                 })
@@ -107,7 +105,7 @@ impl Shortcuts {
     pub fn get_from_event(
         &self,
         event: crossterm::event::KeyEvent,
-    ) -> Option<event_channel::Command> {
+    ) -> Option<crate::command::Command> {
         self.normal.get(&event.into()).cloned()
     }
 }

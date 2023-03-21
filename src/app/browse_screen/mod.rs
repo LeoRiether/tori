@@ -2,8 +2,8 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
+use crate::events::Event;
 use crossterm::event::KeyCode;
-use event_channel::Event;
 use std::error::Error;
 
 use tui::{
@@ -22,8 +22,6 @@ use add::AddPane;
 
 mod now_playing;
 use now_playing::NowPlaying;
-
-use super::event_channel;
 
 use super::Mode;
 
@@ -105,7 +103,7 @@ impl Screen for BrowseScreen<'_> {
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        use event_channel::Command::*;
+        use crate::command::Command::*;
         use BrowsePane::*;
         use Event::*;
         use KeyCode::*;

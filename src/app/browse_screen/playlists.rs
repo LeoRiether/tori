@@ -1,5 +1,5 @@
+use crate::events::{Event};
 use crate::app::{
-    event_channel::{self, Event},
     filtered_list::FilteredList,
     App, Mode, MyBackend,
 };
@@ -95,7 +95,7 @@ impl<'a> PlaylistsPane<'a> {
 
     #[allow(clippy::single_match)]
     pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        use event_channel::Command::*;
+        use crate::command::Command::*;
         use Event::*;
         use KeyCode::*;
 

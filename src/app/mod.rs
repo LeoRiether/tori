@@ -12,17 +12,16 @@ use std::{
 };
 use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
 
-use event_channel::Channel;
+use crate::events::{Channel, self};
 
 pub mod browse_screen;
-pub mod event_channel;
 pub mod filtered_list;
 pub mod notification;
 pub mod shortcuts;
 
 use shortcuts::Shortcuts;
 
-use self::event_channel::Event;
+use crate::events::Event;
 
 const FRAME_DELAY_MS: u16 = 16;
 
@@ -37,11 +36,7 @@ pub enum Mode {
 pub trait Screen {
     fn mode(&self) -> Mode;
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
-    fn handle_event(
-        &mut self,
-        app: &mut App,
-        event: event_channel::Event,
-    ) -> Result<(), Box<dyn Error>>;
+    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
 }
 
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
