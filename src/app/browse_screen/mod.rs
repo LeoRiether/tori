@@ -113,6 +113,30 @@ impl Screen for BrowseScreen<'_> {
                 Quit => {
                     app.change_state(None);
                 }
+                SeekForward => {
+                    app.mpv.seek_forward(10.).ok();
+                    self.now_playing.update(&app.mpv);
+                }
+                SeekBackward => {
+                    app.mpv.seek_backward(10.).ok();
+                    self.now_playing.update(&app.mpv);
+                }
+                NextSong => {
+                    app.mpv
+                        .playlist_next_weak()
+                        .unwrap_or_else(|_| app.notify_err("No next song".into()));
+                    self.now_playing.update(&app.mpv);
+                }
+                PrevSong => {
+                    app.mpv
+                        .playlist_previous_weak()
+                        .unwrap_or_else(|_| app.notify_err("No previous song".into()));
+                    self.now_playing.update(&app.mpv);
+                }
+                TogglePause => {
+                    app.mpv.command("cycle", &["pause"])?;
+                    self.now_playing.update(&app.mpv);
+                }
                 _ => self.pass_event_down(app, Command(cmd))?,
             },
             SongAdded { playlist, song } => {
@@ -120,9 +144,6 @@ impl Screen for BrowseScreen<'_> {
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             SecondTick => {
-                self.now_playing.update(&app.mpv);
-            }
-            NowPlayingShouldUpdate => {
                 self.now_playing.update(&app.mpv);
             }
             ChangedPlaylist => self.reload_songs(),

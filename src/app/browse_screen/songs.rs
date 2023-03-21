@@ -144,22 +144,6 @@ impl<'a> SongsPane<'a> {
             Command(cmd) => match cmd {
                 SelectNext => self.select_next(),
                 SelectPrev => self.select_prev(),
-                NextSong => {
-                    app.mpv
-                        .playlist_next_weak()
-                        .unwrap_or_else(|_| app.notify_err("No next song".into()));
-                    app.channel.send(Event::NowPlayingShouldUpdate)?;
-                }
-                PrevSong => {
-                    app.mpv
-                        .playlist_previous_weak()
-                        .unwrap_or_else(|_| app.notify_err("No previous song".into()));
-                    app.channel.send(Event::NowPlayingShouldUpdate)?;
-                }
-                TogglePause => {
-                    app.mpv.command("cycle", &["pause"])?;
-                    app.channel.send(Event::NowPlayingShouldUpdate)?;
-                }
                 QueueSong => {
                     if let Some(song) = self.selected_item() {
                         app.mpv.playlist_load_files(&[(
@@ -168,14 +152,6 @@ impl<'a> SongsPane<'a> {
                             None,
                         )])?;
                     }
-                }
-                SeekForward => {
-                    app.mpv.seek_forward(10.).ok();
-                    app.channel.send(Event::NowPlayingShouldUpdate)?;
-                }
-                SeekBackward => {
-                    app.mpv.seek_backward(10.).ok();
-                    app.channel.send(Event::NowPlayingShouldUpdate)?;
                 }
                 OpenInBrowser => {
                     if let Some(song) = self.selected_item() {
