@@ -12,7 +12,7 @@ use std::{
 };
 use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
 
-use crate::events::{Channel, self};
+use crate::events::{self, Channel};
 
 pub mod browse_screen;
 pub mod filtered_list;

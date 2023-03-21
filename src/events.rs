@@ -12,6 +12,7 @@ pub enum Event {
     SecondTick,
     SongAdded { playlist: String, song: String },
     ChangedPlaylist,
+    NowPlayingShouldUpdate,
     Command(Command),
     Terminal(crossterm::event::Event),
 }

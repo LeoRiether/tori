@@ -37,6 +37,7 @@ parseable_enum! {
         SelectPrev,
         NextSong,
         PrevSong,
+        TogglePause,
         QueueSong,
         SeekForward,
         SeekBackward,

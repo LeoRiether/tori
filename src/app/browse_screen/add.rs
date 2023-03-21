@@ -9,8 +9,8 @@ use tui::{
 };
 
 use crate::{
-    events::Event,
     app::{App, Mode, MyBackend},
+    events::Event,
     m3u,
 };
 

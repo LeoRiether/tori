@@ -1,8 +1,5 @@
-use crate::events::{Event};
-use crate::app::{
-    filtered_list::FilteredList,
-    App, Mode, MyBackend,
-};
+use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::events::Event;
 
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
 use std::{borrow::Cow, error::Error, path::Path};

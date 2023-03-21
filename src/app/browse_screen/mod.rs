@@ -122,6 +122,9 @@ impl Screen for BrowseScreen<'_> {
             SecondTick => {
                 self.now_playing.update(&app.mpv);
             }
+            NowPlayingShouldUpdate => {
+                self.now_playing.update(&app.mpv);
+            }
             ChangedPlaylist => self.reload_songs(),
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => match event.code {
@@ -135,12 +138,6 @@ impl Screen for BrowseScreen<'_> {
                             Songs => Playlists,
                             Add => Add,
                         };
-                    }
-                    // play/pause
-                    // TODO: I really need a better event system
-                    Char(' ') if self.mode() == Mode::Normal => {
-                        app.mpv.command("cycle", &["pause"])?;
-                        self.now_playing.update(&app.mpv);
                     }
                     // 'a'dd
                     Char('a') if self.mode() == Mode::Normal => {
