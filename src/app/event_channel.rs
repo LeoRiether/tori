@@ -32,7 +32,6 @@ macro_rules! parseable_enum {
                 }
             }
         }
-
     };
 }
 

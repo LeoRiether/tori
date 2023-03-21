@@ -2,8 +2,10 @@ use std::time::{Duration, Instant};
 
 use tui::{
     layout::Rect,
-    widgets::{Block, BorderType, Borders, Paragraph, Wrap, Clear},
-    Frame, style::{Color, Style}, text::Span,
+    style::{Color, Style},
+    text::Span,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
+    Frame,
 };
 
 use crate::app::MyBackend;
@@ -70,7 +72,7 @@ impl Notification {
         let text = Paragraph::new(self.text.as_ref())
             .block(block)
             .style(Style::default().fg(self.color))
-            .wrap(Wrap{ trim: true });
+            .wrap(Wrap { trim: true });
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(text, chunk);

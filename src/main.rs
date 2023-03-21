@@ -1,7 +1,7 @@
-pub mod m3u;
 pub mod app;
+pub mod m3u;
 
-use app::{App, browse_screen::BrowseScreen};
+use app::{browse_screen::BrowseScreen, App};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {

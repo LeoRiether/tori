@@ -200,8 +200,7 @@ impl App {
     //        Notification        //
     ////////////////////////////////
     pub fn notify_err(&mut self, err: String) {
-        self.notification =
-            Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed);
+        self.notification = Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed);
     }
 
     pub fn notify_info(&mut self, info: String) {

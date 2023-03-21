@@ -1,11 +1,9 @@
-
-
 use libmpv::Mpv;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Paragraph},
+    widgets::Paragraph,
     Frame,
 };
 

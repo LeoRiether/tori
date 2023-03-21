@@ -13,8 +13,6 @@ use tui::{
     Frame,
 };
 
-
-
 #[derive(Debug, Default)]
 pub struct PlaylistsPane<'a> {
     playlists: Vec<String>,
