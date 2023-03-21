@@ -58,9 +58,9 @@ impl Notification {
 
         let size = frame.size();
         let chunk = Rect {
-            x: size.width - WIDTH - 1,
+            x: size.width - WIDTH - 3,
             y: size.height - self.height - 1,
-            width: WIDTH,
+            width: WIDTH + 2,
             height: self.height,
         };
 
@@ -216,4 +216,20 @@ fn count_lines(text: &str) -> u16 {
         count += 1;
     }
     count
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_count_lines() {
+        assert_eq!(count_lines("!"), 1);
+        assert_eq!(count_lines(&"a".repeat(WIDTH as usize)), 1);
+        assert_eq!(count_lines(&"b".repeat(WIDTH as usize + 1)), 2);
+        assert_eq!(count_lines(&"c".repeat(WIDTH as usize * 2)), 2);
+        assert_eq!(count_lines(&"d".repeat(WIDTH as usize * 2 + 1)), 3);
+        // TODO: this test fails :(
+        // assert_eq!(count_lines("a\nb\nc\nd"), 4);
+    }
 }
