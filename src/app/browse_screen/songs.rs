@@ -3,11 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-    use crate::events::{Event};
-use crate::app::{
-    filtered_list::FilteredList,
-    App, Mode, MyBackend,
-};
+use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::events::Event;
 use crate::m3u;
 
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -147,12 +144,6 @@ impl<'a> SongsPane<'a> {
             Command(cmd) => match cmd {
                 SelectNext => self.select_next(),
                 SelectPrev => self.select_prev(),
-                OpenInBrowser => {
-                    if let Some(song) = self.selected_item() {
-                        // TODO: reconsider if I really need a library to write this one line
-                        webbrowser::open(&song.path)?;
-                    }
-                }
                 NextSong => {
                     app.mpv
                         .playlist_next_weak()
@@ -177,6 +168,19 @@ impl<'a> SongsPane<'a> {
                 }
                 SeekBackward => {
                     app.mpv.seek_backward(10.).ok();
+                }
+                OpenInBrowser => {
+                    if let Some(song) = self.selected_item() {
+                        // TODO: reconsider if I really need a library to write this one line
+                        webbrowser::open(&song.path)?;
+                    }
+                }
+                CopyUrl => {
+                    if let Some(song) = self.selected_item() {
+                        let mut ctx: ClipboardContext = ClipboardProvider::new()?;
+                        ctx.set_contents(song.path.clone())?;
+                        app.notify_info(format!("Copied {} to the clipboard", song.path));
+                    }
                 }
                 _ => {}
             },
@@ -204,14 +208,6 @@ impl<'a> SongsPane<'a> {
                                     libmpv::FileState::Replace,
                                     None,
                                 )])?;
-                            }
-                        }
-                        // yank, like in vim
-                        Char('y') => {
-                            if let Some(song) = self.selected_item() {
-                                let mut ctx: ClipboardContext = ClipboardProvider::new()?;
-                                ctx.set_contents(song.path.clone())?;
-                                app.notify_info(format!("Copied {} to the clipboard", song.path));
                             }
                         }
                         // Go to the bottom, also like in vim

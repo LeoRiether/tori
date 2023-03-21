@@ -35,11 +35,12 @@ parseable_enum! {
         Quit,
         SelectNext,
         SelectPrev,
-        OpenInBrowser,
         NextSong,
         PrevSong,
         QueueSong,
         SeekForward,
         SeekBackward,
+        OpenInBrowser,
+        CopyUrl,
     }
 }
