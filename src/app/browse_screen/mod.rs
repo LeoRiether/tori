@@ -116,8 +116,7 @@ impl Screen for BrowseScreen<'_> {
                 _ => self.pass_event_down(app, Command(cmd))?,
             },
             SongAdded { playlist, song } => {
-                // Reload songs pane
-                self.songs = SongsPane::from_playlist_pane(&self.playlists);
+                self.reload_songs();
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             SecondTick => {
