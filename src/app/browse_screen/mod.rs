@@ -38,7 +38,7 @@ enum BrowsePane {
 pub struct BrowseScreen<'a> {
     playlists: PlaylistsPane<'a>,
     songs: SongsPane<'a>,
-    add: AddPane,
+    add: AddPane<'a>,
     now_playing: NowPlaying,
     selected_pane: BrowsePane,
 }
@@ -64,11 +64,7 @@ impl<'a> BrowseScreen<'a> {
         match self.selected_pane {
             Playlists => self.playlists.handle_event(app, event),
             Songs => self.songs.handle_event(app, event),
-            Add => self.add.handle_event(
-                app,
-                self.playlists.selected_item().map(|s| s.as_str()),
-                event,
-            ),
+            Add => self.add.handle_event(app, event),
         }
     }
 }
@@ -161,10 +157,17 @@ impl Screen for BrowseScreen<'_> {
                         };
                     }
                     // 'a'dd
-                    Char('a') if self.mode() == Mode::Normal => {
-                        self.selected_pane = Add;
-                        self.add = AddPane::new();
-                    }
+                    // TODO: this should probably be in each pane's handle_event, somehow
+                    Char('a') if self.mode() == Mode::Normal => match self.selected_pane {
+                        Playlists => {}
+                        Songs => {
+                            if let Some(playlist) = self.playlists.selected_item() {
+                                self.selected_pane = Add;
+                                self.add = AddPane::new(playlist.as_str());
+                            }
+                        }
+                        Add => {}
+                    },
                     // 'c'hange
                     KeyCode::Char('c') if self.mode() == Mode::Normal => {
                         self.playlists.open_editor_for_selected()?;

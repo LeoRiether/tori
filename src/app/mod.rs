@@ -18,6 +18,7 @@ pub mod browse_screen;
 pub mod filtered_list;
 pub mod notification;
 pub mod shortcuts;
+pub mod popup;
 
 use shortcuts::Shortcuts;
 

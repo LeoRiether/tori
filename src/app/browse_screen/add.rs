@@ -1,112 +1,58 @@
-use std::{error::Error, mem, thread};
+use std::{error::Error, thread};
 
-use crossterm::event::KeyCode;
-use tui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
-    Frame,
-};
+use tui::Frame;
 
 use crate::{
-    app::{App, Mode, MyBackend},
+    app::{popup::{Popup, self}, App, Mode, MyBackend},
     events::Event,
     m3u,
 };
 
 #[derive(Debug, Default)]
-pub struct AddPane {
-    pub path: String,
+pub struct AddPane<'a> {
+    popup: Popup,
+    playlist: &'a str,
 }
 
-impl AddPane {
-    pub fn new() -> Self {
-        Self::default()
+impl<'a> AddPane<'a> {
+    pub fn new(playlist: &'a str) -> Self {
+        Self {
+            popup: Popup::new("Add song"),
+            playlist,
+        }
     }
 
-    #[allow(clippy::single_match)]
-    pub fn handle_event(
-        &mut self,
-        app: &mut App,
-        selected_playlist: Option<&str>,
-        event: Event,
-    ) -> Result<(), Box<dyn Error>> {
-        use Event::*;
-        use KeyCode::*;
-        match event {
-            Terminal(crossterm::event::Event::Key(event)) => match event.code {
-                Char(c) => self.path.push(c),
-                Backspace => {
-                    self.path.pop();
-                }
-                Esc => {
-                    self.path.clear();
-                }
-                Enter => {
-                    if let Some(playlist) = selected_playlist {
-                        self.commit(app, playlist);
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
+    pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        match self.popup.handle_event(event)? {
+            popup::Message::Nothing => {}
+            popup::Message::Quit => {}
+            popup::Message::Commit(path) => commit(path, app, self.playlist),
         }
         Ok(())
     }
 
     pub fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
-        let size = frame.size();
-        let chunk = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage(48),
-                Constraint::Length(5),
-                Constraint::Percentage(48),
-            ])
-            .split(size)[1];
-        let chunk = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(2, 4),
-                Constraint::Ratio(1, 4),
-            ])
-            .split(chunk)[1];
-
-        let block = Block::default()
-            .title(" Add Song ")
-            .title_alignment(Alignment::Center)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Double)
-            .border_style(Style::default().fg(Color::LightBlue));
-
-        let paragraph = Paragraph::new(format!("\n{}", self.path))
-            .block(block)
-            .alignment(Alignment::Center);
-
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
-    }
-
-    /// Adds the song to the current playlist
-    fn commit(&mut self, app: &mut App, playlist: &str) {
-        let path = mem::take(&mut self.path);
-        app.notify_info(format!("Adding {}...", path));
-        let sender = app.channel.sender.clone();
-        let playlist = playlist.to_string();
-        thread::spawn(move || {
-            add_recursively(&path, &playlist);
-
-            let mut rsplit = path.trim_end_matches('/').rsplit('/');
-            let song = rsplit.next().unwrap_or(&path).to_string();
-            let event = Event::SongAdded { playlist, song };
-            sender.send(event).expect("Failed to send internal event");
-        });
+        self.popup.render(frame)
     }
 
     pub fn mode(&self) -> Mode {
         Mode::Insert
     }
+}
+
+/// Adds the song to the current playlist
+fn commit(path: String, app: &mut App, playlist: &str) {
+    app.notify_info(format!("Adding {}...", path));
+    let sender = app.channel.sender.clone();
+    let playlist = playlist.to_string();
+    thread::spawn(move || {
+        add_recursively(&path, &playlist);
+
+        let mut rsplit = path.trim_end_matches('/').rsplit('/');
+        let song = rsplit.next().unwrap_or(&path).to_string();
+        let event = Event::SongAdded { playlist, song };
+        sender.send(event).expect("Failed to send internal event");
+    });
 }
 
 /// Adds songs from some path. If the path points to a directory, it'll traverse the directory
