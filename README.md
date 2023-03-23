@@ -1,6 +1,8 @@
 # tori
 ## Terminal-based music player
 
+![tori](https://user-images.githubusercontent.com/8211902/227065063-82101443-f520-4498-be0e-0d160fde189f.jpg)
+
 ## Dependencies
 - [mpv](https://mpv.io/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (or youtube-dl)
