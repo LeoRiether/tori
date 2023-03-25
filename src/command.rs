@@ -43,5 +43,7 @@ parseable_enum! {
         SeekBackward,
         OpenInBrowser,
         CopyUrl,
+        VolumeUp,
+        VolumeDown,
     }
 }

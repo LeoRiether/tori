@@ -133,6 +133,14 @@ impl Screen for BrowseScreen<'_> {
                     app.mpv.command("cycle", &["pause"])?;
                     self.now_playing.update(&app.mpv);
                 }
+                VolumeUp => {
+                    app.mpv.add_property("volume", 5)?;
+                    self.now_playing.update(&app.mpv);
+                }
+                VolumeDown => {
+                    app.mpv.add_property("volume", -5)?;
+                    self.now_playing.update(&app.mpv);
+                }
                 _ => self.pass_event_down(app, Command(cmd))?,
             },
             SongAdded { playlist, song } => {

@@ -50,6 +50,9 @@ impl NowPlaying {
             ])
             .split(lines[1]);
 
+        ///////////////////////////////
+        //        Media title        //
+        ///////////////////////////////
         let media_title = {
             let mut parts = vec![];
 
@@ -68,11 +71,21 @@ impl NowPlaying {
             Paragraph::new(Spans::from(parts)).alignment(Alignment::Center)
         };
 
+        //////////////////////////
+        //        Volume        //
+        //////////////////////////
+        let volume_title = Paragraph::new(Spans::from(vec![
+            Span::raw("volume "),
+            Span::styled(format!("{}%", self.volume), Style::default().fg(Color::DarkGray))
+        ])).alignment(Alignment::Left);
+
         let volume_paragraph = {
-            let left = "─"
-                .repeat((self.volume as usize * chunks[0].width as usize / 100).saturating_sub(1));
+            // NOTE: the maximum volume is actually 130
+            // NOTE: (x + 129) / 130 computes the ceiling of x/130
+            let left_width = ((self.volume as usize * chunks[0].width as usize + 129) / 130).saturating_sub(1);
+            let left = "─".repeat(left_width);
             let indicator = "■";
-            let right = "─".repeat((chunks[0].width as usize).saturating_sub(left.len()));
+            let right = "─".repeat((chunks[0].width as usize * 100 / 130).saturating_sub(left_width+1));
             Paragraph::new(Spans::from(vec![
                 Span::styled(left, Style::default().fg(Color::White)),
                 Span::styled(indicator, Style::default().fg(Color::White)),
@@ -80,6 +93,9 @@ impl NowPlaying {
             ]))
         };
 
+        ///////////////////////////////////////
+        //        Playback percentage        //
+        ///////////////////////////////////////
         let playback_bar_str: String = {
             let mut s: Vec<_> = "─".repeat(chunks[3].width as usize).chars().collect();
             let i = self.percentage as usize * s.len() / 100;
@@ -94,7 +110,11 @@ impl NowPlaying {
         let playback_right =
             Paragraph::new(playback_right_str).style(Style::default().fg(Color::White));
 
+        /////////////////////////////////////
+        //        Render everything        //
+        /////////////////////////////////////
         frame.render_widget(media_title, lines[0]);
+        frame.render_widget(volume_title, lines[0]);
         frame.render_widget(volume_paragraph, chunks[0]);
         frame.render_widget(playback_left, chunks[2]);
         frame.render_widget(playback_bar, chunks[3]);
