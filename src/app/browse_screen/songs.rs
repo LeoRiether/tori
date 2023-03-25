@@ -129,7 +129,7 @@ impl<'a> SongsPane<'a> {
         let widget = Table::new(songlist)
             .block(block)
             .widths(widths)
-            .highlight_style(Style::default().bg(Color::LightYellow).fg(Color::Black))
+            .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
             .highlight_symbol(" ◇");
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }

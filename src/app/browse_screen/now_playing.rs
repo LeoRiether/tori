@@ -42,7 +42,7 @@ impl NowPlaying {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(20),
+                Constraint::Percentage(15),
                 Constraint::Length(1),
                 Constraint::Length(strlen(&playback_left_str) as u16),
                 Constraint::Min(5),
@@ -65,7 +65,7 @@ impl NowPlaying {
 
             parts.push(Span::styled(
                 &self.media_title,
-                Style::default().fg(Color::LightYellow),
+                Style::default().fg(Color::Yellow),
             ));
 
             Paragraph::new(Spans::from(parts)).alignment(Alignment::Center)
