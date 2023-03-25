@@ -18,4 +18,5 @@ Either this or follow [the guide I followed :)](https://www.funkyspacemonkey.com
 ## Alternatives
 - [musikcube](https://github.com/clangen/musikcube) is what I used before writing tori.
   It's a great player, but it only plays from local files.
+- [cmus](https://cmus.github.io/)
 - [yewtube](https://github.com/mps-youtube/yewtube)
