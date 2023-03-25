@@ -3,7 +3,10 @@ use std::{error::Error, thread};
 use tui::Frame;
 
 use crate::{
-    app::{popup::{Popup, self}, App, Mode, MyBackend},
+    app::{
+        popup::{self, Popup},
+        App, Mode, MyBackend,
+    },
     events::Event,
     m3u,
 };

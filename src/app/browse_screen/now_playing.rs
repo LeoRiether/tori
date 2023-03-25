@@ -76,16 +76,22 @@ impl NowPlaying {
         //////////////////////////
         let volume_title = Paragraph::new(Spans::from(vec![
             Span::raw("volume "),
-            Span::styled(format!("{}%", self.volume), Style::default().fg(Color::DarkGray))
-        ])).alignment(Alignment::Left);
+            Span::styled(
+                format!("{}%", self.volume),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]))
+        .alignment(Alignment::Left);
 
         let volume_paragraph = {
             // NOTE: the maximum volume is actually 130
             // NOTE: (x + 129) / 130 computes the ceiling of x/130
-            let left_width = ((self.volume as usize * chunks[0].width as usize + 129) / 130).saturating_sub(1);
+            let left_width =
+                ((self.volume as usize * chunks[0].width as usize + 129) / 130).saturating_sub(1);
             let left = "─".repeat(left_width);
             let indicator = "■";
-            let right = "─".repeat((chunks[0].width as usize * 100 / 130).saturating_sub(left_width+1));
+            let right =
+                "─".repeat((chunks[0].width as usize * 100 / 130).saturating_sub(left_width + 1));
             Paragraph::new(Spans::from(vec![
                 Span::styled(left, Style::default().fg(Color::White)),
                 Span::styled(indicator, Style::default().fg(Color::White)),

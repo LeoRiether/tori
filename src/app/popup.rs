@@ -50,7 +50,7 @@ impl Popup {
                     let input = mem::take(&mut self.input);
                     return Ok(Message::Commit(input));
                 }
-                _ => {},
+                _ => {}
             }
         }
         Ok(Message::Nothing)

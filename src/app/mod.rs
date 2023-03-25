@@ -17,8 +17,8 @@ use crate::events::{self, Channel};
 pub mod browse_screen;
 pub mod filtered_list;
 pub mod notification;
-pub mod shortcuts;
 pub mod popup;
+pub mod shortcuts;
 
 use shortcuts::Shortcuts;
 
