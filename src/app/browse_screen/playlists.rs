@@ -41,6 +41,7 @@ impl PlaylistsPane {
         };
 
         self.playlists = dir.into_iter().map(extract_playlist_name).collect();
+        self.playlists.sort();
         self.refresh_shown();
         Ok(())
     }
