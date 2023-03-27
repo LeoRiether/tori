@@ -1,7 +1,7 @@
 # tori
 ## Terminal-based music player
 
-![tori](https://user-images.githubusercontent.com/8211902/227065063-82101443-f520-4498-be0e-0d160fde189f.jpg)
+![tori](https://user-images.githubusercontent.com/8211902/228040682-7888b4f9-0dc3-425e-95ad-166a1737f388.png)
 
 ## Dependencies
 - [mpv](https://mpv.io/)
