@@ -1,50 +1,9 @@
-use std::{error::Error, thread};
+use std::thread;
 
-use tui::Frame;
-
-use crate::{
-    app::{
-        popup::{self, Popup},
-        App, Mode, MyBackend,
-    },
-    events::Event,
-    m3u,
-};
-
-#[derive(Debug, Default)]
-pub struct AddPane {
-    popup: Popup,
-    playlist: String,
-}
-
-impl AddPane {
-    pub fn new(playlist: String) -> Self {
-        Self {
-            popup: Popup::new("Add song"),
-            playlist,
-        }
-    }
-
-    pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        match self.popup.handle_event(event)? {
-            popup::Message::Nothing => {}
-            popup::Message::Quit => {}
-            popup::Message::Commit(path) => commit(path, app, &self.playlist),
-        }
-        Ok(())
-    }
-
-    pub fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
-        self.popup.render(frame)
-    }
-
-    pub fn mode(&self) -> Mode {
-        Mode::Insert
-    }
-}
+use crate::{app::App, events::Event, m3u};
 
 /// Adds the song to the current playlist
-fn commit(path: String, app: &mut App, playlist: &str) {
+pub fn commit(path: String, app: &mut App, playlist: &str) {
     app.notify_info(format!("Adding {}...", path));
     let sender = app.channel.sender.clone();
     let playlist = playlist.to_string();

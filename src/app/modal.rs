@@ -10,7 +10,7 @@ use tui::{
 
 use crate::events::Event;
 
-use super::MyBackend;
+use super::{MyBackend, Mode};
 
 pub enum Message {
     Nothing,
@@ -18,19 +18,25 @@ pub enum Message {
     Commit(String),
 }
 
-/// A popup box that asks for user input
+/// A modal box that asks for user input
 #[derive(Debug, Default)]
-pub struct Popup {
+pub struct Modal {
     title: String,
     input: String,
+    style: Style,
 }
 
-impl Popup {
-    pub fn new(title: &str) -> Self {
+impl Modal {
+    pub fn new(title: String) -> Self {
         Self {
-            title: format!(" {} ", title),
+            title,
             input: String::new(),
+            style: Style::default().fg(Color::LightBlue),
         }
+    }
+
+    pub fn with_style(self, style: Style) -> Self {
+        Self { style, ..self }
     }
 
     pub fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
@@ -80,7 +86,7 @@ impl Popup {
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_type(BorderType::Double)
-            .border_style(Style::default().fg(Color::LightBlue));
+            .border_style(self.style);
 
         let paragraph = Paragraph::new(format!("\n{}", self.input))
             .block(block)
@@ -88,5 +94,9 @@ impl Popup {
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
+    }
+
+    pub fn mode(&self) -> Mode {
+        Mode::Insert
     }
 }

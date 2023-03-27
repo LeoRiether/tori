@@ -18,29 +18,35 @@ mod songs;
 use songs::SongsPane;
 
 mod add;
-use add::AddPane;
 
 mod now_playing;
 use now_playing::NowPlaying;
 
+use super::modal::{self, Modal};
 use super::Mode;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ModalType {
+    AddSong { playlist: String },
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[repr(i8)]
 enum BrowsePane {
     #[default]
     Playlists,
     Songs,
-    Add,
+    Modal(ModalType),
 }
 
 #[derive(Debug, Default)]
 pub struct BrowseScreen {
     playlists: PlaylistsPane,
     songs: SongsPane,
-    add: AddPane,
-    now_playing: NowPlaying,
+    modal: Modal,
     selected_pane: BrowsePane,
+
+    now_playing: NowPlaying,
 }
 
 impl BrowseScreen {
@@ -64,8 +70,36 @@ impl BrowseScreen {
         match self.selected_pane {
             Playlists => self.playlists.handle_event(app, event),
             Songs => self.songs.handle_event(app, event),
-            Add => self.add.handle_event(app, event),
+            Modal(_) => {
+                let msg = self.modal.handle_event(event)?;
+                self.handle_modal_message(app, msg)
+            }
         }
+    }
+
+    fn handle_modal_message(
+        &mut self,
+        app: &mut App,
+        msg: modal::Message,
+    ) -> Result<(), Box<dyn Error>> {
+        if let BrowsePane::Modal(modal_type) = &self.selected_pane {
+            use ModalType::*;
+            use modal::Message::*;
+            match (modal_type, msg) {
+                (_, Nothing) => {}
+
+                // AddSong
+                (AddSong { playlist: _ }, Quit) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
+                (AddSong { playlist }, Commit(song)) => {
+                    add::commit(song, app, playlist)
+                }
+            }
+        } else {
+            panic!("Please don't call BrowseScreen::handle_modal_message without a selected modal");
+        }
+        Ok(())
     }
 }
 
@@ -93,14 +127,14 @@ impl Screen for BrowseScreen {
 
         self.now_playing.render(frame, vchunks[1]);
 
-        if self.selected_pane == BrowsePane::Add {
-            self.add.render(frame);
+        if let BrowsePane::Modal(_) = self.selected_pane {
+            self.modal.render(frame);
         }
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
         use crate::command::Command::*;
-        use BrowsePane::*;
+        use BrowsePane::{Playlists, Songs};
         use Event::*;
         use KeyCode::*;
 
@@ -153,15 +187,15 @@ impl Screen for BrowseScreen {
             ChangedPlaylist => self.reload_songs(),
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => match event.code {
-                    Esc | Enter if self.selected_pane == Add => {
-                        self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?;
-                        self.selected_pane = Songs;
-                    }
                     Right | Left => {
-                        self.selected_pane = match self.selected_pane {
-                            Playlists => Songs,
-                            Songs => Playlists,
-                            Add => Add,
+                        match self.selected_pane {
+                            Playlists => {
+                                self.selected_pane = Songs;
+                            }
+                            Songs => {
+                                self.selected_pane = Playlists;
+                            }
+                            BrowsePane::Modal(_) => {}
                         };
                     }
                     // 'a'dd
@@ -170,11 +204,13 @@ impl Screen for BrowseScreen {
                         Playlists => {}
                         Songs => {
                             if let Some(playlist) = self.playlists.selected_item() {
-                                self.selected_pane = Add;
-                                self.add = AddPane::new(playlist.to_owned());
+                                self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
+                                    playlist: playlist.to_owned(),
+                                });
+                                self.modal = Modal::new(" Add song ".into());
                             }
                         }
-                        Add => {}
+                        BrowsePane::Modal(_) => {}
                     },
                     // 'c'hange
                     KeyCode::Char('c') if self.mode() == Mode::Normal => {
@@ -197,7 +233,7 @@ impl Screen for BrowseScreen {
         match self.selected_pane {
             Playlists => self.playlists.mode(),
             Songs => self.songs.mode(),
-            Add => self.add.mode(),
+            Modal(_) => self.modal.mode(),
         }
     }
 }
