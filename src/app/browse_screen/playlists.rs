@@ -155,7 +155,8 @@ impl PlaylistsPane {
     }
 
     pub fn selected_item(&self) -> Option<&str> {
-        self.shown.selected_item()
+        self.shown
+            .selected_item()
             .and_then(|i| self.playlists.get(i))
             .map(|s| s.as_str())
     }

@@ -65,9 +65,14 @@ fn commit(path: String, app: &mut App, playlist: &str) {
 fn add_recursively(path: &str, playlist_name: &str) {
     let file = std::path::Path::new(&path);
     if file.is_dir() && !file.is_symlink() {
-        for entry in std::fs::read_dir(path).expect("Failed to read dir") {
-            let entry = entry.expect("Failed to read entry");
-            let path = entry.path();
+        let mut entries: Vec<_> = std::fs::read_dir(path)
+            .expect("Failed to read dir")
+            .map(|entry| entry.expect("Failed to read entry").path())
+            .collect();
+
+        entries.sort();
+
+        for path in entries {
             let path = path.to_str().expect("Failed to convert path to str");
             add_recursively(path, playlist_name);
         }
