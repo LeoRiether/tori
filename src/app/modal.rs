@@ -10,9 +10,11 @@ use tui::{
 
 use crate::events::Event;
 
-use super::{MyBackend, Mode};
+use super::{Mode, MyBackend};
 
+#[derive(Debug, Default, PartialEq)]
 pub enum Message {
+    #[default]
     Nothing,
     Quit,
     Commit(String),
@@ -98,5 +100,83 @@ impl Modal {
 
     pub fn mode(&self) -> Mode {
         Mode::Insert
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::events::Event;
+    use crossterm::event::{
+        Event::Key,
+        KeyCode::{Backspace, Char, Enter, Esc},
+        KeyEvent, KeyEventKind, KeyEventState, KeyModifiers,
+    };
+
+    fn key_event(code: KeyCode) -> crossterm::event::Event {
+        Key(KeyEvent {
+            code,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: KeyEventState::NONE,
+        })
+    }
+
+    #[test]
+    fn test_modal_commit_lifecycle() {
+        let mut modal = Modal::new("commit lifecycle".into());
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Char('h'))))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Char('i'))))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Char('!'))))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Backspace)))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Enter)))
+                .ok(),
+            Some(Message::Commit("hi".into()))
+        );
+    }
+
+    #[test]
+    fn test_modal_quit_lifecycle() {
+        let mut modal = Modal::new("commit lifecycle".into());
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Char('h'))))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Char('i'))))
+                .ok(),
+            Some(Message::Nothing)
+        );
+        assert_eq!(
+            modal
+                .handle_event(Event::Terminal(key_event(Esc)))
+                .ok(),
+            Some(Message::Quit)
+        );
     }
 }
