@@ -12,11 +12,17 @@ use crate::events::Event;
 
 use super::{Mode, MyBackend};
 
+/// The return type for [Modal::handle_event].
 #[derive(Debug, Default, PartialEq)]
 pub enum Message {
+    /// Nothing changed
     #[default]
     Nothing,
+
+    /// User has quit the modal (by pressing Esc)
     Quit,
+
+    /// User has written something (the String) in the modal and pressed Enter 
     Commit(String),
 }
 

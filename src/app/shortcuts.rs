@@ -58,7 +58,7 @@ impl From<crossterm::event::KeyEvent> for InputStr {
     }
 }
 
-/// Stores a table of [Command](app/event_channel/enum.Command.html) shortcuts.
+/// Stores a table of [Command](crate::command::Command) shortcuts.
 #[derive(Default)]
 pub struct Shortcuts {
     pub normal: HashMap<InputStr, crate::command::Command>,
