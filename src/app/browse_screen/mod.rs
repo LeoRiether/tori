@@ -2,6 +2,7 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
+use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;
 use std::error::Error;
@@ -79,6 +80,8 @@ impl BrowseScreen {
         }
     }
 
+    /// When a modal handles an event, it returns a message, which can be Nothing, Quit, or
+    /// Commit(String). This method handles that message.
     fn handle_modal_message(
         &mut self,
         app: &mut App,
@@ -94,7 +97,10 @@ impl BrowseScreen {
                 (AddSong { playlist: _ }, Quit) => {
                     self.selected_pane = BrowsePane::Songs;
                 }
-                (AddSong { playlist }, Commit(song)) => add::commit(song, app, playlist),
+                (AddSong { playlist }, Commit(song)) => {
+                    add::commit(song, app, playlist);
+                    self.selected_pane = BrowsePane::Songs;
+                }
 
                 // AddPlaylist
                 (AddPlaylist, Quit) => {
@@ -116,6 +122,108 @@ impl BrowseScreen {
             }
         } else {
             panic!("Please don't call BrowseScreen::handle_modal_message without a selected modal");
+        }
+        Ok(())
+    }
+
+    /// Handles an Event::Command(cmd)
+    fn handle_command(
+        &mut self,
+        app: &mut App,
+        cmd: command::Command,
+    ) -> Result<(), Box<dyn Error>> {
+        use command::Command::*;
+        match cmd {
+            Quit => {
+                app.change_state(None);
+            }
+            SeekForward => {
+                app.mpv.seek_forward(10.).ok();
+                self.now_playing.update(&app.mpv);
+            }
+            SeekBackward => {
+                app.mpv.seek_backward(10.).ok();
+                self.now_playing.update(&app.mpv);
+            }
+            NextSong => {
+                app.mpv
+                    .playlist_next_weak()
+                    .unwrap_or_else(|_| app.notify_err("No next song".into()));
+                self.now_playing.update(&app.mpv);
+            }
+            PrevSong => {
+                app.mpv
+                    .playlist_previous_weak()
+                    .unwrap_or_else(|_| app.notify_err("No previous song".into()));
+                self.now_playing.update(&app.mpv);
+            }
+            TogglePause => {
+                app.mpv.command("cycle", &["pause"])?;
+                self.now_playing.update(&app.mpv);
+            }
+            VolumeUp => {
+                app.mpv.add_property("volume", 5)?;
+                self.now_playing.update(&app.mpv);
+            }
+            VolumeDown => {
+                app.mpv.add_property("volume", -5)?;
+                self.now_playing.update(&app.mpv);
+            }
+            PlayFromModal => {
+                self.selected_pane = BrowsePane::Modal(ModalType::Play);
+                self.modal = Modal::new(" Play ".into());
+            }
+            _ => self.pass_event_down(app, Event::Command(cmd))?,
+        }
+        Ok(())
+    }
+
+    /// Handles an Event::Terminal(event)
+    fn handle_terminal_event(
+        &mut self,
+        app: &mut App,
+        event: crossterm::event::Event,
+    ) -> Result<(), Box<dyn Error>> {
+        use BrowsePane::{Playlists, Songs};
+        use Event::*;
+        use KeyCode::*;
+
+        match event {
+            crossterm::event::Event::Key(event) => match event.code {
+                Right | Left => {
+                    match self.selected_pane {
+                        Playlists => {
+                            self.selected_pane = Songs;
+                        }
+                        Songs => {
+                            self.selected_pane = Playlists;
+                        }
+                        BrowsePane::Modal(_) => {}
+                    };
+                }
+                // 'a'dd
+                // TODO: this should probably be in each pane's handle_event, somehow
+                Char('a') if self.mode() == Mode::Normal => match self.selected_pane {
+                    Playlists => {}
+                    Songs => {
+                        if let Some(playlist) = self.playlists.selected_item() {
+                            self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
+                                playlist: playlist.to_owned(),
+                            });
+                            self.modal = Modal::new(" Add song ".into());
+                        }
+                    }
+                    BrowsePane::Modal(_) => {}
+                },
+                // 'c'hange
+                KeyCode::Char('c') if self.mode() == Mode::Normal => {
+                    self.playlists.open_editor_for_selected()?;
+                }
+                _ => self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?,
+            },
+            _ => {
+                self.pass_event_down(app, Terminal(event))?;
+            }
         }
         Ok(())
     }
@@ -151,54 +259,11 @@ impl Screen for BrowseScreen {
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        use crate::command::Command::*;
-        use BrowsePane::{Playlists, Songs};
         use Event::*;
-        use KeyCode::*;
-
         match event {
-            Command(cmd) => match cmd {
-                Quit => {
-                    app.change_state(None);
-                }
-                SeekForward => {
-                    app.mpv.seek_forward(10.).ok();
-                    self.now_playing.update(&app.mpv);
-                }
-                SeekBackward => {
-                    app.mpv.seek_backward(10.).ok();
-                    self.now_playing.update(&app.mpv);
-                }
-                NextSong => {
-                    app.mpv
-                        .playlist_next_weak()
-                        .unwrap_or_else(|_| app.notify_err("No next song".into()));
-                    self.now_playing.update(&app.mpv);
-                }
-                PrevSong => {
-                    app.mpv
-                        .playlist_previous_weak()
-                        .unwrap_or_else(|_| app.notify_err("No previous song".into()));
-                    self.now_playing.update(&app.mpv);
-                }
-                TogglePause => {
-                    app.mpv.command("cycle", &["pause"])?;
-                    self.now_playing.update(&app.mpv);
-                }
-                VolumeUp => {
-                    app.mpv.add_property("volume", 5)?;
-                    self.now_playing.update(&app.mpv);
-                }
-                VolumeDown => {
-                    app.mpv.add_property("volume", -5)?;
-                    self.now_playing.update(&app.mpv);
-                }
-                PlayFromModal => {
-                    self.selected_pane = BrowsePane::Modal(ModalType::Play);
-                    self.modal = Modal::new(" Play ".into());
-                }
-                _ => self.pass_event_down(app, Command(cmd))?,
-            },
+            Command(cmd) => {
+                self.handle_command(app, cmd)?;
+            }
             SongAdded { playlist, song } => {
                 self.reload_songs();
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
@@ -206,46 +271,12 @@ impl Screen for BrowseScreen {
             SecondTick => {
                 self.now_playing.update(&app.mpv);
             }
-            ChangedPlaylist => self.reload_songs(),
-            Terminal(event) => match event {
-                crossterm::event::Event::Key(event) => match event.code {
-                    Right | Left => {
-                        match self.selected_pane {
-                            Playlists => {
-                                self.selected_pane = Songs;
-                            }
-                            Songs => {
-                                self.selected_pane = Playlists;
-                            }
-                            BrowsePane::Modal(_) => {}
-                        };
-                    }
-                    // 'a'dd
-                    // TODO: this should probably be in each pane's handle_event, somehow
-                    Char('a') if self.mode() == Mode::Normal => match self.selected_pane {
-                        Playlists => {}
-                        Songs => {
-                            if let Some(playlist) = self.playlists.selected_item() {
-                                self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
-                                    playlist: playlist.to_owned(),
-                                });
-                                self.modal = Modal::new(" Add song ".into());
-                            }
-                        }
-                        BrowsePane::Modal(_) => {}
-                    },
-                    // 'c'hange
-                    KeyCode::Char('c') if self.mode() == Mode::Normal => {
-                        self.playlists.open_editor_for_selected()?;
-                    }
-                    _ => {
-                        self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?
-                    }
-                },
-                _ => {
-                    self.pass_event_down(app, Terminal(event))?;
-                }
-            },
+            ChangedPlaylist => {
+                self.reload_songs();
+            }
+            Terminal(event) => {
+                self.handle_terminal_event(app, event)?;
+            }
         }
         Ok(())
     }
