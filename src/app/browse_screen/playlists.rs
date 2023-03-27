@@ -1,4 +1,3 @@
-use crate::app::popup::Popup;
 use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::events::Event;
 
@@ -16,7 +15,6 @@ pub struct PlaylistsPane<'a> {
     playlists: Vec<String>,
     shown: FilteredList<'a, String, ListState>,
     filter: String,
-    add_popup: Popup,
 }
 
 impl<'a> PlaylistsPane<'a> {
