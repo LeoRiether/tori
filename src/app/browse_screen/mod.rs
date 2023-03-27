@@ -28,6 +28,8 @@ use super::Mode;
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ModalType {
     AddSong { playlist: String },
+    AddPlaylist,
+    Play,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -83,8 +85,8 @@ impl BrowseScreen {
         msg: modal::Message,
     ) -> Result<(), Box<dyn Error>> {
         if let BrowsePane::Modal(modal_type) = &self.selected_pane {
-            use ModalType::*;
             use modal::Message::*;
+            use ModalType::*;
             match (modal_type, msg) {
                 (_, Nothing) => {}
 
@@ -92,8 +94,24 @@ impl BrowseScreen {
                 (AddSong { playlist: _ }, Quit) => {
                     self.selected_pane = BrowsePane::Songs;
                 }
-                (AddSong { playlist }, Commit(song)) => {
-                    add::commit(song, app, playlist)
+                (AddSong { playlist }, Commit(song)) => add::commit(song, app, playlist),
+
+                // AddPlaylist
+                (AddPlaylist, Quit) => {
+                    self.selected_pane = BrowsePane::Playlists;
+                }
+                (AddPlaylist, Commit(playlist)) => {
+                    todo!("Add playlist.m3u")
+                }
+
+                // Play
+                (Play, Quit) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
+                (Play, Commit(path)) => {
+                    app.mpv
+                        .playlist_load_files(&[(&path, libmpv::FileState::Replace, None)])?;
+                    self.selected_pane = BrowsePane::Songs;
                 }
             }
         } else {
@@ -174,6 +192,10 @@ impl Screen for BrowseScreen {
                 VolumeDown => {
                     app.mpv.add_property("volume", -5)?;
                     self.now_playing.update(&app.mpv);
+                }
+                PlayFromModal => {
+                    self.selected_pane = BrowsePane::Modal(ModalType::Play);
+                    self.modal = Modal::new(" Play ".into());
                 }
                 _ => self.pass_event_down(app, Command(cmd))?,
             },

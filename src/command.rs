@@ -45,5 +45,6 @@ parseable_enum! {
         CopyUrl,
         VolumeUp,
         VolumeDown,
+        PlayFromModal,
     }
 }
