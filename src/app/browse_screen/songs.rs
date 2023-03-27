@@ -72,12 +72,7 @@ impl SongsPane {
     }
 
     fn refresh_shown(&mut self) {
-        // SAFETY: if we ever change `self.songs`, the filtered list will point to
-        // garbage memory.
-        // So... not very safe. But it's fine for this module for now I think.
-        let songs_slice =
-            unsafe { std::slice::from_raw_parts(self.songs.as_ptr(), self.songs.len()) };
-        self.shown.filter(songs_slice, |s| {
+        self.shown.filter(&self.songs, |s| {
             self.filter.is_empty()
                 || s.title
                     .to_lowercase()
@@ -248,8 +243,7 @@ impl SongsPane {
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.shown.selected_item()
-            .and_then(|i| self.songs.get(i))
+        self.shown.selected_item().and_then(|i| self.songs.get(i))
     }
 
     pub fn mode(&self) -> Mode {

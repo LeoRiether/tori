@@ -47,12 +47,7 @@ impl PlaylistsPane {
     }
 
     fn refresh_shown(&mut self) {
-        // SAFETY: if we ever change `self.playlists`, the filtered list will point to
-        // garbage memory.
-        // So... not very safe. But it's fine for this module for now I think.
-        let playlist_slice =
-            unsafe { std::slice::from_raw_parts(self.playlists.as_ptr(), self.playlists.len()) };
-        self.shown.filter(playlist_slice, |s| {
+        self.shown.filter(&self.playlists, |s| {
             self.filter.is_empty() || s.to_lowercase().contains(&self.filter[1..].to_lowercase())
         });
     }
