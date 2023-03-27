@@ -12,13 +12,13 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct AddPane<'a> {
+pub struct AddPane {
     popup: Popup,
-    playlist: &'a str,
+    playlist: String,
 }
 
-impl<'a> AddPane<'a> {
-    pub fn new(playlist: &'a str) -> Self {
+impl AddPane {
+    pub fn new(playlist: String) -> Self {
         Self {
             popup: Popup::new("Add song"),
             playlist,
@@ -29,7 +29,7 @@ impl<'a> AddPane<'a> {
         match self.popup.handle_event(event)? {
             popup::Message::Nothing => {}
             popup::Message::Quit => {}
-            popup::Message::Commit(path) => commit(path, app, self.playlist),
+            popup::Message::Commit(path) => commit(path, app, &self.playlist),
         }
         Ok(())
     }

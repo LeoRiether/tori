@@ -32,19 +32,35 @@ impl Selectable for TableState {
 //        Filtered List        //
 /////////////////////////////////
 #[derive(Debug, Default)]
-pub struct FilteredList<'a, T: 'a, St: Selectable> {
-    pub items: Vec<&'a T>,
+pub struct FilteredList<St: Selectable> {
+    /// List of indices of the original list
+    pub items: Vec<usize>,
     pub state: St,
 }
 
-impl<'a, T: 'a, St: Selectable> FilteredList<'a, T, St> {
-    pub fn filter<F>(&mut self, items: &'a [T], pred: F)
+impl<St: Selectable> FilteredList<St> {
+    pub fn filter<T, F>(&mut self, items: &[T], pred: F)
     where
-        F: Fn(&&'a T) -> bool,
+        F: Fn(&T) -> bool,
     {
-        self.items = items.iter().filter(pred).collect();
-        self.state
-            .select(if self.items.is_empty() { None } else { Some(0) });
+        let previous_selection = self.selected_item();
+
+        self.items = (0..items.len())
+            .filter(|&i| {
+                // SAFETY: `i` is in (0..items.len()), so no bound checking needed
+                pred(unsafe { items.get_unchecked(i) })
+            })
+            .collect();
+
+        let new_selection = self
+            .items
+            .iter()
+            // Search for the item that was previously selected
+            .position(|&i| Some(i) == previous_selection)
+            // If we don't find it, select the first item
+            .or(if self.items.is_empty() { None } else { Some(0) });
+
+        self.state.select(new_selection);
     }
 
     pub fn select_next(&mut self) {
@@ -63,7 +79,7 @@ impl<'a, T: 'a, St: Selectable> FilteredList<'a, T, St> {
         });
     }
 
-    pub fn selected_item(&self) -> Option<&'a T> {
+    pub fn selected_item(&self) -> Option<usize> {
         self.state.selected().map(|i| self.items[i])
     }
 }

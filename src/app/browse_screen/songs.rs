@@ -17,14 +17,14 @@ use tui::{
 };
 
 #[derive(Debug, Default)]
-pub struct SongsPane<'a> {
+pub struct SongsPane {
     title: String,
     songs: Vec<m3u::Song>,
-    shown: FilteredList<'a, m3u::Song, TableState>,
+    shown: FilteredList<TableState>,
     filter: String,
 }
 
-impl<'a> SongsPane<'a> {
+impl SongsPane {
     pub fn new() -> Self {
         Self {
             title: " songs ".into(),
@@ -113,6 +113,7 @@ impl<'a> SongsPane<'a> {
             .shown
             .items
             .iter()
+            .map(|&i| &self.songs[i])
             .map(|song| {
                 Row::new(vec![
                     format!(" {}", song.title),
@@ -248,6 +249,7 @@ impl<'a> SongsPane<'a> {
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
         self.shown.selected_item()
+            .and_then(|i| self.songs.get(i))
     }
 
     pub fn mode(&self) -> Mode {

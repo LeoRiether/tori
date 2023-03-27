@@ -35,15 +35,15 @@ enum BrowsePane {
 }
 
 #[derive(Debug, Default)]
-pub struct BrowseScreen<'a> {
-    playlists: PlaylistsPane<'a>,
-    songs: SongsPane<'a>,
-    add: AddPane<'a>,
+pub struct BrowseScreen {
+    playlists: PlaylistsPane,
+    songs: SongsPane,
+    add: AddPane,
     now_playing: NowPlaying,
     selected_pane: BrowsePane,
 }
 
-impl<'a> BrowseScreen<'a> {
+impl BrowseScreen {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         let playlists = PlaylistsPane::from_dir("playlists")?;
         let songs = SongsPane::from_playlist_pane(&playlists);
@@ -69,7 +69,7 @@ impl<'a> BrowseScreen<'a> {
     }
 }
 
-impl Screen for BrowseScreen<'_> {
+impl Screen for BrowseScreen {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
         let size = frame.size();
 
@@ -171,7 +171,7 @@ impl Screen for BrowseScreen<'_> {
                         Songs => {
                             if let Some(playlist) = self.playlists.selected_item() {
                                 self.selected_pane = Add;
-                                self.add = AddPane::new(playlist.as_str());
+                                self.add = AddPane::new(playlist.to_owned());
                             }
                         }
                         Add => {}

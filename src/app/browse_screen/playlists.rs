@@ -2,7 +2,7 @@ use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::events::Event;
 
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
-use std::{borrow::Cow, error::Error, path::Path};
+use std::{error::Error, path::Path};
 use tui::{
     layout,
     style::{Color, Style},
@@ -11,13 +11,13 @@ use tui::{
 };
 
 #[derive(Debug, Default)]
-pub struct PlaylistsPane<'a> {
+pub struct PlaylistsPane {
     playlists: Vec<String>,
-    shown: FilteredList<'a, String, ListState>,
+    shown: FilteredList<ListState>,
     filter: String,
 }
 
-impl<'a> PlaylistsPane<'a> {
+impl PlaylistsPane {
     pub fn from_dir<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let mut me = Self::default();
         me.reload_from_dir(path)?;
@@ -81,7 +81,7 @@ impl<'a> PlaylistsPane<'a> {
             .shown
             .items
             .iter()
-            .map(|&s| ListItem::new(Cow::from(s)))
+            .map(|&i| ListItem::new(self.playlists[i].as_str()))
             .collect();
 
         let widget = List::new(playlists)
@@ -113,7 +113,6 @@ impl<'a> PlaylistsPane<'a> {
                     match event.code {
                         Up => self.select_prev(app),
                         Down => self.select_next(app),
-                        Enter if !self.filter.is_empty() => self.commit_filter(app),
                         Char('/') => self.filter = "/".into(),
                         _ => {}
                     }
@@ -141,18 +140,12 @@ impl<'a> PlaylistsPane<'a> {
                 self.filter.pop();
                 Ok(true)
             }
-            KeyCode::Esc => {
+            KeyCode::Esc | KeyCode::Enter => {
                 self.filter.clear();
                 Ok(true)
             }
             _ => Ok(false),
         }
-    }
-
-    pub fn commit_filter(&mut self, app: &mut App) {
-        // TODO: select playlist
-        self.filter.clear();
-        app.channel.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn select_next(&mut self, app: &mut App) {
@@ -165,8 +158,10 @@ impl<'a> PlaylistsPane<'a> {
         app.channel.send(Event::ChangedPlaylist).unwrap();
     }
 
-    pub fn selected_item(&self) -> Option<&'a String> {
+    pub fn selected_item(&self) -> Option<&str> {
         self.shown.selected_item()
+            .and_then(|i| self.playlists.get(i))
+            .map(|s| s.as_str())
     }
 
     pub fn open_editor_for_selected(&mut self) -> Result<(), Box<dyn Error>> {
