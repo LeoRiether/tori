@@ -1,12 +1,16 @@
 use std::str::FromStr;
 
 macro_rules! parseable_enum {
-    ($vis:vis enum $enum:ident { $($item:ident),* $(,)? }) => {
-        // I have to put the derive here because it doesn't work outside the macro?
-        #[derive(Debug, Default, Clone)]
+    (
+        $( #[$attr:meta] )*
+        $vis:vis enum $enum:ident { $($(#[$item_attr:meta])* $item:ident),* $(,)? }
+    ) => {
+        $( #[$attr] )*
         $vis enum $enum {
-            #[default] // ...it's the first item, always...
-            $($item),*
+            $(
+                $(#[$item_attr])*
+                $item
+            ),*
         }
 
         impl FromStr for $enum {
@@ -30,7 +34,9 @@ macro_rules! parseable_enum {
 }
 
 parseable_enum! {
+    #[derive(Debug, Default, Clone)]
     pub enum Command {
+        #[default]
         Nop,
         Quit,
         SelectNext,
