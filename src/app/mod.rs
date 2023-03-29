@@ -40,7 +40,6 @@ pub trait Screen {
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
 
 pub struct App {
-    config: Config,
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
     state: Option<Rc<RefCell<dyn Screen>>>,
@@ -51,7 +50,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new<S: Screen + 'static>(config: Config, state: S) -> Result<Self, Box<dyn Error>> {
+    pub fn new<S: Screen + 'static>(state: S) -> Result<Self, Box<dyn Error>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
@@ -69,7 +68,6 @@ impl App {
         let notification = Notification::default();
 
         Ok(App {
-            config,
             terminal,
             mpv,
             state: Some(Rc::new(RefCell::new(state))),
@@ -166,7 +164,7 @@ impl App {
     fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
         use crossterm::event::Event::Key;
         use Event::*;
-        match self.config.normal.get_from_event(key_event) {
+        match Config::global().normal.get_from_event(key_event) {
             Some(cmd) => Command(cmd),
             None => Terminal(Key(key_event)),
         }

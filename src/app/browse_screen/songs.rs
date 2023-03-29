@@ -42,11 +42,11 @@ impl SongsPane {
     pub fn from_playlist_named(name: &str) -> Self {
         Self::from_playlist({
             let filename = format!("{}.m3u", name);
-            PathBuf::from("playlists").join(filename)
+            PathBuf::from(&crate::config::Config::global().playlists_dir).join(filename)
         })
     }
 
-    pub fn from_playlist<P: AsRef<Path>>(path: P) -> Self {
+    pub fn from_playlist(path: impl AsRef<Path>) -> Self {
         // TODO: maybe return Result?
         let file = std::fs::File::open(&path)
             .unwrap_or_else(|_| panic!("Couldn't open playlist file {}", path.as_ref().display()));

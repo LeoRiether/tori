@@ -54,7 +54,7 @@ pub struct BrowseScreen {
 
 impl BrowseScreen {
     pub fn new() -> Result<Self, Box<dyn Error>> {
-        let playlists = PlaylistsPane::from_dir("playlists")?;
+        let playlists = PlaylistsPane::new()?;
         let songs = SongsPane::from_playlist_pane(&playlists);
         Ok(Self {
             playlists,

@@ -708,6 +708,7 @@ dependencies = [
  "crossterm",
  "dirs 5.0.0",
  "libmpv-sirno",
+ "once_cell",
  "serde",
  "serde_json",
  "serde_yaml",

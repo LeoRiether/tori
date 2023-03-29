@@ -1,5 +1,6 @@
 use std::error::Error;
 use serde::{Serialize, Deserialize};
+use once_cell::sync::OnceCell;
 
 use crate::shortcuts::Shortcuts;
 
@@ -9,7 +10,17 @@ pub struct Config {
     pub normal: Shortcuts,
 }
 
+static INSTANCE: OnceCell<Config> = OnceCell::new(); 
+
 impl Config {
+    pub fn global() -> &'static Self {
+        INSTANCE.get().expect("Config instance not loaded!")
+    }
+
+    pub fn set_global(instance: Self) {
+        INSTANCE.set(instance).unwrap();
+    }
+
     /// Loads the shortcuts from the default path, which is
     /// [dirs::config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/tori.yaml
     pub fn from_default_location() -> Result<Self, Box<dyn Error>> {

@@ -10,7 +10,7 @@ use config::Config;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = Config::from_default_location()?;
-    let mut app = App::new(config, BrowseScreen::new()?)?;
+    Config::set_global(Config::from_default_location()?);
+    let mut app = App::new(BrowseScreen::new()?)?;
     app.run()
 }

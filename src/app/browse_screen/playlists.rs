@@ -1,8 +1,10 @@
 use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::config::Config;
 use crate::events::Event;
 
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
-use std::{error::Error, path::Path};
+use std::error::Error;
+use std::path::PathBuf;
 use tui::{
     layout,
     style::{Color, Style},
@@ -18,14 +20,14 @@ pub struct PlaylistsPane {
 }
 
 impl PlaylistsPane {
-    pub fn from_dir<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         let mut me = Self::default();
-        me.reload_from_dir(path)?;
+        me.reload_from_dir()?;
         Ok(me)
     }
 
-    pub fn reload_from_dir<P: AsRef<Path>>(&mut self, path: P) -> Result<(), Box<dyn Error>> {
-        let dir = std::fs::read_dir(path)
+    pub fn reload_from_dir(&mut self) -> Result<(), Box<dyn Error>> {
+        let dir = std::fs::read_dir(&Config::global().playlists_dir)
             .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
         use std::fs::DirEntry;
@@ -167,10 +169,14 @@ impl PlaylistsPane {
 
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
             std::process::Command::new(editor)
-                .arg(format!("playlists/{}.m3u", selected))
+                .arg(
+                    // playlists_dir/selected.m3u
+                    PathBuf::from(&Config::global().playlists_dir)
+                        .join(format!("{}.m3u", selected)),
+                )
                 .status()
                 .expect("Failed to execute editor");
-            self.reload_from_dir("playlists")?;
+            self.reload_from_dir()?;
 
             crate::app::setup_terminal().unwrap();
         }
