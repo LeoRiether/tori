@@ -12,15 +12,12 @@ use std::{
 };
 use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
 
-use crate::events::{self, Channel};
+use crate::{events::{self, Channel}, config::Config};
 
 pub mod browse_screen;
 pub mod filtered_list;
 pub mod notification;
 pub mod modal;
-pub mod shortcuts;
-
-use shortcuts::Shortcuts;
 
 use crate::events::Event;
 
@@ -43,6 +40,7 @@ pub trait Screen {
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
 
 pub struct App {
+    config: Config,
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
     state: Option<Rc<RefCell<dyn Screen>>>,
@@ -50,11 +48,10 @@ pub struct App {
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification,
-    shortcuts: Shortcuts,
 }
 
 impl App {
-    pub fn new<S: Screen + 'static>(state: S) -> Result<Self, Box<dyn Error>> {
+    pub fn new<S: Screen + 'static>(config: Config, state: S) -> Result<Self, Box<dyn Error>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
@@ -71,11 +68,8 @@ impl App {
 
         let notification = Notification::default();
 
-        // TODO: if we fail to load the shortcuts, we should load some default ones and notify the
-        // user
-        let shortcuts = Shortcuts::from_default_location()?;
-
         Ok(App {
+            config,
             terminal,
             mpv,
             state: Some(Rc::new(RefCell::new(state))),
@@ -83,7 +77,6 @@ impl App {
             next_render,
             next_poll_timeout,
             notification,
-            shortcuts,
         })
     }
 
@@ -173,7 +166,7 @@ impl App {
     fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
         use crossterm::event::Event::Key;
         use Event::*;
-        match self.shortcuts.get_from_event(key_event) {
+        match self.config.normal.get_from_event(key_event) {
             Some(cmd) => Command(cmd),
             None => Terminal(Key(key_event)),
         }

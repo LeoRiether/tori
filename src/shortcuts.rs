@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
+use serde::{Serialize, Deserialize};
 use crossterm::event::{KeyCode, KeyModifiers};
 
 /// Encapsulates a string representing some key event.
@@ -27,7 +28,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 ///     InputStr("C-S-tab".into())
 /// );
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct InputStr(String);
 
 impl From<crossterm::event::KeyEvent> for InputStr {
@@ -59,54 +60,15 @@ impl From<crossterm::event::KeyEvent> for InputStr {
 }
 
 /// Stores a table of [Command](crate::command::Command) shortcuts.
-#[derive(Default)]
-pub struct Shortcuts {
-    pub normal: HashMap<InputStr, crate::command::Command>,
-}
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Shortcuts(HashMap<InputStr, crate::command::Command>);
 
 impl Shortcuts {
-    /// Loads the shortcuts from the default path, which is
-    /// [dirs::config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/tori.yaml
-    pub fn from_default_location() -> Result<Self, Box<dyn Error>> {
-        let path = dirs::config_dir().unwrap_or_default().join("tori.yaml");
-        Self::from_path(path)
-    }
-
-    /// Loads the shortcuts from some path
-    pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
-        let config: serde_yaml::Value = serde_yaml::from_reader(std::fs::File::open(path)?)?;
-        let table = config.as_mapping().ok_or("Config yaml is not a mapping")?;
-
-        let normal = {
-            let map = table
-                .get(serde_yaml::Value::String("normal".into()))
-                .unwrap()
-                .as_mapping()
-                .unwrap();
-
-            let res: Result<HashMap<_, _>, Box<dyn Error>> = map
-                .iter()
-                .map(|(k, v)| {
-                    let k = k.as_str().unwrap().into();
-                    let v = v.as_str().unwrap();
-                    let v = v
-                        .parse::<crate::command::Command>()
-                        .map_err(|_| format!("Unrecognized command in config yaml: {}", v))?;
-                    Ok((InputStr(k), v))
-                })
-                .collect();
-
-            res?
-        };
-
-        Ok(Self { normal })
-    }
-
     pub fn get_from_event(
         &self,
         event: crossterm::event::KeyEvent,
     ) -> Option<crate::command::Command> {
-        self.normal.get(&event.into()).cloned()
+        self.0.get(&event.into()).cloned()
     }
 }
 

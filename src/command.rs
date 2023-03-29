@@ -1,56 +1,39 @@
-use std::str::FromStr;
+use serde::{Serialize, Deserialize};
 
-macro_rules! parseable_enum {
-    (
-        $( #[$attr:meta] )*
-        $vis:vis enum $enum:ident { $($(#[$item_attr:meta])* $item:ident),* $(,)? }
-    ) => {
-        $( #[$attr] )*
-        $vis enum $enum {
-            $(
-                $(#[$item_attr])*
-                $item
-            ),*
-        }
-
-        impl FromStr for $enum {
-            type Err = String;
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                match s {
-                    $(stringify!($item) => Ok($enum::$item)),*,
-                    _ => Err(format!("No such variant: {}", s)),
-                }
-            }
-        }
-
-        impl From<$enum> for String {
-            fn from(e: $enum) -> String {
-                match e {
-                    $($enum::$item => stringify!($item).to_string()),*,
-                }
-            }
-        }
-    };
+#[derive(Debug, Default, Clone, PartialEq, Hash, Serialize, Deserialize)]
+pub enum Command {
+    #[default]
+    Nop,
+    Quit,
+    SelectNext,
+    SelectPrev,
+    NextSong,
+    PrevSong,
+    TogglePause,
+    QueueSong,
+    SeekForward,
+    SeekBackward,
+    OpenInBrowser,
+    CopyUrl,
+    VolumeUp,
+    VolumeDown,
+    PlayFromModal,
 }
 
-parseable_enum! {
-    #[derive(Debug, Default, Clone)]
-    pub enum Command {
-        #[default]
-        Nop,
-        Quit,
-        SelectNext,
-        SelectPrev,
-        NextSong,
-        PrevSong,
-        TogglePause,
-        QueueSong,
-        SeekForward,
-        SeekBackward,
-        OpenInBrowser,
-        CopyUrl,
-        VolumeUp,
-        VolumeDown,
-        PlayFromModal,
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialization() {
+        // not sure why serde_yaml puts a newline there ¯\_(ツ)_/¯
+        assert_eq!(serde_yaml::to_string(&Command::Quit).unwrap(), "Quit\n");
+        assert_eq!(serde_yaml::to_string(&Command::TogglePause).unwrap(), "TogglePause\n");
+    }
+
+    #[test]
+    fn test_deserialization() {
+        assert_eq!(serde_yaml::from_str::<Command>("Quit").unwrap(), Command::Quit);
+        assert_eq!(serde_yaml::from_str::<Command>("VolumeUp").unwrap(), Command::VolumeUp);
     }
 }
