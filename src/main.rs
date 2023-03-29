@@ -21,13 +21,12 @@ struct Args {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args: Args = argh::from_env();
     Config::set_global({
-        let args: Args = argh::from_env();
-        let default_config_path = || dirs::config_dir().unwrap_or_default().join("tori.yaml");
         Config::from_path(
             args.config
                 .map(PathBuf::from)
-                .unwrap_or_else(default_config_path),
+                .unwrap_or(dirs::config_dir().unwrap_or_default().join("tori.yaml")),
         )?
     });
 
