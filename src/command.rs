@@ -12,6 +12,7 @@ pub enum Command {
     SeekBackward,
     OpenInBrowser,
     CopyUrl,
+    CopyTitle,
     VolumeUp,
     VolumeDown,
 

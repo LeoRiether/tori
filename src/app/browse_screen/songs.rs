@@ -162,6 +162,13 @@ impl SongsPane {
                         app.notify_info(format!("Copied {} to the clipboard", song.path));
                     }
                 }
+                CopyTitle => {
+                    if let Some(song) = self.selected_item() {
+                        let mut ctx: ClipboardContext = ClipboardProvider::new()?;
+                        ctx.set_contents(song.title.clone())?;
+                        app.notify_info(format!("Copied {} to the clipboard", song.title));
+                    }
+                }
                 _ => {}
             },
             SongAdded {
