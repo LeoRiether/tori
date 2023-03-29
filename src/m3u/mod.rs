@@ -4,6 +4,8 @@ use std::mem;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use crate::config::Config;
+
 #[derive(Debug, Default, Clone)]
 pub struct Song {
     pub title: String,
@@ -152,7 +154,8 @@ impl Song {
     }
 
     pub fn add_to_playlist(&self, playlist_name: &str) -> Result<(), Box<dyn Error>> {
-        let path = PathBuf::from("playlists").join(format!("{}.m3u", playlist_name));
+        let path =
+            PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u", playlist_name));
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .read(true)

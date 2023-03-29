@@ -3,15 +3,17 @@ use std::{error::Error, path::PathBuf, thread};
 use crate::{app::App, config::Config, events::Event, m3u};
 
 /// Adds a song to an existing playlist
-pub fn add_song(app: &mut App, playlist: &str, path: String) {
-    app.notify_info(format!("Adding {}...", path));
+pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
+    app.notify_info(format!("Adding {}...", song_path));
     let sender = app.channel.sender.clone();
     let playlist = playlist.to_string();
     thread::spawn(move || {
-        add_song_recursively(&path, &playlist);
+        add_song_recursively(&song_path, &playlist);
 
-        let mut rsplit = path.trim_end_matches('/').rsplit('/');
-        let song = rsplit.next().unwrap_or(&path).to_string();
+        // Extract last part (separated by '/') of the song_path 
+        let mut rsplit = song_path.trim_end_matches('/').rsplit('/');
+        let song = rsplit.next().unwrap_or(&song_path).to_string();
+
         let event = Event::SongAdded { playlist, song };
         sender.send(event).expect("Failed to send internal event");
     });
@@ -38,7 +40,7 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
     } else {
         let song = m3u::Song::from_path(path).expect("Failed to parse song");
         song.add_to_playlist(playlist_name)
-            .unwrap_or_else(|_| panic!("Failed to add '{}' to playlist", path));
+            .unwrap_or_else(|e| panic!("Failed to add '{}' to playlist. Error: {}", path, e));
     }
 }
 
