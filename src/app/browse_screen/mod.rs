@@ -2,6 +2,7 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
+use crate::app::playlist_management;
 use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;
@@ -17,8 +18,6 @@ use playlists::PlaylistsPane;
 
 mod songs;
 use songs::SongsPane;
-
-mod add;
 
 mod now_playing;
 use now_playing::NowPlaying;
@@ -98,7 +97,7 @@ impl BrowseScreen {
                     self.selected_pane = BrowsePane::Songs;
                 }
                 (AddSong { playlist }, Commit(song)) => {
-                    add::commit(song, app, playlist);
+                    playlist_management::add_song(app, playlist, song);
                     self.selected_pane = BrowsePane::Songs;
                 }
 
@@ -107,7 +106,9 @@ impl BrowseScreen {
                     self.selected_pane = BrowsePane::Playlists;
                 }
                 (AddPlaylist, Commit(playlist)) => {
-                    todo!("Add playlist.m3u")
+                    playlist_management::create_playlist(app, &playlist)?;
+                    self.playlists.reload_from_dir()?;
+                    self.selected_pane = BrowsePane::Playlists;
                 }
 
                 // Play
@@ -173,6 +174,22 @@ impl BrowseScreen {
                 self.selected_pane = BrowsePane::Modal(ModalType::Play);
                 self.modal = Modal::new(" Play ".into());
             }
+            // TODO: this should probably be in each pane's handle_event, somehow
+            Add => match self.selected_pane {
+                BrowsePane::Playlists => {
+                    self.selected_pane = BrowsePane::Modal(ModalType::AddPlaylist);
+                    self.modal = Modal::new(" Add playlist ".into());
+                }
+                BrowsePane::Songs => {
+                    if let Some(playlist) = self.playlists.selected_item() {
+                        self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
+                            playlist: playlist.to_owned(),
+                        });
+                        self.modal = Modal::new(" Add song ".into());
+                    }
+                }
+                BrowsePane::Modal(_) => {}
+            },
             _ => self.pass_event_down(app, Event::Command(cmd))?,
         }
         Ok(())
@@ -201,20 +218,6 @@ impl BrowseScreen {
                         BrowsePane::Modal(_) => {}
                     };
                 }
-                // 'a'dd
-                // TODO: this should probably be in each pane's handle_event, somehow
-                Char('a') if self.mode() == Mode::Normal => match self.selected_pane {
-                    Playlists => {}
-                    Songs => {
-                        if let Some(playlist) = self.playlists.selected_item() {
-                            self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
-                                playlist: playlist.to_owned(),
-                            });
-                            self.modal = Modal::new(" Add song ".into());
-                        }
-                    }
-                    BrowsePane::Modal(_) => {}
-                },
                 // 'c'hange
                 KeyCode::Char('c') if self.mode() == Mode::Normal => {
                     self.playlists.open_editor_for_selected()?;

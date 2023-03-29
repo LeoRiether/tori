@@ -5,18 +5,29 @@ pub enum Command {
     #[default]
     Nop,
     Quit,
-    SelectNext,
-    SelectPrev,
     NextSong,
     PrevSong,
     TogglePause,
-    QueueSong,
     SeekForward,
     SeekBackward,
     OpenInBrowser,
     CopyUrl,
     VolumeUp,
     VolumeDown,
+
+    /// Select next item (like a song or playlist)
+    SelectNext,
+
+    /// Select previous item (like a song or playlist)
+    SelectPrev,
+
+    /// Add a new song or playlist
+    Add,
+
+    /// Add song to the queue
+    QueueSong,
+
+    /// Queries the user for a song to play, without adding it to a playlist 
     PlayFromModal,
 }
 

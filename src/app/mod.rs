@@ -18,6 +18,7 @@ pub mod browse_screen;
 pub mod filtered_list;
 pub mod notification;
 pub mod modal;
+pub mod playlist_management;
 
 use crate::events::Event;
 
