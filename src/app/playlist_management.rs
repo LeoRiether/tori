@@ -38,7 +38,7 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
     } else {
         let song = m3u::Song::from_path(path).expect("Failed to parse song");
         song.add_to_playlist(playlist_name)
-            .expect("Failed to add song to playlist");
+            .unwrap_or_else(|_| panic!("Failed to add '{}' to playlist", path));
     }
 }
 

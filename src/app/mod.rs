@@ -177,6 +177,7 @@ impl App {
         std::panic::set_hook(Box::new(move |panic| {
             reset_terminal().unwrap();
             original_hook(panic);
+            std::process::exit(1);
         }));
     }
 

@@ -29,21 +29,21 @@ impl Default for Channel {
 }
 
 impl Channel {
-    pub fn spawn_terminal_event_getter(&self) {
+    pub fn spawn_terminal_event_getter(&self) -> thread::JoinHandle<()> {
         let sender = self.sender.clone();
         thread::spawn(move || loop {
             if let Ok(event) = crossterm::event::read() {
                 sender.send(Event::Terminal(event)).unwrap();
             }
-        });
+        })
     }
 
-    pub fn spawn_ticks(&self) {
+    pub fn spawn_ticks(&self) -> thread::JoinHandle<()> {
         let sender = self.sender.clone();
         thread::spawn(move || loop {
             thread::sleep(time::Duration::from_secs(1));
             sender.send(Event::SecondTick).unwrap();
-        });
+        })
     }
 
     pub fn send(&mut self, event: Event) -> Result<(), mpsc::SendError<Event>> {
