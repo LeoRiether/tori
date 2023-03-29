@@ -171,21 +171,18 @@ impl BrowseScreen {
                 self.now_playing.update(&app.mpv);
             }
             PlayFromModal => {
-                self.selected_pane = BrowsePane::Modal(ModalType::Play);
-                self.modal = Modal::new(" Play ".into());
+                self.open_modal(" Play ".into(), ModalType::Play);
             }
             // TODO: this should probably be in each pane's handle_event, somehow
             Add => match self.selected_pane {
                 BrowsePane::Playlists => {
-                    self.selected_pane = BrowsePane::Modal(ModalType::AddPlaylist);
-                    self.modal = Modal::new(" Add playlist ".into());
+                    self.open_modal(" Add playlist ".into(), ModalType::AddPlaylist);
                 }
                 BrowsePane::Songs => {
                     if let Some(playlist) = self.playlists.selected_item() {
-                        self.selected_pane = BrowsePane::Modal(ModalType::AddSong {
+                        self.open_modal(" Add song ".into(), ModalType::AddSong {
                             playlist: playlist.to_owned(),
                         });
-                        self.modal = Modal::new(" Add song ".into());
                     }
                 }
                 BrowsePane::Modal(_) => {}
@@ -229,6 +226,11 @@ impl BrowseScreen {
             }
         }
         Ok(())
+    }
+
+    fn open_modal(&mut self, title: String, modal_type: ModalType) {
+        self.selected_pane = BrowsePane::Modal(modal_type);
+        self.modal = Modal::new(title);
     }
 }
 
