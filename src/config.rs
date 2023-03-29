@@ -21,13 +21,6 @@ impl Config {
         INSTANCE.set(instance).unwrap();
     }
 
-    /// Loads the shortcuts from the default path, which is
-    /// [dirs::config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/tori.yaml
-    pub fn from_default_location() -> Result<Self, Box<dyn Error>> {
-        let path = dirs::config_dir().unwrap_or_default().join("tori.yaml");
-        Self::from_path(path)
-    }
-
     /// Loads the shortcuts from some path
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let file = std::fs::File::open(path)?;
