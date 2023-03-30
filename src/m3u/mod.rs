@@ -104,12 +104,11 @@ impl Song {
         })
     }
 
-    /// Parses song from a local file using audiotags.
-    /// Currently audiotags only supports mp3, flac and MPEG-4 (m4a/mp4/...)
+    /// Parses song from a local file using lofty.
     pub fn parse_local_file(path: &str) -> Result<Song, Box<dyn Error>> {
-        use audiotags::{
-            Error::{ReadError, UnknownFileExtension, UnsupportedFormat, UnsupportedMimeType},
-            Tag,
+        use lofty::{
+            error::ErrorKind::{NotAPicture, UnknownFormat, UnsupportedPicture, UnsupportedTag},
+            Accessor, AudioFile, TaggedFileExt,
         };
 
         let default_title = || {
@@ -120,26 +119,31 @@ impl Song {
                 .to_string()
         };
 
-        let (title, duration) = match Tag::new().read_from_path(path) {
-            Ok(tag) => {
-                let title = match (tag.artist(), tag.title()) {
-                    (Some(artist), Some(title)) => format!("{} - {}", artist, title),
-                    (Some(artist), None) => format!("{} - ?", artist),
-                    (None, Some(title)) => title.to_string(),
-                    (None, None) => default_title(),
-                };
-                let duration = tag
-                    .duration()
-                    .map(Duration::from_secs_f64)
-                    .unwrap_or_default();
-                (title, duration)
-            }
-            Err(UnknownFileExtension(_))
-            | Err(UnsupportedFormat(_))
-            | Err(UnsupportedMimeType(_))
-            | Err(ReadError { source: _ }) => (default_title(), Duration::default()),
-            Err(e) => return Err(Box::new(e)),
+        let tagged_file = match lofty::read_from_path(path) {
+            Ok(tf) => Some(tf),
+            Err(e) => match e.kind() {
+                UnknownFormat | NotAPicture | UnsupportedPicture | UnsupportedTag => None,
+                _ => return Err(e.into()),
+            },
         };
+
+        let tag = tagged_file
+            .as_ref()
+            .and_then(|t| t.primary_tag().or(t.first_tag()));
+
+        let title = match (
+            tag.and_then(Accessor::artist),
+            tag.and_then(Accessor::title),
+        ) {
+            (Some(artist), Some(title)) => format!("{} - {}", artist, title),
+            (Some(artist), None) => format!("{} - ?", artist),
+            (None, Some(title)) => title.to_string(),
+            (None, None) => default_title(),
+        };
+
+        let duration = tagged_file
+            .map(|t| t.properties().duration())
+            .unwrap_or_default();
 
         Ok(Song {
             title,
