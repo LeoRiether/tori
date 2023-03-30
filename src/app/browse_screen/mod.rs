@@ -204,9 +204,6 @@ impl BrowseScreen {
 
         match event {
             crossterm::event::Event::Key(event) => match event.code {
-                Char('x') => {
-                    self.open_modal(String::default(), ModalType::AddPlaylist);
-                }
                 Right | Left => {
                     match self.selected_pane {
                         Playlists => {
