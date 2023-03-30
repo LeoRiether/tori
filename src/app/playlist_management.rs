@@ -1,4 +1,4 @@
-use std::{error::Error, path::PathBuf, thread};
+use std::{path::PathBuf, thread, io};
 
 use crate::{app::App, config::Config, events::Event, m3u};
 
@@ -44,15 +44,30 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
     }
 }
 
-pub fn create_playlist(app: &mut App, playlist_name: &str) -> Result<(), Box<dyn Error>> {
+#[derive(Debug)]
+pub enum CreatePlaylistError {
+    PlaylistAlreadyExists,
+    IOError(io::Error),
+}
+
+impl From<io::Error> for CreatePlaylistError {
+    fn from(value: io::Error) -> Self {
+        Self::IOError(value)
+    }
+}
+
+/// Creates the corresponding .m3u8 file for a new playlist
+pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
     let path =
         PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
 
     // TODO: when it's stabilized, use std::fs::File::create_new
     if path.try_exists()? {
-        app.notify_err(format!("Playlist '{}' already exists!", playlist_name));
+        Err(CreatePlaylistError::PlaylistAlreadyExists)
     } else {
         std::fs::File::create(path)?;
+        Ok(())
     }
-    Ok(())
 }
+
+

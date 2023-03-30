@@ -106,8 +106,16 @@ impl BrowseScreen {
                     self.selected_pane = BrowsePane::Playlists;
                 }
                 (AddPlaylist, Commit(playlist)) => {
-                    playlist_management::create_playlist(app, &playlist)?;
-                    self.playlists.reload_from_dir()?;
+                    use playlist_management::CreatePlaylistError;
+                    match playlist_management::create_playlist(&playlist) {
+                        Ok(_) => {
+                            self.playlists.reload_from_dir()?;
+                        }
+                        Err(CreatePlaylistError::PlaylistAlreadyExists) => {
+                            app.notify_err(format!("Playlist '{}' already exists!", playlist));
+                        }
+                        Err(CreatePlaylistError::IOError(e)) => return Err(e.into()),
+                    }
                     self.selected_pane = BrowsePane::Playlists;
                 }
 
