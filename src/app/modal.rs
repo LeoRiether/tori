@@ -43,8 +43,9 @@ impl Modal {
         }
     }
 
-    pub fn with_style(self, style: Style) -> Self {
-        Self { style, ..self }
+    pub fn with_style(&mut self, style: Style) -> &mut Self {
+        self.style = style;
+        self
     }
 
     pub fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {

@@ -204,6 +204,9 @@ impl BrowseScreen {
 
         match event {
             crossterm::event::Event::Key(event) => match event.code {
+                Char('x') => {
+                    self.open_modal(String::default(), ModalType::AddPlaylist);
+                }
                 Right | Left => {
                     match self.selected_pane {
                         Playlists => {
@@ -228,9 +231,10 @@ impl BrowseScreen {
         Ok(())
     }
 
-    fn open_modal(&mut self, title: String, modal_type: ModalType) {
+    fn open_modal(&mut self, title: String, modal_type: ModalType) -> &mut Modal {
         self.selected_pane = BrowsePane::Modal(modal_type);
         self.modal = Modal::new(title);
+        &mut self.modal
     }
 }
 
