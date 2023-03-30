@@ -15,6 +15,7 @@ pub enum Command {
     CopyTitle,
     VolumeUp,
     VolumeDown,
+    Shuffle,
 
     /// Select next item (like a song or playlist)
     SelectNext,
@@ -27,6 +28,9 @@ pub enum Command {
 
     /// Add song to the queue
     QueueSong,
+
+    /// Add all shown songs to the queue
+    QueueShown,
 
     /// Queries the user for a song to play, without adding it to a playlist 
     PlayFromModal,

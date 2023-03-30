@@ -164,6 +164,9 @@ impl SongsPane {
                         .collect();
                     app.mpv.playlist_load_files(&entries)?;
                 }
+                Shuffle => {
+                    app.mpv.command("playlist-shuffle", &[])?;
+                }
                 OpenInBrowser => {
                     if let Some(song) = self.selected_item() {
                         // TODO: reconsider if I really need a library to write this one line
