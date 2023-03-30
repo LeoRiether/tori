@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize};
 use crossterm::event::{KeyCode, KeyModifiers};
+use serde::{Deserialize, Serialize};
 
 /// Encapsulates a string representing some key event.
 ///

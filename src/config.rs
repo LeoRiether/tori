@@ -1,6 +1,6 @@
-use std::error::Error;
-use serde::{Serialize, Deserialize};
 use once_cell::sync::OnceCell;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 use crate::shortcuts::Shortcuts;
 
@@ -10,7 +10,7 @@ pub struct Config {
     pub normal: Shortcuts,
 }
 
-static INSTANCE: OnceCell<Config> = OnceCell::new(); 
+static INSTANCE: OnceCell<Config> = OnceCell::new();
 
 impl Config {
     pub fn global() -> &'static Self {

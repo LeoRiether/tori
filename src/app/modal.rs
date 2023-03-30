@@ -22,7 +22,7 @@ pub enum Message {
     /// User has quit the modal (by pressing Esc)
     Quit,
 
-    /// User has written something (the String) in the modal and pressed Enter 
+    /// User has written something (the String) in the modal and pressed Enter
     Commit(String),
 }
 
@@ -157,9 +157,7 @@ mod tests {
             Some(Message::Nothing)
         );
         assert_eq!(
-            modal
-                .handle_event(Event::Terminal(key_event(Enter)))
-                .ok(),
+            modal.handle_event(Event::Terminal(key_event(Enter))).ok(),
             Some(Message::Commit("hi".into()))
         );
     }
@@ -180,9 +178,7 @@ mod tests {
             Some(Message::Nothing)
         );
         assert_eq!(
-            modal
-                .handle_event(Event::Terminal(key_event(Esc)))
-                .ok(),
+            modal.handle_event(Event::Terminal(key_event(Esc))).ok(),
             Some(Message::Quit)
         );
     }

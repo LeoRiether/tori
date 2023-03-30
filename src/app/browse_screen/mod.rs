@@ -180,9 +180,12 @@ impl BrowseScreen {
                 }
                 BrowsePane::Songs => {
                     if let Some(playlist) = self.playlists.selected_item() {
-                        self.open_modal(" Add song ".into(), ModalType::AddSong {
-                            playlist: playlist.to_owned(),
-                        });
+                        self.open_modal(
+                            " Add song ".into(),
+                            ModalType::AddSong {
+                                playlist: playlist.to_owned(),
+                            },
+                        );
                     }
                 }
                 BrowsePane::Modal(_) => {}

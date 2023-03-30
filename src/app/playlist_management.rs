@@ -10,7 +10,7 @@ pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
     thread::spawn(move || {
         add_song_recursively(&song_path, &playlist);
 
-        // Extract last part (separated by '/') of the song_path 
+        // Extract last part (separated by '/') of the song_path
         let mut rsplit = song_path.trim_end_matches('/').rsplit('/');
         let song = rsplit.next().unwrap_or(&song_path).to_string();
 

@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum Command {
@@ -32,7 +32,7 @@ pub enum Command {
     /// Add all shown songs to the queue
     QueueShown,
 
-    /// Queries the user for a song to play, without adding it to a playlist 
+    /// Queries the user for a song to play, without adding it to a playlist
     PlayFromModal,
 }
 
@@ -44,12 +44,21 @@ mod tests {
     fn test_serialization() {
         // not sure why serde_yaml puts a newline there ¯\_(ツ)_/¯
         assert_eq!(serde_yaml::to_string(&Command::Quit).unwrap(), "Quit\n");
-        assert_eq!(serde_yaml::to_string(&Command::TogglePause).unwrap(), "TogglePause\n");
+        assert_eq!(
+            serde_yaml::to_string(&Command::TogglePause).unwrap(),
+            "TogglePause\n"
+        );
     }
 
     #[test]
     fn test_deserialization() {
-        assert_eq!(serde_yaml::from_str::<Command>("Quit").unwrap(), Command::Quit);
-        assert_eq!(serde_yaml::from_str::<Command>("VolumeUp").unwrap(), Command::VolumeUp);
+        assert_eq!(
+            serde_yaml::from_str::<Command>("Quit").unwrap(),
+            Command::Quit
+        );
+        assert_eq!(
+            serde_yaml::from_str::<Command>("VolumeUp").unwrap(),
+            Command::VolumeUp
+        );
     }
 }
