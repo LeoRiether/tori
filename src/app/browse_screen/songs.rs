@@ -149,6 +149,21 @@ impl SongsPane {
                         )])?;
                     }
                 }
+                QueueShown => {
+                    let entries: Vec<_> = self
+                        .shown
+                        .items
+                        .iter()
+                        .map(|&i| {
+                            (
+                                self.songs[i].path.as_str(),
+                                libmpv::FileState::AppendPlay,
+                                None::<&str>,
+                            )
+                        })
+                        .collect();
+                    app.mpv.playlist_load_files(&entries)?;
+                }
                 OpenInBrowser => {
                     if let Some(song) = self.selected_item() {
                         // TODO: reconsider if I really need a library to write this one line
