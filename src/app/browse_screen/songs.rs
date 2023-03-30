@@ -41,7 +41,7 @@ impl SongsPane {
 
     pub fn from_playlist_named(name: &str) -> Self {
         Self::from_playlist({
-            let filename = format!("{}.m3u", name);
+            let filename = format!("{}.m3u8", name);
             PathBuf::from(&crate::config::Config::global().playlists_dir).join(filename)
         })
     }

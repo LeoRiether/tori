@@ -159,7 +159,7 @@ impl Song {
 
     pub fn add_to_playlist(&self, playlist_name: &str) -> Result<(), Box<dyn Error>> {
         let path =
-            PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u", playlist_name));
+            PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .read(true)

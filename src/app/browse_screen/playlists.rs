@@ -38,7 +38,7 @@ impl PlaylistsPane {
                 .file_name()
                 .into_string()
                 .unwrap()
-                .trim_end_matches(".m3u")
+                .trim_end_matches(".m3u8")
                 .to_string()
         };
 
@@ -170,9 +170,9 @@ impl PlaylistsPane {
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
             std::process::Command::new(editor)
                 .arg(
-                    // playlists_dir/selected.m3u
+                    // playlists_dir/selected.m3u8
                     PathBuf::from(&Config::global().playlists_dir)
-                        .join(format!("{}.m3u", selected)),
+                        .join(format!("{}.m3u8", selected)),
                 )
                 .status()
                 .expect("Failed to execute editor");

@@ -46,7 +46,7 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
 
 pub fn create_playlist(app: &mut App, playlist_name: &str) -> Result<(), Box<dyn Error>> {
     let path =
-        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u", playlist_name));
+        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
 
     // TODO: when it's stabilized, use std::fs::File::create_new
     if path.try_exists()? {
