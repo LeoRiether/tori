@@ -222,7 +222,7 @@ impl BrowseScreen {
                         (self.playlists.selected_item(), self.songs.selected_index())
                     {
                         self.open_modal(
-                            " Rename song ".into(),
+                            " Rename song (esc cancels) ".into(),
                             ModalType::RenameSong {
                                 playlist: playlist.to_owned(),
                                 index,
