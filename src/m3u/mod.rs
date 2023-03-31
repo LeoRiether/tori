@@ -22,9 +22,12 @@ pub struct Song {
 impl Song {
     /// Parse a song from a given path. The path can be a url or a local file.
     pub fn from_path(path: &str) -> Result<Song, Box<dyn Error>> {
-        if path.starts_with("http://")
+        if let Some(path) = path.strip_prefix("ytdl://") {
+            let mut song = Song::parse_ytdlp(path)?;
+            song.path = format!("ytdl://{}", song.path);
+            Ok(song)
+        } else if path.starts_with("http://")
             || path.starts_with("https://")
-            || path.starts_with("ytdl://")
         {
             Song::parse_ytdlp(path)
         } else {
