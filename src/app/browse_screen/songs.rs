@@ -57,7 +57,9 @@ impl SongsPane {
             .unwrap()
             .to_string_lossy()
             .to_string();
-        let songs = m3u::Song::parse_m3u(file);
+
+        // TODO: maybe return Result?
+        let songs = m3u::Parser::from_reader(file).all_songs().unwrap();
         let shown = FilteredList::default();
 
         let mut me = Self {
@@ -269,6 +271,10 @@ impl SongsPane {
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
         self.shown.selected_item().and_then(|i| self.songs.get(i))
+    }
+
+    pub fn selected_index(&self) -> Option<usize> {
+        self.shown.selected_item()
     }
 
     pub fn mode(&self) -> Mode {

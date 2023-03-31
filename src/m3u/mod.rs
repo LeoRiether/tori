@@ -1,10 +1,13 @@
 use std::error::Error;
-use std::io::{self, BufRead, BufReader, ErrorKind, Read, Seek, Write};
+use std::io::{self, ErrorKind, Read, Seek, Write};
 use std::mem;
 use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::config::Config;
+
+pub mod stringreader;
+pub use stringreader::StringReader;
 
 pub mod parser;
 pub use parser::Parser;
@@ -17,43 +20,6 @@ pub struct Song {
 }
 
 impl Song {
-    pub fn parse_m3u<R: Read>(reader: R) -> Vec<Song> {
-        let reader = BufReader::new(reader);
-        let mut title = String::default();
-        let mut duration = Duration::default();
-
-        let mut songs = Vec::new();
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let line = line.trim();
-
-            // Do nothing
-            if line.is_empty() {
-
-                // Parse EXT
-            } else if line.starts_with('#') {
-                use Ext::*;
-                match Song::parse_m3u_extline(line) {
-                    Extm3u => {}
-                    Extinf(d, t) => {
-                        duration = d;
-                        title = t;
-                    }
-                }
-
-            // Parse song path/url
-            } else {
-                songs.push(Song {
-                    title: mem::take(&mut title),
-                    duration: mem::take(&mut duration),
-                    path: line.into(),
-                });
-            }
-        }
-        songs
-    }
-
-
     /// Parse a song from a given path. The path can be a url or a local file.
     pub fn from_path(path: &str) -> Result<Song, Box<dyn Error>> {
         if path.starts_with("http://") || path.starts_with("https://") {

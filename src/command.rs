@@ -16,6 +16,7 @@ pub enum Command {
     VolumeUp,
     VolumeDown,
     Shuffle,
+    Rename,
 
     /// Select next item (like a song or playlist)
     SelectNext,

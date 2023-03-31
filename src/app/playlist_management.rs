@@ -1,4 +1,10 @@
-use std::{path::PathBuf, thread, io};
+use std::{
+    error::Error,
+    fs,
+    io::{self, Write},
+    path::PathBuf,
+    thread,
+};
 
 use crate::{app::App, config::Config, events::Event, m3u};
 
@@ -70,16 +76,60 @@ pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
     }
 }
 
-pub fn delete_song(playlist_name: &str, index: usize) {
-    unimplemented!()
+pub fn delete_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
+    let path =
+        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let content = fs::read_to_string(&path)?;
+    let mut parser = m3u::Parser::from_string(&content);
+
+    parser.next_header()?;
+    for _ in 0..index {
+        parser.next_song()?;
+    }
+
+    let start_pos = parser.cursor();
+    let _song = parser.next_song()?;
+    let end_pos = parser.cursor();
+
+    let mut file = fs::OpenOptions::new().write(true).open(&path)?;
+    file.write_all(content[..start_pos].as_bytes())?;
+    file.write_all(content[end_pos..].as_bytes())?;
+
+    Ok(())
 }
 
-pub fn rename_song(playlist_name: &str, index: usize, new_name: &str) {
-    unimplemented!()
+pub fn rename_song(
+    playlist_name: &str,
+    index: usize,
+    new_name: &str,
+) -> Result<(), Box<dyn Error>> {
+    let path =
+        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let content = fs::read_to_string(&path)?;
+    let mut parser = m3u::Parser::from_string(&content);
+
+    parser.next_header()?;
+    for _ in 0..index {
+        parser.next_song()?;
+    }
+
+    let start_pos = parser.cursor();
+    let song = parser.next_song()?;
+    let end_pos = parser.cursor();
+
+    if let Some(mut song) = song {
+        song.title = new_name.to_string();
+
+        let mut file = fs::OpenOptions::new().write(true).open(&path)?;
+        file.write_all(content[..start_pos].as_bytes())?;
+        file.write_all(song.serialize().as_bytes())?;
+        file.write_all(content[end_pos..].as_bytes())?;
+    }
+
+    Ok(())
 }
 
 /// Swaps `index`-th song with the `index+1`-th (0-indexed)
 pub fn swap_song(playlist_name: &str, index: usize) {
     unimplemented!()
 }
-

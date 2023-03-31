@@ -29,6 +29,7 @@ use super::Mode;
 enum ModalType {
     AddSong { playlist: String },
     AddPlaylist,
+    RenameSong { playlist: String, index: usize },
     Play,
 }
 
@@ -128,6 +129,22 @@ impl BrowseScreen {
                         .playlist_load_files(&[(&path, libmpv::FileState::Replace, None)])?;
                     self.selected_pane = BrowsePane::Songs;
                 }
+
+                // RenameSong
+                (
+                    RenameSong {
+                        playlist: _,
+                        index: _,
+                    },
+                    Quit,
+                ) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
+                (RenameSong { playlist, index }, Commit(new_name)) => {
+                    playlist_management::rename_song(playlist, *index, &new_name)?;
+                    self.reload_songs();
+                    self.selected_pane = BrowsePane::Songs;
+                }
             }
         } else {
             panic!("Please don't call BrowseScreen::handle_modal_message without a selected modal");
@@ -197,6 +214,23 @@ impl BrowseScreen {
                     }
                 }
                 BrowsePane::Modal(_) => {}
+            },
+            Rename => match self.selected_pane {
+                BrowsePane::Playlists => {}
+                BrowsePane::Songs => {
+                    if let (Some(playlist), Some(index)) =
+                        (self.playlists.selected_item(), self.songs.selected_index())
+                    {
+                        self.open_modal(
+                            " Rename song ".into(),
+                            ModalType::RenameSong {
+                                playlist: playlist.to_owned(),
+                                index,
+                            },
+                        );
+                    }
+                }
+                _ => {}
             },
             _ => self.pass_event_down(app, Event::Command(cmd))?,
         }
