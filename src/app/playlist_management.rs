@@ -70,4 +70,16 @@ pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
     }
 }
 
+pub fn delete_song(playlist_name: &str, index: usize) {
+    unimplemented!()
+}
+
+pub fn rename_song(playlist_name: &str, index: usize, new_name: &str) {
+    unimplemented!()
+}
+
+/// Swaps `index`-th song with the `index+1`-th (0-indexed)
+pub fn swap_song(playlist_name: &str, index: usize) {
+    unimplemented!()
+}
 
