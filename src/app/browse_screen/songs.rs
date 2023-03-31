@@ -76,10 +76,10 @@ impl SongsPane {
             self.filter.is_empty()
                 || s.title
                     .to_lowercase()
-                    .contains(&self.filter[1..].to_lowercase())
+                    .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
                 || s.path
                     .to_lowercase()
-                    .contains(&self.filter[1..].to_lowercase())
+                    .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
         });
     }
 
@@ -139,7 +139,7 @@ impl SongsPane {
 
         match event {
             crossterm::event::Event::Key(event) => {
-                if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
                     self.refresh_shown();
                     return Ok(());
                 }
@@ -153,6 +153,10 @@ impl SongsPane {
                                 None,
                             )])?;
                         }
+                    }
+                    Esc => {
+                        self.filter.clear();
+                        self.refresh_shown();
                     }
                     // Go to the bottom, also like in vim
                     Char('G') => {
@@ -274,6 +278,10 @@ impl SongsPane {
                 self.filter.clear();
                 Ok(true)
             }
+            KeyCode::Enter => {
+                self.filter.push('\n');
+                Ok(true)
+            }
             _ => Ok(false),
         }
     }
@@ -291,7 +299,7 @@ impl SongsPane {
     }
 
     pub fn mode(&self) -> Mode {
-        if self.filter.is_empty() {
+        if self.filter.is_empty() || self.filter.as_bytes().last() == Some(&b'\n') {
             Mode::Normal
         } else {
             Mode::Insert
