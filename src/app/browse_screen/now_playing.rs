@@ -26,7 +26,11 @@ impl NowPlaying {
         self.time_pos = mpv.get_property("time-pos").unwrap_or_default();
         self.time_rem = mpv.get_property("time-remaining").unwrap_or_default();
         self.paused = mpv.get_property("pause").unwrap_or_default();
-        self.volume = mpv.get_property("volume").unwrap_or_default();
+        self.volume = if mpv.get_property("mute").unwrap_or(false) {
+            0
+        } else {
+            mpv.get_property("volume").unwrap_or_default()
+        };
     }
 
     pub fn render(&self, frame: &mut Frame<'_, MyBackend>, chunk: Rect) {

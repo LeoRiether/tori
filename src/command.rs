@@ -15,6 +15,7 @@ pub enum Command {
     CopyTitle,
     VolumeUp,
     VolumeDown,
+    Mute,
     Shuffle,
     Rename,
 

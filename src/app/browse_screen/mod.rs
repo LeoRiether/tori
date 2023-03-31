@@ -195,6 +195,10 @@ impl BrowseScreen {
                 app.mpv.add_property("volume", -5)?;
                 self.now_playing.update(&app.mpv);
             }
+            Mute => {
+                app.mpv.cycle_property("mute", true)?;
+                self.now_playing.update(&app.mpv);
+            }
             PlayFromModal => {
                 self.open_modal(" Play ".into(), ModalType::Play);
             }
