@@ -1,6 +1,7 @@
 pub mod app;
 pub mod command;
 pub mod config;
+pub mod dbglog;
 pub mod events;
 pub mod m3u;
 pub mod shortcuts;
