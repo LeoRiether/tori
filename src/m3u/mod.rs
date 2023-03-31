@@ -6,16 +6,14 @@ use std::time::Duration;
 
 use crate::config::Config;
 
+pub mod parser;
+pub use parser::Parser;
+
 #[derive(Debug, Default, Clone)]
 pub struct Song {
     pub title: String,
     pub duration: Duration,
     pub path: String,
-}
-
-enum Ext {
-    Extm3u,
-    Extinf(Duration, String),
 }
 
 impl Song {
@@ -55,23 +53,6 @@ impl Song {
         songs
     }
 
-    fn parse_m3u_extline(line: &str) -> Ext {
-        use Ext::*;
-        if line.starts_with("#EXTM3U") {
-            return Extm3u;
-        }
-
-        if let Some(line) = line.strip_prefix("#EXTINF:") {
-            let mut parts = line.splitn(2, ',');
-            let duration =
-                Duration::from_secs(parts.next().unwrap().parse::<f64>().unwrap() as u64);
-            let title = parts.next().unwrap().to_string();
-            return Extinf(duration, title);
-        }
-
-        // TODO: improve error handling here
-        panic!("Unknown extline: {}", line);
-    }
 
     /// Parse a song from a given path. The path can be a url or a local file.
     pub fn from_path(path: &str) -> Result<Song, Box<dyn Error>> {
