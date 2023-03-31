@@ -120,7 +120,10 @@ pub fn rename_song(
     if let Some(mut song) = song {
         song.title = new_name.to_string();
 
-        let mut file = fs::OpenOptions::new().write(true).open(&path)?;
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(&path)?;
         file.write_all(content[..start_pos].as_bytes())?;
         file.write_all(song.serialize().as_bytes())?;
         file.write_all(content[end_pos..].as_bytes())?;
@@ -130,6 +133,6 @@ pub fn rename_song(
 }
 
 /// Swaps `index`-th song with the `index+1`-th (0-indexed)
-pub fn swap_song(playlist_name: &str, index: usize) {
+pub fn swap_song(_playlist_name: &str, _indexx: usize) {
     unimplemented!()
 }

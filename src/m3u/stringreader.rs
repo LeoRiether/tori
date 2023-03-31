@@ -30,7 +30,7 @@ impl<'s> LineReader for StringReader<'s> {
         for i in 0..slice.len() {
             if slice.as_bytes()[i] == b'\n' {
                 self.cursor += i + 1;
-                return Ok((slice[..i].to_owned(), i+1));
+                return Ok((slice[..i].to_owned(), i + 1));
             }
         }
         self.cursor += slice.len();

@@ -42,8 +42,8 @@ impl Song {
         }
 
         let metadata: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-        let title = metadata["title"].as_str().unwrap().into();
-        let duration = Duration::from_secs(metadata["duration"].as_f64().unwrap() as u64);
+        let title = metadata["title"].as_str().unwrap_or("?").into();
+        let duration = Duration::from_secs_f64(metadata["duration"].as_f64().unwrap_or(0.0));
         Ok(Song {
             title,
             duration,
