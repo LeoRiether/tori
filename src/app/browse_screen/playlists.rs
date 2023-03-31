@@ -50,7 +50,9 @@ impl PlaylistsPane {
 
     fn refresh_shown(&mut self) {
         self.shown.filter(&self.playlists, |s| {
-            self.filter.is_empty() || s.to_lowercase().contains(&self.filter[1..].to_lowercase())
+            self.filter.is_empty()
+                || s.to_lowercase()
+                    .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
         });
     }
 
@@ -102,7 +104,7 @@ impl PlaylistsPane {
             },
             Terminal(event) => match event {
                 crossterm::event::Event::Key(event) => {
-                    if !self.filter.is_empty() && self.handle_filter_key_event(event)? {
+                    if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
                         self.refresh_shown();
                         app.channel.send(Event::ChangedPlaylist).unwrap();
                         return Ok(());
@@ -112,6 +114,11 @@ impl PlaylistsPane {
                         Up => self.select_prev(app),
                         Down => self.select_next(app),
                         Char('/') => self.filter = "/".into(),
+                        Esc => {
+                            self.filter.clear();
+                            self.refresh_shown();
+                            app.channel.send(Event::ChangedPlaylist).unwrap();
+                        }
                         _ => {}
                     }
                 }
@@ -138,8 +145,12 @@ impl PlaylistsPane {
                 self.filter.pop();
                 Ok(true)
             }
-            KeyCode::Esc | KeyCode::Enter => {
+            KeyCode::Esc => {
                 self.filter.clear();
+                Ok(true)
+            }
+            KeyCode::Enter => {
+                self.filter.push('\n');
                 Ok(true)
             }
             _ => Ok(false),
@@ -184,7 +195,7 @@ impl PlaylistsPane {
     }
 
     pub fn mode(&self) -> Mode {
-        if self.filter.is_empty() {
+        if self.filter.is_empty() || self.filter.as_bytes().last() == Some(&b'\n') {
             Mode::Normal
         } else {
             Mode::Insert
