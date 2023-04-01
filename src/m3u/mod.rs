@@ -26,9 +26,7 @@ impl Song {
             let mut song = Song::parse_ytdlp(path)?;
             song.path = format!("ytdl://{}", song.path);
             Ok(song)
-        } else if path.starts_with("http://")
-            || path.starts_with("https://")
-        {
+        } else if path.starts_with("http://") || path.starts_with("https://") {
             Song::parse_ytdlp(path)
         } else {
             Song::parse_local_file(path)
