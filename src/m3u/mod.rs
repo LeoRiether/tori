@@ -37,12 +37,18 @@ impl Song {
     pub fn parse_ytdlp(url: &str) -> Result<Song, Box<dyn Error>> {
         // TODO: maybe the user doesn't want to use yt-dlp?
         let output = std::process::Command::new("yt-dlp")
-            .arg("--dump-json")
+            .arg("--dump-single-json")
+            .arg("--flat-playlist")
             .arg(url)
             .output()?;
 
         if !output.status.success() {
-            return Err(format!("yt-dlp exited with status {}", output.status).into());
+            return Err(format!(
+                "yt-dlp exited with status {}: {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            )
+            .into());
         }
 
         let metadata: serde_json::Value = serde_json::from_slice(&output.stdout)?;
