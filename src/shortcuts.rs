@@ -16,8 +16,8 @@ use serde::{Deserialize, Serialize};
 ///     InputStr("C-a".into())
 /// );
 /// assert_eq!(
-///     InputStr::from(key_event(KeyModifiers::SHIFT, KeyCode::Char('b'))),
-///     InputStr("S-b".into())
+///     InputStr::from(key_event(KeyModifiers::SHIFT, KeyCode::Char('B'))),
+///     InputStr("B".into())
 /// );
 /// assert_eq!(
 ///     InputStr::from(key_event(KeyModifiers::ALT, KeyCode::Enter)),
@@ -34,12 +34,13 @@ pub struct InputStr(String);
 impl From<crossterm::event::KeyEvent> for InputStr {
     fn from(event: crossterm::event::KeyEvent) -> Self {
         let mut s = String::new();
+        let is_char = |e: crossterm::event::KeyEvent| matches!(e.code, KeyCode::Char(_));
 
         // Modifiers
         if event.modifiers & KeyModifiers::CONTROL != KeyModifiers::NONE {
             s.push_str("C-");
         }
-        if event.modifiers & KeyModifiers::SHIFT != KeyModifiers::NONE {
+        if event.modifiers & KeyModifiers::SHIFT != KeyModifiers::NONE && !is_char(event) {
             s.push_str("S-");
         }
         if event.modifiers & KeyModifiers::ALT != KeyModifiers::NONE {
@@ -97,8 +98,16 @@ mod tests {
             InputStr("C-a".into())
         );
         assert_eq!(
-            InputStr::from(key_event(KeyModifiers::SHIFT, KeyCode::Char('b'))),
-            InputStr("S-b".into())
+            InputStr::from(key_event(KeyModifiers::SHIFT, KeyCode::Char('B'))),
+            InputStr("B".into())
+        );
+        assert_eq!(
+            // ctrl+shift+1, but shift+1 is !
+            InputStr::from(key_event(
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                KeyCode::Char('!')
+            )),
+            InputStr("C-!".into())
         );
         assert_eq!(
             InputStr::from(key_event(KeyModifiers::ALT, KeyCode::Enter)),
