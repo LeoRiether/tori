@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::io::{self, ErrorKind, Read, Seek, Write};
-use std::mem;
+
 use std::path::PathBuf;
 use std::time::Duration;
 
