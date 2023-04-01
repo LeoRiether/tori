@@ -7,6 +7,8 @@ use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;
 use std::error::Error;
+use tui::style::Color;
+use tui::style::Style;
 
 use tui::{
     layout::{Constraint, Direction, Layout},
@@ -22,15 +24,18 @@ use songs::SongsPane;
 mod now_playing;
 use now_playing::NowPlaying;
 
-use super::modal::{self, Modal};
+use super::modal::ConfirmationModal;
+use super::modal::Modal;
+use super::modal::{self, InputModal};
 use super::Mode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ModalType {
+    Play,
     AddSong { playlist: String },
     AddPlaylist,
     RenameSong { playlist: String, index: usize },
-    Play,
+    DeleteSong { playlist: String, index: usize },
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -42,14 +47,25 @@ enum BrowsePane {
     Modal(ModalType),
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct BrowseScreen {
     playlists: PlaylistsPane,
     songs: SongsPane,
-    modal: Modal,
+    modal: Box<dyn Modal>,
     selected_pane: BrowsePane,
 
     now_playing: NowPlaying,
+}
+
+impl std::fmt::Debug for BrowseScreen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BrowseScreen")
+            .field("playlists", &self.playlists)
+            .field("songs", &self.songs)
+            .field("selected_pane", &self.selected_pane)
+            .field("now_playing", &self.now_playing)
+            .finish()
+    }
 }
 
 impl BrowseScreen {
@@ -145,6 +161,22 @@ impl BrowseScreen {
                     self.reload_songs();
                     self.selected_pane = BrowsePane::Songs;
                 }
+
+                // DeleteSong
+                (
+                    DeleteSong {
+                        playlist: _,
+                        index: _,
+                    },
+                    Quit,
+                ) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
+                (DeleteSong { playlist, index }, Commit(_)) => {
+                    playlist_management::delete_song(playlist, *index)?;
+                    self.reload_songs();
+                    self.selected_pane = BrowsePane::Songs;
+                }
             }
         } else {
             panic!("Please don't call BrowseScreen::handle_modal_message without a selected modal");
@@ -236,6 +268,26 @@ impl BrowseScreen {
                 }
                 _ => {}
             },
+            Delete => match self.selected_pane {
+                BrowsePane::Playlists => {}
+                BrowsePane::Songs => {
+                    if let (Some(playlist), Some(index)) =
+                        (self.playlists.selected_item(), self.songs.selected_index())
+                    {
+                        let title = format!(
+                            "Do you really want to delete '{}'?",
+                            self.songs.selected_item().unwrap().title
+                        );
+                        let modal_type = ModalType::DeleteSong {
+                            playlist: playlist.to_owned(),
+                            index,
+                        };
+                        self.open_confirmation(title.as_str(), modal_type)
+                            .apply_style(Style::default().fg(Color::LightRed));
+                    }
+                }
+                _ => {}
+            },
             _ => self.pass_event_down(app, Event::Command(cmd))?,
         }
         Ok(())
@@ -277,9 +329,15 @@ impl BrowseScreen {
         Ok(())
     }
 
-    fn open_modal(&mut self, title: String, modal_type: ModalType) -> &mut Modal {
+    fn open_modal(&mut self, title: String, modal_type: ModalType) -> &mut Box<dyn Modal> {
         self.selected_pane = BrowsePane::Modal(modal_type);
-        self.modal = Modal::new(title);
+        self.modal = Box::new(InputModal::new(title));
+        &mut self.modal
+    }
+
+    fn open_confirmation(&mut self, title: &str, modal_type: ModalType) -> &mut Box<dyn Modal> {
+        self.selected_pane = BrowsePane::Modal(modal_type);
+        self.modal = Box::new(ConfirmationModal::new(title));
         &mut self.modal
     }
 }

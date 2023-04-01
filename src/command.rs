@@ -18,6 +18,7 @@ pub enum Command {
     Mute,
     Shuffle,
     Rename,
+    Delete,
 
     /// Select next item (like a song or playlist)
     SelectNext,

@@ -166,11 +166,12 @@ impl App {
     /// Transforms a key event into the corresponding command, if there is one.
     /// Assumes state is in normal mode
     fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
+        use crate::command::Command::Nop;
         use crossterm::event::Event::Key;
         use Event::*;
         match Config::global().normal.get_from_event(key_event) {
-            Some(cmd) => Command(cmd),
-            None => Terminal(Key(key_event)),
+            Some(cmd) if cmd != Nop => Command(cmd),
+            _ => Terminal(Key(key_event)),
         }
     }
 

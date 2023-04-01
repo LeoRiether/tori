@@ -26,15 +26,30 @@ pub enum Message {
     Commit(String),
 }
 
+// TODO: maybe I should have a Component trait? With handle_event<T>, render and mode.
+// Then modals are simply Component<Message>
+pub trait Modal {
+    fn apply_style(&mut self, style: Style);
+    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>>;
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
+    fn mode(&self) -> Mode;
+}
+
+impl Default for Box<dyn Modal> {
+    fn default() -> Self {
+        Box::new(InputModal::new(String::default()))
+    }
+}
+
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
-pub struct Modal {
+pub struct InputModal {
     title: String,
     input: String,
     style: Style,
 }
 
-impl Modal {
+impl InputModal {
     pub fn new(title: String) -> Self {
         Self {
             title,
@@ -42,13 +57,14 @@ impl Modal {
             style: Style::default().fg(Color::LightBlue),
         }
     }
+}
 
-    pub fn with_style(&mut self, style: Style) -> &mut Self {
+impl Modal for InputModal {
+    fn apply_style(&mut self, style: Style) {
         self.style = style;
-        self
     }
 
-    pub fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
+    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
         use Event::*;
         use KeyCode::*;
         if let Terminal(crossterm::event::Event::Key(event)) = event {
@@ -71,24 +87,9 @@ impl Modal {
         Ok(Message::Nothing)
     }
 
-    pub fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
         let size = frame.size();
-        let chunk = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage(48),
-                Constraint::Length(5),
-                Constraint::Percentage(48),
-            ])
-            .split(size)[1];
-        let chunk = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(2, 4),
-                Constraint::Ratio(1, 4),
-            ])
-            .split(chunk)[1];
+        let chunk = get_modal_chunk(size);
 
         let block = Block::default()
             .title(self.title.as_str())
@@ -105,9 +106,86 @@ impl Modal {
         frame.render_widget(paragraph, chunk);
     }
 
-    pub fn mode(&self) -> Mode {
+    fn mode(&self) -> Mode {
         Mode::Insert
     }
+}
+
+/// A confirmation modal box that asks for user yes/no input
+#[derive(Debug, Default)]
+pub struct ConfirmationModal {
+    title: String,
+    style: Style,
+}
+
+impl ConfirmationModal {
+    pub fn new(title: &str) -> Self {
+        Self {
+            title: format!("\n{} (y/n)", title),
+            style: Style::default().fg(Color::LightBlue),
+        }
+    }
+}
+
+impl Modal for ConfirmationModal {
+    fn apply_style(&mut self, style: Style) {
+        self.style = style;
+    }
+
+    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
+        use Event::*;
+        use KeyCode::*;
+        if let Terminal(crossterm::event::Event::Key(event)) = event {
+            return match event.code {
+                Backspace | Esc | Char('q') | Char('n') | Char('N') => Ok(Message::Quit),
+                Enter | Char('y') | Char('Y') => Ok(Message::Commit("y".into())),
+                _ => Ok(Message::Nothing),
+            };
+        }
+        Ok(Message::Nothing)
+    }
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
+        let size = frame.size();
+        let chunk = get_modal_chunk(size);
+
+        let block = Block::default()
+            .title_alignment(Alignment::Center)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Double)
+            .border_style(self.style);
+
+        let paragraph = Paragraph::new(self.title.as_str())
+            .block(block)
+            .style(self.style)
+            .alignment(Alignment::Center);
+
+        frame.render_widget(Clear, chunk);
+        frame.render_widget(paragraph, chunk);
+    }
+
+    fn mode(&self) -> Mode {
+        Mode::Insert
+    }
+}
+
+fn get_modal_chunk(size: tui::layout::Rect) -> tui::layout::Rect {
+    let chunk = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(48),
+            Constraint::Length(5),
+            Constraint::Percentage(48),
+        ])
+        .split(size)[1];
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Ratio(1, 4),
+            Constraint::Ratio(2, 4),
+            Constraint::Ratio(1, 4),
+        ])
+        .split(chunk)[1]
 }
 
 #[cfg(test)]
@@ -131,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_modal_commit_lifecycle() {
-        let mut modal = Modal::new("commit lifecycle".into());
+        let mut modal = InputModal::new("commit lifecycle".into());
         assert_eq!(
             modal
                 .handle_event(Event::Terminal(key_event(Char('h'))))
@@ -164,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_modal_quit_lifecycle() {
-        let mut modal = Modal::new("commit lifecycle".into());
+        let mut modal = InputModal::new("commit lifecycle".into());
         assert_eq!(
             modal
                 .handle_event(Event::Terminal(key_event(Char('h'))))
