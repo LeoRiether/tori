@@ -64,7 +64,7 @@ impl std::fmt::Debug for BrowseScreen {
             .field("songs", &self.songs)
             .field("selected_pane", &self.selected_pane)
             .field("now_playing", &self.now_playing)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
