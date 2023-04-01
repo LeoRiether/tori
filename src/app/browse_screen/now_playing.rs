@@ -108,7 +108,7 @@ impl NowPlaying {
         ///////////////////////////////////////
         let playback_bar_str: String = {
             let mut s: Vec<_> = "─".repeat(chunks[3].width as usize).chars().collect();
-            let i = self.percentage as usize * s.len() / 100;
+            let i = (self.percentage as usize * s.len() / 100).min(s.len()-1).max(0);
             s[i] = '■';
             s.into_iter().collect()
         };
