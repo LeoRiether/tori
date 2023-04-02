@@ -43,11 +43,18 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
             let path = path.to_str().expect("Failed to convert path to str");
             add_song_recursively(path, playlist_name);
         }
-    } else {
+    } else if !image_file(file) {
         let song = m3u::Song::from_path(path).expect("Failed to parse song");
         song.add_to_playlist(playlist_name)
             .unwrap_or_else(|e| panic!("Failed to add '{}' to playlist. Error: {}", path, e));
     }
+}
+
+fn image_file(file: &std::path::Path) -> bool {
+    matches!(
+        file.extension().and_then(|s| s.to_str()),
+        Some("png") | Some("jpg") | Some("jpeg") | Some("webp") | Some("svg")
+    )
 }
 
 #[derive(Debug)]
@@ -91,7 +98,7 @@ pub fn delete_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Erro
     let _song = parser.next_song()?;
     let end_pos = parser.cursor();
 
-    let mut file = fs::OpenOptions::new().write(true).open(&path)?;
+    let mut file = fs::OpenOptions::new().write(true).truncate(true).open(&path)?;
     file.write_all(content[..start_pos].as_bytes())?;
     file.write_all(content[end_pos..].as_bytes())?;
 

@@ -151,7 +151,12 @@ fn parse_extline(line: &str) -> Result<Ext, Box<dyn Error>> {
     if let Some(line) = line.strip_prefix("#EXTINF:") {
         let mut parts = line.splitn(2, ',');
         let duration = Duration::from_secs(parts.next().unwrap().parse::<f64>().unwrap() as u64);
-        let title = parts.next().unwrap().to_string();
+            parts
+                .next()
+                .and_then(|p| p.parse::<f64>().ok())
+                .unwrap_or_default() as u64,
+        );
+        let title = parts.next().unwrap_or_default().to_string();
         return Ok(Extinf(duration, title));
     }
 
