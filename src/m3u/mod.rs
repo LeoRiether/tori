@@ -12,7 +12,7 @@ pub use stringreader::StringReader;
 pub mod parser;
 pub use parser::Parser;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Song {
     pub title: String,
     pub duration: Duration,

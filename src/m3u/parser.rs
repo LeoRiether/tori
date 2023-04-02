@@ -8,6 +8,7 @@ use std::{
 use super::Song;
 use super::StringReader;
 
+#[derive(Debug, PartialEq)]
 enum Ext {
     Extm3u,
     Extinf(Duration, String),
@@ -150,7 +151,7 @@ fn parse_extline(line: &str) -> Result<Ext, Box<dyn Error>> {
 
     if let Some(line) = line.strip_prefix("#EXTINF:") {
         let mut parts = line.splitn(2, ',');
-        let duration = Duration::from_secs(parts.next().unwrap().parse::<f64>().unwrap() as u64);
+        let duration = Duration::from_secs(
             parts
                 .next()
                 .and_then(|p| p.parse::<f64>().ok())
@@ -162,4 +163,56 @@ fn parse_extline(line: &str) -> Result<Ext, Box<dyn Error>> {
 
     // TODO: improve error handling here
     Err(format!("Unknown extline: {}", line).into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extline_parsing() {
+        assert_eq!(parse_extline("#EXTM3U").ok(), Some(Ext::Extm3u));
+        assert_eq!(
+            parse_extline("#EXTINF:10,Artist - Title").ok(),
+            Some(Ext::Extinf(
+                Duration::from_secs_f64(10.),
+                "Artist - Title".into()
+            ))
+        );
+        assert_eq!(
+            parse_extline("#EXTINF:").ok(),
+            Some(Ext::Extinf(Duration::default(), String::default()))
+        );
+    }
+
+    #[test]
+    fn test_parser() {
+        let mut parser = Parser::from_string(
+            r#"
+            #EXTM3U
+
+            #EXTINF:10,Artist - Title
+            https://www.youtube.com/watch?v=dQw4w9WgXcQ
+            #EXTINF:0,Yup
+            /path/to/local/song
+            "#,
+        );
+
+        use super::Song;
+        assert_eq!(
+            parser.all_songs().ok(),
+            Some(vec![
+                Song {
+                    title: "Artist - Title".into(),
+                    duration: Duration::from_secs_f64(10.),
+                    path: "https://www.youtube.com/watch?v=dQw4w9WgXcQ".into()
+                },
+                Song {
+                    title: "Yup".into(),
+                    duration: Duration::from_secs_f64(0.),
+                    path: "/path/to/local/song".into()
+                }
+            ]),
+        );
+    }
 }
