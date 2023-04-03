@@ -2,6 +2,42 @@
 ## Terminal-based music player
 
 ![tori](https://user-images.githubusercontent.com/8211902/228040682-7888b4f9-0dc3-425e-95ad-166a1737f388.png)
+## Configuration
+Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is, depending on your operating system:
+
+|Platform | Value                                 | Example                                  |
+| ------- | ------------------------------------- | ---------------------------------------- |
+| Linux   | `$XDG_CONFIG_HOME` or `$HOME`/.config | /home/alice/.config                      |
+| macOS   | `$HOME`/Library/Application Support   | /Users/Alice/Library/Application Support |
+| Windows | `{FOLDERID_LocalAppData}`             | C:\Users\Alice\AppData\Local             |
+
+Here's an example of a configuration file:
+```yaml
+playlists_dir: /home/leonardo/Music/tori
+normal:
+  C-c: Quit
+  C-d: Quit
+  j: SelectNext
+  k: SelectPrev
+  '>': NextSong 
+  '<': PrevSong 
+  q: QueueSong
+  A-enter: QueueShown
+  S-right: SeekForward
+  S-left: SeekBackward
+  o: OpenInBrowser
+  y: CopyUrl # y for 'yank', like in vim
+  t: CopyTitle
+  ' ': TogglePause
+  A-up: VolumeUp
+  A-down: VolumeDown
+  m: Mute
+  p: PlayFromModal
+  a: Add
+  R: Rename
+  X: Delete
+  ',': Shuffle
+```
 
 ## Dependencies
 - [mpv](https://mpv.io/)

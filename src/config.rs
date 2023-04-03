@@ -1,10 +1,13 @@
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
-use crate::shortcuts::Shortcuts;
+use crate::{
+    command::Command,
+    shortcuts::{InputStr, Shortcuts},
+};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub playlists_dir: String,
     pub normal: Shortcuts,
@@ -21,6 +24,70 @@ impl Config {
         INSTANCE.set(instance).unwrap();
     }
 
+    pub fn merge(mut self, other: OptionalConfig) -> Self {
+        if let Some(playlists_dir) = other.playlists_dir {
+            self.playlists_dir = playlists_dir;
+        }
+
+        if let Some(normal) = other.normal {
+            for (k, v) in normal.0 {
+                self.normal.0.insert(k, v);
+            }
+        }
+
+        self
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        let playlists_dir = dirs::audio_dir()
+            .map(|p| p.join("tori"))
+            .and_then(|p| p.to_str().map(|s| s.to_string()))
+            .unwrap_or("playlists".into());
+
+        let i = |s: &str, c: Command| (InputStr(s.into()), c);
+
+        let normal = Shortcuts::new(HashMap::from([
+            i("q", Command::Quit),
+            i("C-c", Command::Quit),
+            i("C-d", Command::Quit),
+            i("j", Command::SelectNext),
+            i("k", Command::SelectPrev),
+            i(">", Command::NextSong),
+            i("<", Command::PrevSong),
+            i("C-q", Command::QueueSong),
+            i("A-enter", Command::QueueShown),
+            i("S-right", Command::SeekForward),
+            i("S-left", Command::SeekBackward),
+            i("o", Command::OpenInBrowser),
+            i("y", Command::CopyUrl),
+            i("t", Command::CopyTitle),
+            i(" ", Command::TogglePause),
+            i("A-up", Command::VolumeUp),
+            i("A-down", Command::VolumeDown),
+            i("m", Command::Mute),
+            i("p", Command::PlayFromModal),
+            i("a", Command::Add),
+            i("R", Command::Rename),
+            i("X", Command::Delete),
+            i(",", Command::Shuffle),
+        ]));
+
+        Self {
+            playlists_dir,
+            normal,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OptionalConfig {
+    pub playlists_dir: Option<String>,
+    pub normal: Option<Shortcuts>,
+}
+
+impl OptionalConfig {
     /// Loads the shortcuts from some path
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let file = std::fs::File::open(path)?;

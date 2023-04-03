@@ -8,7 +8,7 @@ pub mod shortcuts;
 
 use app::{browse_screen::BrowseScreen, App};
 use argh::FromArgs;
-use config::Config;
+use config::{Config, OptionalConfig};
 use std::{error::Error, path::PathBuf};
 
 #[derive(FromArgs)]
@@ -24,11 +24,13 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Args = argh::from_env();
     Config::set_global({
-        Config::from_path(
+        let opt_conf = OptionalConfig::from_path(
             args.config
                 .map(PathBuf::from)
                 .unwrap_or(dirs::config_dir().unwrap_or_default().join("tori.yaml")),
-        )?
+        )?;
+
+        Config::default().merge(opt_conf)
     });
 
     let mut app = App::new(BrowseScreen::new()?)?;

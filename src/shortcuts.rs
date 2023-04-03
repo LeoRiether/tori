@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct InputStr(String);
+pub struct InputStr(pub String);
 
 impl From<crossterm::event::KeyEvent> for InputStr {
     fn from(event: crossterm::event::KeyEvent) -> Self {
@@ -62,9 +62,13 @@ impl From<crossterm::event::KeyEvent> for InputStr {
 
 /// Stores a table of [Command](crate::command::Command) shortcuts.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Shortcuts(HashMap<InputStr, crate::command::Command>);
+pub struct Shortcuts(pub HashMap<InputStr, crate::command::Command>);
 
 impl Shortcuts {
+    pub fn new(map: HashMap<InputStr, crate::command::Command>) -> Self {
+        Self(map)
+    }
+
     pub fn get_from_event(
         &self,
         event: crossterm::event::KeyEvent,
