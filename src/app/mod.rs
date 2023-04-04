@@ -13,8 +13,10 @@ use std::{
 use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
 
 use crate::{
+    command,
     config::Config,
     events::{self, Channel},
+    visualizer::Visualizer,
 };
 
 pub mod browse_screen;
@@ -26,6 +28,8 @@ pub mod playlist_management;
 use crate::events::Event;
 
 const FRAME_DELAY_MS: u16 = 16;
+const HIGH_EVENT_TIMEOUT: u16 = 16; // BUG: if I commited this, I forgot to change it back to 1000,
+                                    // sorry
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]
@@ -51,6 +55,7 @@ pub struct App {
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification,
+    visualizer: Option<Visualizer>,
 }
 
 impl App {
@@ -67,7 +72,7 @@ impl App {
         let channel = Channel::default();
 
         let next_render = time::Instant::now();
-        let next_poll_timeout = 1000;
+        let next_poll_timeout = HIGH_EVENT_TIMEOUT;
 
         let notification = Notification::default();
 
@@ -79,6 +84,7 @@ impl App {
             next_render,
             next_poll_timeout,
             notification,
+            visualizer: None,
         })
     }
 
@@ -96,7 +102,7 @@ impl App {
             self.render(&mut *state)
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
-            self.handle_event(&mut *state)
+            self.recv_event(&mut *state)
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
         }
@@ -113,6 +119,10 @@ impl App {
                 self.notification.render(f);
             })?;
 
+            if let Some(ref visualizer) = self.visualizer {
+                visualizer.render(self.terminal.current_buffer_mut());
+            }
+
             self.next_render = time::Instant::now()
                 .checked_add(Duration::from_millis(FRAME_DELAY_MS as u64))
                 .unwrap();
@@ -121,7 +131,7 @@ impl App {
     }
 
     #[inline]
-    fn handle_event(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
+    fn recv_event(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
         // immediately after the last event, which triggers a fast render.
@@ -129,11 +139,11 @@ impl App {
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
                 let event = self.transform_event(state, event);
-                state.handle_event(self, event)?;
+                self.handle_event(event, state)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
-                self.next_poll_timeout = 1000;
+                self.next_poll_timeout = HIGH_EVENT_TIMEOUT;
             }
             Err(e) => {
                 return Err(e.into());
@@ -163,6 +173,20 @@ impl App {
         }
     }
 
+    fn handle_event(
+        &mut self,
+        event: events::Event,
+        state: &mut dyn Screen,
+    ) -> Result<(), Box<dyn Error>> {
+        match &event {
+            Event::Command(command::Command::ToggleVisualizer) => {
+                self.toggle_visualizer()?;
+            }
+            _otherwise => state.handle_event(self, event)?,
+        }
+        Ok(())
+    }
+
     /// Transforms a key event into the corresponding command, if there is one.
     /// Assumes state is in normal mode
     fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
@@ -173,6 +197,16 @@ impl App {
             Some(cmd) if cmd != Nop => Command(cmd),
             _ => Terminal(Key(key_event)),
         }
+    }
+
+    fn toggle_visualizer(&mut self) -> Result<(), Box<dyn Error>> {
+        if self.visualizer.take().is_none() {
+            let opts = crate::visualizer::CavaOptions {
+                bars: self.terminal.get_frame().size().width as usize,
+            };
+            self.visualizer = Some(Visualizer::new(opts)?);
+        }
+        Ok(())
     }
 
     fn chain_hook(&mut self) {

@@ -5,6 +5,7 @@ pub mod dbglog;
 pub mod events;
 pub mod m3u;
 pub mod shortcuts;
+pub mod visualizer;
 
 use app::{browse_screen::BrowseScreen, App};
 use argh::FromArgs;

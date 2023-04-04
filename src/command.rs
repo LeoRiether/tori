@@ -19,6 +19,7 @@ pub enum Command {
     Shuffle,
     Rename,
     Delete,
+    ToggleVisualizer,
 
     /// Select next item (like a song or playlist)
     SelectNext,

@@ -49,14 +49,13 @@ impl Default for Config {
         let i = |s: &str, c: Command| (InputStr(s.into()), c);
 
         let normal = Shortcuts::new(HashMap::from([
-            i("q", Command::Quit),
             i("C-c", Command::Quit),
             i("C-d", Command::Quit),
             i("j", Command::SelectNext),
             i("k", Command::SelectPrev),
             i(">", Command::NextSong),
             i("<", Command::PrevSong),
-            i("C-q", Command::QueueSong),
+            i("q", Command::QueueSong),
             i("A-enter", Command::QueueShown),
             i("S-right", Command::SeekForward),
             i("S-left", Command::SeekBackward),
@@ -72,6 +71,7 @@ impl Default for Config {
             i("R", Command::Rename),
             i("X", Command::Delete),
             i(",", Command::Shuffle),
+            i("v", Command::ToggleVisualizer),
         ]));
 
         Self {
