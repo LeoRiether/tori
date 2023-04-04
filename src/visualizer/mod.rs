@@ -110,15 +110,15 @@ impl Visualizer {
         let right_color = (21, 71, 133);
 
         let data = self.data.lock().unwrap();
-        let columns = std::cmp::min(data.len(), buffer.area().width as usize);
+        let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
         let size = *buffer.area();
-        for i in (0..columns).step_by(2) {
+        for i in 0..columns {
             let perc = i as f64 / columns as f64;
             let style = Style::default().bg(lerp_rgb(left_color, right_color, perc));
             let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
 
             let area = Rect {
-                x: i as u16,
+                x: 2*i as u16,
                 y: size.height.saturating_sub(height),
                 width: 1,
                 height,

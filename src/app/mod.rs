@@ -202,7 +202,7 @@ impl App {
     fn toggle_visualizer(&mut self) -> Result<(), Box<dyn Error>> {
         if self.visualizer.take().is_none() {
             let opts = crate::visualizer::CavaOptions {
-                bars: self.terminal.get_frame().size().width as usize,
+                bars: self.terminal.get_frame().size().width as usize / 2,
             };
             self.visualizer = Some(Visualizer::new(opts)?);
         }
