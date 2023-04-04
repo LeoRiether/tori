@@ -92,7 +92,7 @@ impl Visualizer {
         })
     }
 
-    fn render(&self, buffer: &mut tui::buffer::Buffer) {
+    pub fn render(&self, buffer: &mut tui::buffer::Buffer) {
         let lerp = |from: u8, to: u8, perc: f64| {
             (perc * (to as f64) + (1. - perc) * (from as f64)).round() as u8
         };
