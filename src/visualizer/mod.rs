@@ -112,7 +112,7 @@ impl Visualizer {
         let data = self.data.lock().unwrap();
         let columns = std::cmp::min(data.len(), buffer.area().width as usize);
         let size = *buffer.area();
-        for i in 0..columns {
+        for i in (0..columns).step_by(2) {
             let perc = i as f64 / columns as f64;
             let style = Style::default().bg(lerp_rgb(left_color, right_color, perc));
             let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
@@ -129,7 +129,6 @@ impl Visualizer {
 }
 
 impl Drop for Visualizer {
-    // See: https://stackoverflow.com/a/42791007
     fn drop(&mut self) {
         // ~~hopefully~~ stop thread execution
         self.stop_flag.store(true, atomic::Ordering::Relaxed);
