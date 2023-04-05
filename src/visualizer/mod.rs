@@ -35,7 +35,7 @@ reverse = 0
 
 [smoothing]
 ; monstercat = 1
-noise_reduction = 0.33
+noise_reduction = 0.3
 "#
     };
 }

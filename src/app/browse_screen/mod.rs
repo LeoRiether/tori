@@ -193,7 +193,7 @@ impl BrowseScreen {
         use command::Command::*;
         match cmd {
             Quit => {
-                app.change_state(None);
+                app.quit();
             }
             SeekForward => {
                 app.mpv.seek_forward(10.).ok();

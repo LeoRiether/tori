@@ -19,6 +19,7 @@ use crate::{
     visualizer::Visualizer,
 };
 
+pub mod app_screen;
 pub mod browse_screen;
 pub mod filtered_list;
 pub mod modal;
@@ -27,9 +28,11 @@ pub mod playlist_management;
 
 use crate::events::Event;
 
+use self::app_screen::AppScreen;
+
 const FRAME_DELAY_MS: u16 = 16;
-const HIGH_EVENT_TIMEOUT: u16 = 16; // BUG: if I commited this, I forgot to change it back to 1000,
-                                    // sorry
+const HIGH_EVENT_TIMEOUT: u16 = 1000;
+const LOW_EVENT_TIMEOUT: u16 = 17;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]
@@ -50,16 +53,17 @@ pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
 pub struct App {
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
-    state: Option<Rc<RefCell<dyn Screen>>>,
     channel: Channel,
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification,
     visualizer: Option<Visualizer>,
+    screen: Rc<RefCell<AppScreen>>,
+    quit: bool,
 }
 
 impl App {
-    pub fn new<S: Screen + 'static>(state: S) -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
@@ -69,22 +73,25 @@ impl App {
                 .and_then(|_| mpv.set_property("volume", 100))
         })?;
 
+        let screen = Rc::new(RefCell::new(AppScreen::new()?));
+
         let channel = Channel::default();
 
         let next_render = time::Instant::now();
-        let next_poll_timeout = HIGH_EVENT_TIMEOUT;
+        let next_poll_timeout = LOW_EVENT_TIMEOUT;
 
         let notification = Notification::default();
 
         Ok(App {
             terminal,
             mpv,
-            state: Some(Rc::new(RefCell::new(state))),
             channel,
             next_render,
             next_poll_timeout,
             notification,
             visualizer: None,
+            screen,
+            quit: false,
         })
     }
 
@@ -95,14 +102,11 @@ impl App {
         self.channel.spawn_terminal_event_getter();
         self.channel.spawn_ticks();
 
-        while let Some(state_rc) = &self.state {
-            let state_rc = state_rc.clone();
-            let mut state = state_rc.borrow_mut();
-
-            self.render(&mut *state)
+        while !self.quit {
+            self.render()
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
-            self.recv_event(&mut *state)
+            self.recv_event()
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
         }
@@ -112,10 +116,10 @@ impl App {
     }
 
     #[inline]
-    fn render(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
+    fn render(&mut self) -> Result<(), Box<dyn Error>> {
         if time::Instant::now() >= self.next_render {
             self.terminal.draw(|f| {
-                state.render(f);
+                self.screen.borrow_mut().render(f);
                 self.notification.render(f);
             })?;
 
@@ -131,19 +135,19 @@ impl App {
     }
 
     #[inline]
-    fn recv_event(&mut self, state: &mut dyn Screen) -> Result<(), Box<dyn Error>> {
+    fn recv_event(&mut self) -> Result<(), Box<dyn Error>> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
         // immediately after the last event, which triggers a fast render.
         let timeout = Duration::from_millis(self.next_poll_timeout as u64);
         match self.channel.receiver.recv_timeout(timeout) {
             Ok(event) => {
-                let event = self.transform_event(state, event);
-                self.handle_event(event, state)?;
+                let event = self.transform_event(event);
+                self.handle_event(event)?;
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
-                self.next_poll_timeout = HIGH_EVENT_TIMEOUT;
+                self.next_poll_timeout = self.suitable_event_timeout();
             }
             Err(e) => {
                 return Err(e.into());
@@ -153,14 +157,22 @@ impl App {
         Ok(())
     }
 
+    #[inline]
+    fn suitable_event_timeout(&self) -> u16 {
+        match self.visualizer {
+            Some(_) => LOW_EVENT_TIMEOUT,
+            None => HIGH_EVENT_TIMEOUT,
+        }
+    }
+
     /// Transforms an event, according to the current app state.
-    fn transform_event(&self, state: &mut dyn Screen, event: Event) -> Event {
+    fn transform_event(&self, event: Event) -> Event {
         use Event::*;
         match event {
             Terminal(crossterm::event::Event::Key(key_event)) => {
                 let has_mods = key_event.modifiers & (KeyModifiers::CONTROL | KeyModifiers::ALT)
                     != KeyModifiers::NONE;
-                match state.mode() {
+                match self.screen.borrow().mode() {
                     // In insert mode, key events pass through untransformed, unless there's a
                     // control or alt modifier
                     Mode::Insert if !has_mods => event,
@@ -176,13 +188,15 @@ impl App {
     fn handle_event(
         &mut self,
         event: events::Event,
-        state: &mut dyn Screen,
     ) -> Result<(), Box<dyn Error>> {
         match &event {
             Event::Command(command::Command::ToggleVisualizer) => {
                 self.toggle_visualizer()?;
             }
-            _otherwise => state.handle_event(self, event)?,
+            _otherwise => {
+                let screen = self.screen.clone();
+                screen.borrow_mut().handle_event(self, event)?;
+            }
         }
         Ok(())
     }
@@ -219,8 +233,12 @@ impl App {
         }));
     }
 
-    pub fn change_state(&mut self, state: Option<Rc<RefCell<dyn Screen>>>) {
-        self.state = state;
+    pub fn select_screen(&mut self, screen: app_screen::Selected) {
+        self.screen.borrow_mut().select(screen);
+    }
+
+    pub fn quit(&mut self) {
+        self.quit = true;
     }
 
     ////////////////////////////////

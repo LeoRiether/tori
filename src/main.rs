@@ -34,6 +34,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         Config::default().merge(opt_conf)
     });
 
-    let mut app = App::new(BrowseScreen::new()?)?;
+    let mut app = App::new()?;
     app.run()
 }
