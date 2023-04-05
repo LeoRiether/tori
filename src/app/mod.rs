@@ -21,6 +21,7 @@ use crate::{
 
 pub mod app_screen;
 pub mod browse_screen;
+pub mod playlist_screen;
 pub mod filtered_list;
 pub mod modal;
 pub mod notification;
@@ -149,9 +150,7 @@ impl App {
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 self.next_poll_timeout = self.suitable_event_timeout();
             }
-            Err(e) => {
-                return Err(e.into());
-            }
+            Err(e) => return Err(e.into()),
         }
 
         Ok(())
@@ -185,10 +184,7 @@ impl App {
         }
     }
 
-    fn handle_event(
-        &mut self,
-        event: events::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, event: events::Event) -> Result<(), Box<dyn Error>> {
         match &event {
             Event::Command(command::Command::ToggleVisualizer) => {
                 self.toggle_visualizer()?;
