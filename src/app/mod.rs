@@ -10,7 +10,7 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal};
+use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal, layout::Rect};
 
 use crate::{
     command,
@@ -45,7 +45,7 @@ pub enum Mode {
 
 pub trait Screen {
     fn mode(&self) -> Mode;
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect);
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
 }
 
@@ -119,9 +119,10 @@ impl App {
     #[inline]
     fn render(&mut self) -> Result<(), Box<dyn Error>> {
         if time::Instant::now() >= self.next_render {
-            self.terminal.draw(|f| {
-                self.screen.borrow_mut().render(f);
-                self.notification.render(f);
+            self.terminal.draw(|frame| {
+                let chunk = frame.size();
+                self.screen.borrow_mut().render(frame, chunk);
+                self.notification.render(frame);
             })?;
 
             if let Some(ref visualizer) = self.visualizer {

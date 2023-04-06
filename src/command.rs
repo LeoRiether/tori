@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
 pub enum Command {
     #[default]
     Nop,

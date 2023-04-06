@@ -7,7 +7,7 @@ pub mod m3u;
 pub mod shortcuts;
 pub mod visualizer;
 
-use app::{browse_screen::BrowseScreen, App};
+use app::App;
 use argh::FromArgs;
 use config::{Config, OptionalConfig};
 use std::{error::Error, path::PathBuf};

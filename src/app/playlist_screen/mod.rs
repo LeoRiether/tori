@@ -2,7 +2,7 @@ use std::error::Error;
 
 use tui::{
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState}, layout::Alignment,
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState}, layout::{Alignment, Rect},
 };
 
 use crate::{command, events};
@@ -84,9 +84,7 @@ impl Screen for PlaylistScreen {
         Mode::Normal
     }
 
-    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>) {
-        let size = frame.size();
-
+    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect) {
         let block = Block::default()
             .title(" Playlist ")
             .title_alignment(Alignment::Center)
@@ -103,7 +101,7 @@ impl Screen for PlaylistScreen {
             .block(block)
             .highlight_style(Style::default().bg(Color::Red).fg(Color::White));
 
-        frame.render_stateful_widget(list, size, &mut self.playing);
+        frame.render_stateful_widget(list, chunk, &mut self.playing);
     }
 
     fn handle_event(

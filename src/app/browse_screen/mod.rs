@@ -6,6 +6,7 @@ use crate::app::playlist_management;
 use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;
+use tui::layout::Rect;
 use std::error::Error;
 use tui::style::Color;
 use tui::style::Style;
@@ -20,9 +21,6 @@ use playlists::PlaylistsPane;
 
 mod songs;
 use songs::SongsPane;
-
-mod now_playing;
-use now_playing::NowPlaying;
 
 use super::modal::ConfirmationModal;
 use super::modal::Modal;
@@ -54,7 +52,6 @@ pub struct BrowseScreen {
     modal: Box<dyn Modal>,
     selected_pane: BrowsePane,
 
-    now_playing: NowPlaying,
 }
 
 impl std::fmt::Debug for BrowseScreen {
@@ -63,7 +60,6 @@ impl std::fmt::Debug for BrowseScreen {
             .field("playlists", &self.playlists)
             .field("songs", &self.songs)
             .field("selected_pane", &self.selected_pane)
-            .field("now_playing", &self.now_playing)
             .finish_non_exhaustive()
     }
 }
@@ -192,45 +188,6 @@ impl BrowseScreen {
     ) -> Result<(), Box<dyn Error>> {
         use command::Command::*;
         match cmd {
-            Quit => {
-                app.quit();
-            }
-            SeekForward => {
-                app.mpv.seek_forward(10.).ok();
-                self.now_playing.update(&app.mpv);
-            }
-            SeekBackward => {
-                app.mpv.seek_backward(10.).ok();
-                self.now_playing.update(&app.mpv);
-            }
-            NextSong => {
-                app.mpv
-                    .playlist_next_weak()
-                    .unwrap_or_else(|_| app.notify_err("No next song".into()));
-                self.now_playing.update(&app.mpv);
-            }
-            PrevSong => {
-                app.mpv
-                    .playlist_previous_weak()
-                    .unwrap_or_else(|_| app.notify_err("No previous song".into()));
-                self.now_playing.update(&app.mpv);
-            }
-            TogglePause => {
-                app.mpv.command("cycle", &["pause"])?;
-                self.now_playing.update(&app.mpv);
-            }
-            VolumeUp => {
-                app.mpv.add_property("volume", 5)?;
-                self.now_playing.update(&app.mpv);
-            }
-            VolumeDown => {
-                app.mpv.add_property("volume", -5)?;
-                self.now_playing.update(&app.mpv);
-            }
-            Mute => {
-                app.mpv.cycle_property("mute", true)?;
-                self.now_playing.update(&app.mpv);
-            }
             PlayFromModal => {
                 self.open_modal(" Play ".into(), ModalType::Play);
             }
@@ -343,18 +300,11 @@ impl BrowseScreen {
 }
 
 impl Screen for BrowseScreen {
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
-        let size = frame.size();
-
-        let vchunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
-            .split(size);
-
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect) {
         let hchunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
-            .split(vchunks[0]);
+            .split(chunk);
 
         self.playlists.render(
             self.selected_pane == BrowsePane::Playlists,
@@ -363,8 +313,6 @@ impl Screen for BrowseScreen {
         );
         self.songs
             .render(self.selected_pane == BrowsePane::Songs, frame, hchunks[1]);
-
-        self.now_playing.render(frame, vchunks[1]);
 
         if let BrowsePane::Modal(_) = self.selected_pane {
             self.modal.render(frame);
@@ -381,9 +329,7 @@ impl Screen for BrowseScreen {
                 self.reload_songs();
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
-            SecondTick => {
-                self.now_playing.update(&app.mpv);
-            }
+            SecondTick => {}
             ChangedPlaylist => {
                 self.reload_songs();
             }
