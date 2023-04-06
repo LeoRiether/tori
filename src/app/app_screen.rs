@@ -1,6 +1,8 @@
 use std::error::Error;
 
-use super::{browse_screen::BrowseScreen, Screen, App, Mode, playlist_screen::PlaylistScreen};
+use crate::events;
+
+use super::{browse_screen::BrowseScreen, playlist_screen::PlaylistScreen, App, Mode, Screen};
 
 #[derive(Debug, Default)]
 pub enum Selected {
@@ -28,6 +30,17 @@ impl AppScreen {
     pub fn select(&mut self, selection: Selected) {
         self.selected = selection;
     }
+
+    pub fn pass_event_down(
+        &mut self,
+        app: &mut App,
+        event: events::Event,
+    ) -> Result<(), Box<dyn Error>> {
+        match self.selected {
+            Selected::Browse => self.browse.handle_event(app, event),
+            Selected::Playlist => self.playlist.handle_event(app, event),
+        }
+    }
 }
 
 impl Screen for AppScreen {
@@ -45,14 +58,21 @@ impl Screen for AppScreen {
         }
     }
 
-    fn handle_event(
-        &mut self,
-        app: &mut App,
-        event: crate::events::Event,
-    ) -> Result<(), Box<dyn Error>> {
-        match self.selected {
-            Selected::Browse => self.browse.handle_event(app, event),
-            Selected::Playlist => self.playlist.handle_event(app, event),
+    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>> {
+        use crossterm::event::KeyCode;
+        match &event {
+            events::Event::Terminal(crossterm::event::Event::Key(key_event)) => match key_event.code {
+                KeyCode::Char('1') => {
+                    self.select(Selected::Browse);
+                }
+                KeyCode::Char('2') => {
+                    self.playlist.update(&app.mpv)?;
+                    self.select(Selected::Playlist);
+                }
+                _ => self.pass_event_down(app, event)?,
+            }
+            _ => self.pass_event_down(app, event)?,
         }
+        Ok(())
     }
 }
