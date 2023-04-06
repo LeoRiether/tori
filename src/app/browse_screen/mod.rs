@@ -6,8 +6,8 @@ use crate::app::playlist_management;
 use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;
-use tui::layout::Rect;
 use std::error::Error;
+use tui::layout::Rect;
 use tui::style::Color;
 use tui::style::Style;
 
@@ -51,7 +51,6 @@ pub struct BrowseScreen {
     songs: SongsPane,
     modal: Box<dyn Modal>,
     selected_pane: BrowsePane,
-
 }
 
 impl std::fmt::Debug for BrowseScreen {

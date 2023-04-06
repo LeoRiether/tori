@@ -1,22 +1,23 @@
-use std::error::Error;
-
+use self::centered_list::{CenteredList, CenteredListItem, CenteredListState};
+use super::{App, Mode, Screen};
+use crate::{command, events};
+use std::{error::Error, thread, time::Duration};
 use tui::{
+    layout::{Alignment, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState}, layout::{Alignment, Rect},
+    widgets::{Block, BorderType, Borders},
 };
 
-use crate::{command, events};
-
-use super::{App, Mode, Screen};
+mod centered_list;
 
 #[derive(Debug, Default)]
 pub struct PlaylistScreen {
     songs: Vec<String>,
-    playing: ListState,
+    playing: CenteredListState,
 }
 
 impl PlaylistScreen {
-    /// See https://mpv.io/manual/master/#command-interface-playlist
+    /// See <https://mpv.io/manual/master/#command-interface-playlist>
     pub fn update(&mut self, mpv: &libmpv::Mpv) -> Result<&mut Self, Box<dyn Error>> {
         let n = mpv.get_property("playlist/count")?;
 
@@ -34,6 +35,18 @@ impl PlaylistScreen {
             });
 
         Ok(self)
+    }
+
+    /// Waits a couple of milliseconds, then calls [update](PlaylistScreen::update). It's used
+    /// primarily by [select_next](PlaylistScreen::select_next) and
+    /// [select_prev](PlaylistScreen::select_prev) because mpv takes a while to update the playlist
+    /// properties after changing the selection.
+    pub fn update_after_delay(&self, app: &App) {
+        let sender = app.channel.sender.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(16));
+            sender.send(events::Event::SecondTick).unwrap();
+        });
     }
 
     fn handle_command(
@@ -70,12 +83,14 @@ impl PlaylistScreen {
         app.mpv
             .playlist_next_weak()
             .unwrap_or_else(|_| app.notify_err("No next song".into()));
+        self.update_after_delay(app);
     }
 
     fn select_prev(&self, app: &mut App) {
         app.mpv
             .playlist_previous_weak()
-            .unwrap_or_else(|_| app.notify_err("No next song".into()));
+            .unwrap_or_else(|_| app.notify_err("No previous song".into()));
+        self.update_after_delay(app);
     }
 }
 
@@ -95,9 +110,9 @@ impl Screen for PlaylistScreen {
         let items: Vec<_> = self
             .songs
             .iter()
-            .map(|x| ListItem::new(x.as_str()))
+            .map(|x| CenteredListItem::new(x.as_str()))
             .collect();
-        let list = List::new(items)
+        let list = CenteredList::new(items)
             .block(block)
             .highlight_style(Style::default().bg(Color::Red).fg(Color::White));
 
@@ -107,12 +122,13 @@ impl Screen for PlaylistScreen {
     fn handle_event(
         &mut self,
         app: &mut App,
-        event: crate::events::Event,
+        event: events::Event,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        use events::Event::*;
         match event {
-            events::Event::Command(cmd) => self.handle_command(app, cmd)?,
-            events::Event::Terminal(event) => self.handle_terminal_event(app, event)?,
-            events::Event::SecondTick => {
+            Command(cmd) => self.handle_command(app, cmd)?,
+            Terminal(event) => self.handle_terminal_event(app, event)?,
+            SecondTick => {
                 self.update(&app.mpv)?;
             }
             _ => {}
