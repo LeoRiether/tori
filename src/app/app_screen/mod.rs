@@ -4,7 +4,7 @@ use crate::{command, events};
 
 mod now_playing;
 use now_playing::NowPlaying;
-use tui::layout::{Layout, Direction, Constraint, Rect};
+use tui::layout::{Constraint, Direction, Layout, Rect};
 
 use super::{browse_screen::BrowseScreen, playlist_screen::PlaylistScreen, App, Mode, Screen};
 
@@ -94,7 +94,7 @@ impl AppScreen {
                 app.mpv.cycle_property("mute", true)?;
                 self.now_playing.update(&app.mpv);
             }
-            _ => {}
+            _ => self.pass_event_down(app, events::Event::Command(cmd))?,
         }
         Ok(())
     }
@@ -127,18 +127,16 @@ impl Screen for AppScreen {
         use events::Event::*;
         match &event {
             Command(cmd) => self.handle_command(app, *cmd)?,
-            Terminal(crossterm::event::Event::Key(key_event)) => {
-                match key_event.code {
-                    KeyCode::Char('1') => {
-                        self.select(Selected::Browse);
-                    }
-                    KeyCode::Char('2') => {
-                        self.playlist.update(&app.mpv)?;
-                        self.select(Selected::Playlist);
-                    }
-                    _ => self.pass_event_down(app, event)?,
+            Terminal(crossterm::event::Event::Key(key_event)) => match key_event.code {
+                KeyCode::Char('1') => {
+                    self.select(Selected::Browse);
                 }
-            }
+                KeyCode::Char('2') => {
+                    self.playlist.update(&app.mpv)?;
+                    self.select(Selected::Playlist);
+                }
+                _ => self.pass_event_down(app, event)?,
+            },
             SecondTick => {
                 self.now_playing.update(&app.mpv);
                 self.pass_event_down(app, event)?;

@@ -59,7 +59,7 @@ impl PlaylistScreen {
         if let Event::Key(key_event) = event {
             match key_event.code {
                 KeyCode::Up => self.select_prev(app),
-                KeyCode::Down => self.select_prev(app),
+                KeyCode::Down => self.select_next(app),
                 _ => {}
             }
         }
