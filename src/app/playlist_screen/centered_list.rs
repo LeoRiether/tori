@@ -81,6 +81,8 @@ pub struct CenteredList<'a> {
     highlight_style: Style,
     /// Symbol in front of the selected item (Shift all items to the right)
     highlight_symbol: Option<&'a str>,
+    /// Symbol to the right of the selected item
+    highlight_symbol_right: Option<&'a str>,
     /// Whether to repeat the highlight symbol for each line of the selected item
     repeat_highlight_symbol: bool,
 }
@@ -97,6 +99,7 @@ impl<'a> CenteredList<'a> {
             start_corner: Corner::TopLeft,
             highlight_style: Style::default(),
             highlight_symbol: None,
+            highlight_symbol_right: None,
             repeat_highlight_symbol: false,
         }
     }
@@ -113,6 +116,11 @@ impl<'a> CenteredList<'a> {
 
     pub fn highlight_symbol(mut self, highlight_symbol: &'a str) -> Self {
         self.highlight_symbol = Some(highlight_symbol);
+        self
+    }
+
+    pub fn highlight_symbol_right(mut self, highlight_symbol: &'a str) -> Self {
+        self.highlight_symbol_right = Some(highlight_symbol);
         self
     }
 
@@ -197,6 +205,7 @@ impl<'a> StatefulWidget for CenteredList<'a> {
         state.offset = start;
 
         let highlight_symbol = self.highlight_symbol.unwrap_or("");
+        let highlight_symbol_right = self.highlight_symbol_right.unwrap_or("");
         let blank_symbol = " ".repeat(highlight_symbol.width());
 
         let mut current_height = 0;
@@ -238,9 +247,14 @@ impl<'a> StatefulWidget for CenteredList<'a> {
                 } else {
                     &blank_symbol
                 };
+
+                // NOTE: this is how we center the span :)
+                // idk why there's a +1 there
+                let offset = (list_area.width / 2).saturating_sub((line.width() + 1) as u16 / 2);
+
                 let (elem_x, max_element_width) = if has_selection {
                     let (elem_x, _) = buf.set_stringn(
-                        x,
+                        x + offset,
                         y + j as u16,
                         symbol,
                         list_area.width as usize,
@@ -248,13 +262,25 @@ impl<'a> StatefulWidget for CenteredList<'a> {
                     );
                     (elem_x, list_area.width - (elem_x - x))
                 } else {
-                    (x, list_area.width)
+                    (x + offset, list_area.width)
                 };
 
-                // NOTE: this is how we center the span :)
-                let offset = (max_element_width / 2).saturating_sub(line.width() as u16 / 2);
+                let (x_after, _) = buf.set_spans(elem_x, y + j as u16, line, max_element_width);
 
-                buf.set_spans(elem_x + offset, y + j as u16, line, max_element_width);
+                if has_selection {
+                    let symbol = if is_selected && (j == 0 || self.repeat_highlight_symbol) {
+                        highlight_symbol_right
+                    } else {
+                        &blank_symbol
+                    };
+                    buf.set_stringn(
+                        x_after,
+                        y + j as u16,
+                        symbol,
+                        list_area.width as usize,
+                        item_style,
+                    );
+                }
             }
             if is_selected {
                 buf.set_style(area, self.highlight_style);

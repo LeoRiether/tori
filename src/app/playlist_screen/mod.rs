@@ -114,7 +114,9 @@ impl Screen for PlaylistScreen {
             .collect();
         let list = CenteredList::new(items)
             .block(block)
-            .highlight_style(Style::default().bg(Color::Red).fg(Color::White));
+            .highlight_style(Style::default().bg(Color::Red).fg(Color::White))
+            .highlight_symbol("›")
+            .highlight_symbol_right("‹");
 
         frame.render_stateful_widget(list, chunk, &mut self.playing);
     }
