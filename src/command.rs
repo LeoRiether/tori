@@ -24,6 +24,12 @@ pub enum Command {
     /// Delete selected song or playlist
     Delete,
 
+    /// Swap the selected song with the one below it
+    SwapSongDown,
+
+    /// Swap the selected song with the one above it
+    SwapSongUp,
+
     /// Shuffle current playlist
     Shuffle,
 

@@ -239,6 +239,21 @@ impl SongsPane {
                     app.notify_info(format!("Copied {} to the clipboard", song.title));
                 }
             }
+            SwapSongUp if self.filter.is_empty() => match self.selected_index() {
+                Some(i) if i >= 1 => {
+                    m3u::playlist_management::swap_song(&self.title, i-1)?;
+                    self.songs.swap(i-1, i);
+                    self.select_prev();
+                }
+                _ => {}
+            },
+            SwapSongDown if self.filter.is_empty() => {
+                if let Some(i) = self.selected_index() {
+                    m3u::playlist_management::swap_song(&self.title, i)?;
+                    self.songs.swap(i, i+1);
+                    self.select_next();
+                }
+            }
             _ => {}
         }
         Ok(())

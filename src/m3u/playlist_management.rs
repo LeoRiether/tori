@@ -98,7 +98,10 @@ pub fn delete_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Erro
     let _song = parser.next_song()?;
     let end_pos = parser.cursor();
 
-    let mut file = fs::OpenOptions::new().write(true).truncate(true).open(&path)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&path)?;
     file.write_all(content[..start_pos].as_bytes())?;
     file.write_all(content[end_pos..].as_bytes())?;
 
@@ -140,6 +143,32 @@ pub fn rename_song(
 }
 
 /// Swaps `index`-th song with the `index+1`-th (0-indexed)
-pub fn swap_song(_playlist_name: &str, _indexx: usize) {
-    unimplemented!()
+pub fn swap_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
+    let path =
+        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let content = fs::read_to_string(&path)?;
+    let mut parser = m3u::Parser::from_string(&content);
+
+    parser.next_header()?;
+    for _ in 0..index {
+        parser.next_song()?;
+    }
+
+    let start_pos = parser.cursor();
+    let song1 = parser.next_song()?;
+    let song2 = parser.next_song()?;
+    let end_pos = parser.cursor();
+
+    if let (Some(song1), Some(song2)) = (song1, song2) {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(&path)?;
+        file.write_all(content[..start_pos].as_bytes())?;
+        file.write_all(song2.serialize().as_bytes())?;
+        file.write_all(song1.serialize().as_bytes())?;
+        file.write_all(content[end_pos..].as_bytes())?;
+    }
+
+    Ok(())
 }
