@@ -205,7 +205,7 @@ impl BrowseScreen {
                             },
                         );
                     } else {
-                        app.notify_err("Please select a playlist before adding a song".into());
+                        app.notify_err("Please select a playlist before adding a song");
                     }
                 }
                 BrowsePane::Modal(_) => {}

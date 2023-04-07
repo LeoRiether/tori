@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     error::Error,
     time::{Duration, Instant},
 };
@@ -18,17 +19,17 @@ use super::component::{Component, Mode};
 const WIDTH: u16 = 40;
 
 #[derive(Debug)]
-pub struct Notification {
-    pub text: String,
+pub struct Notification<'t> {
+    pub text: Cow<'t, str>,
     pub show_until: Instant,
     pub color: Color,
     height: u16,
 }
 
-impl Default for Notification {
+impl<'t> Default for Notification<'t> {
     fn default() -> Self {
         Self {
-            text: String::new(),
+            text: Cow::default(),
             show_until: Instant::now(),
             color: Color::White,
             height: 0,
@@ -36,8 +37,9 @@ impl Default for Notification {
     }
 }
 
-impl Notification {
-    pub fn new(text: String, duration: Duration) -> Self {
+impl<'t> Notification<'t> {
+    pub fn new<T: Into<Cow<'t, str>>>(text: T, duration: Duration) -> Self {
+        let text = text.into();
         let height = count_lines(&text) + 2;
         Self {
             text,
@@ -57,7 +59,7 @@ impl Notification {
     }
 }
 
-impl Component for Notification {
+impl<'t> Component for Notification<'t> {
     type RenderState = ();
 
     fn mode(&self) -> Mode {

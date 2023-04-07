@@ -5,7 +5,7 @@ use crossterm::{
 };
 use libmpv::Mpv;
 use notification::Notification;
-use std::{cell::RefCell, error::Error, rc::Rc, sync::mpsc};
+use std::{borrow::Cow, cell::RefCell, error::Error, rc::Rc, sync::mpsc};
 use std::{
     io,
     time::{self, Duration},
@@ -39,19 +39,19 @@ const FRAME_DELAY_MS: u16 = 16;
 const HIGH_EVENT_TIMEOUT: u16 = 1000;
 const LOW_EVENT_TIMEOUT: u16 = 17;
 
-pub struct App {
+pub struct App<'n> {
     pub channel: Channel,
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
     next_render: time::Instant,
     next_poll_timeout: u16,
-    notification: Notification,
+    notification: Notification<'n>,
     visualizer: Option<Visualizer>,
     screen: Rc<RefCell<AppScreen>>,
     quit: bool,
 }
 
-impl App {
+impl<'n> App<'n> {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
@@ -229,16 +229,16 @@ impl App {
     ////////////////////////////////
     //        Notification        //
     ////////////////////////////////
-    pub fn notify_err(&mut self, err: String) {
+    pub fn notify_err(&mut self, err: impl Into<Cow<'n, str>>) {
         self.notification = Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed);
     }
 
-    pub fn notify_info(&mut self, info: String) {
+    pub fn notify_info(&mut self, info: impl Into<Cow<'n, str>>) {
         self.notification =
             Notification::new(info, Duration::from_secs(4)).colored(Color::LightCyan);
     }
 
-    pub fn notify_ok(&mut self, text: String) {
+    pub fn notify_ok(&mut self, text: impl Into<Cow<'n, str>>) {
         self.notification =
             Notification::new(text, Duration::from_secs(4)).colored(Color::LightGreen);
     }

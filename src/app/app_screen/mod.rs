@@ -71,13 +71,13 @@ impl AppScreen {
             NextSong => {
                 app.mpv
                     .playlist_next_weak()
-                    .unwrap_or_else(|_| app.notify_err("No next song".into()));
+                    .unwrap_or_else(|_| app.notify_err("No next song"));
                 self.now_playing.update(&app.mpv);
             }
             PrevSong => {
                 app.mpv
                     .playlist_previous_weak()
-                    .unwrap_or_else(|_| app.notify_err("No previous song".into()));
+                    .unwrap_or_else(|_| app.notify_err("No previous song"));
                 self.now_playing.update(&app.mpv);
             }
             TogglePause => {
