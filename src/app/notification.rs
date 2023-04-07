@@ -38,7 +38,10 @@ impl<'t> Default for Notification<'t> {
 }
 
 impl<'t> Notification<'t> {
-    pub fn new<T: Into<Cow<'t, str>>>(text: T, duration: Duration) -> Self {
+    pub fn new<T>(text: T, duration: Duration) -> Self
+    where
+        T: Into<Cow<'t, str>>,
+    {
         let text = text.into();
         let height = count_lines(&text) + 2;
         Self {
