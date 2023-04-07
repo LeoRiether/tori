@@ -72,6 +72,8 @@ impl Default for Config {
             i("a", Command::Add),
             i("R", Command::Rename),
             i("X", Command::Delete),
+            i("J", Command::SwapSongDown),
+            i("K", Command::SwapSongUp),
             i(",", Command::Shuffle),
             i("v", Command::ToggleVisualizer),
         ]));
