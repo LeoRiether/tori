@@ -203,6 +203,8 @@ impl BrowseScreen {
                                 playlist: playlist.to_owned(),
                             },
                         );
+                    } else {
+                        app.notify_err("Please select a playlist before adding a song".into());
                     }
                 }
                 BrowsePane::Modal(_) => {}

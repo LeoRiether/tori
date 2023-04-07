@@ -17,6 +17,7 @@ pub struct CenteredListState {
 }
 
 impl CenteredListState {
+    #[allow(dead_code)]
     pub fn selected(&self) -> Option<usize> {
         self.selected
     }
@@ -46,6 +47,7 @@ impl<'a> CenteredListItem<'a> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn style(mut self, style: Style) -> CenteredListItem<'a> {
         self.style = style;
         self
@@ -109,6 +111,7 @@ impl<'a> CenteredList<'a> {
         self
     }
 
+    #[allow(dead_code)]
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
@@ -129,11 +132,13 @@ impl<'a> CenteredList<'a> {
         self
     }
 
+    #[allow(dead_code)]
     pub fn repeat_highlight_symbol(mut self, repeat: bool) -> Self {
         self.repeat_highlight_symbol = repeat;
         self
     }
 
+    #[allow(dead_code)]
     pub fn start_corner(mut self, corner: Corner) -> Self {
         self.start_corner = corner;
         self
