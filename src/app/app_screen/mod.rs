@@ -128,10 +128,10 @@ impl Screen for AppScreen {
         match &event {
             Command(cmd) => self.handle_command(app, *cmd)?,
             Terminal(crossterm::event::Event::Key(key_event)) => match key_event.code {
-                KeyCode::Char('1') => {
+                KeyCode::Char('1') if self.mode() == Mode::Normal => {
                     self.select(Selected::Browse);
                 }
-                KeyCode::Char('2') => {
+                KeyCode::Char('2') if self.mode() == Mode::Normal => {
                     self.playlist.update(&app.mpv)?;
                     self.select(Selected::Playlist);
                 }
