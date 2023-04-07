@@ -95,6 +95,7 @@ impl OptionalConfig {
     /// Loads the shortcuts from some path
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let file = std::fs::File::open(path)?;
-        Ok(serde_yaml::from_reader(file)?)
+        Ok(serde_yaml::from_reader(file)
+            .map_err(|e| format!("Couldn't parse your config.yaml. Reason: {}", e))?)
     }
 }
