@@ -1,11 +1,11 @@
-use std::{
-    error::Error,
-    path::{Path},
-};
+use std::{error::Error, path::Path};
 
-use crate::{app::{filtered_list::FilteredList, App, Mode, MyBackend}, config::Config};
 use crate::events::Event;
 use crate::m3u;
+use crate::{
+    app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
+    config::Config,
+};
 
 use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
@@ -80,53 +80,6 @@ impl SongsPane {
                     .to_lowercase()
                     .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
         });
-    }
-
-    pub fn render(
-        &mut self,
-        is_focused: bool,
-        frame: &mut Frame<'_, MyBackend>,
-        chunk: layout::Rect,
-    ) {
-        let title = if !self.filter.is_empty() {
-            format!(" {} ", self.filter)
-        } else {
-            format!(" {} ", self.title)
-        };
-
-        let mut block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Plain);
-
-        if is_focused {
-            block = block.border_style(Style::default().fg(Color::LightBlue));
-        }
-
-        let songlist: Vec<_> = self
-            .shown
-            .items
-            .iter()
-            .map(|&i| &self.songs[i])
-            .map(|song| {
-                Row::new(vec![
-                    format!(" {}", song.title),
-                    format!(
-                        "{}:{:02}",
-                        song.duration.as_secs() / 60,
-                        song.duration.as_secs() % 60
-                    ),
-                ])
-            })
-            .collect();
-
-        let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
-        let widget = Table::new(songlist)
-            .block(block)
-            .widths(widths)
-            .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
-            .highlight_symbol(" ◇");
-        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
     fn handle_terminal_event(
@@ -238,8 +191,8 @@ impl SongsPane {
             }
             SwapSongUp if self.filter.is_empty() => match self.selected_index() {
                 Some(i) if i >= 1 => {
-                    m3u::playlist_management::swap_song(&self.title, i-1)?;
-                    self.songs.swap(i-1, i);
+                    m3u::playlist_management::swap_song(&self.title, i - 1)?;
+                    self.songs.swap(i - 1, i);
                     self.select_prev();
                 }
                 _ => {}
@@ -247,33 +200,12 @@ impl SongsPane {
             SwapSongDown if self.filter.is_empty() => {
                 if let Some(i) = self.selected_index() {
                     m3u::playlist_management::swap_song(&self.title, i)?;
-                    self.songs.swap(i, i+1);
+                    self.songs.swap(i, i + 1);
                     self.select_next();
                 }
             }
             _ => {}
         }
-        Ok(())
-    }
-
-    pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        use Event::*;
-
-        match event {
-            Command(cmd) => self.handle_command(app, cmd)?,
-            Terminal(event) => self.handle_terminal_event(app, event)?,
-            SongAdded {
-                playlist: _,
-                song: _,
-            } => {
-                // scroll to the bottom
-                if !self.shown.items.is_empty() {
-                    self.shown.state.select(Some(self.shown.items.len() - 1));
-                }
-            }
-            _ => {}
-        }
-
         Ok(())
     }
 
@@ -315,12 +247,79 @@ impl SongsPane {
     pub fn selected_index(&self) -> Option<usize> {
         self.shown.selected_item()
     }
+}
 
-    pub fn mode(&self) -> Mode {
+impl Component for SongsPane {
+    type RenderState = bool;
+
+    fn mode(&self) -> Mode {
         if self.filter.is_empty() || self.filter.as_bytes().last() == Some(&b'\n') {
             Mode::Normal
         } else {
             Mode::Insert
         }
+    }
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: layout::Rect, is_focused: bool) {
+        let title = if !self.filter.is_empty() {
+            format!(" {} ", self.filter)
+        } else {
+            format!(" {} ", self.title)
+        };
+
+        let mut block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain);
+
+        if is_focused {
+            block = block.border_style(Style::default().fg(Color::LightBlue));
+        }
+
+        let songlist: Vec<_> = self
+            .shown
+            .items
+            .iter()
+            .map(|&i| &self.songs[i])
+            .map(|song| {
+                Row::new(vec![
+                    format!(" {}", song.title),
+                    format!(
+                        "{}:{:02}",
+                        song.duration.as_secs() / 60,
+                        song.duration.as_secs() % 60
+                    ),
+                ])
+            })
+            .collect();
+
+        let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
+        let widget = Table::new(songlist)
+            .block(block)
+            .widths(widths)
+            .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
+            .highlight_symbol(" ◇");
+        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+    }
+
+    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use Event::*;
+
+        match event {
+            Command(cmd) => self.handle_command(app, cmd)?,
+            Terminal(event) => self.handle_terminal_event(app, event)?,
+            SongAdded {
+                playlist: _,
+                song: _,
+            } => {
+                // scroll to the bottom
+                if !self.shown.items.is_empty() {
+                    self.shown.state.select(Some(self.shown.items.len() - 1));
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }

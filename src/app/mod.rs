@@ -10,9 +10,10 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, style::Color, Frame, Terminal, layout::Rect};
+use tui::{backend::CrosstermBackend, style::Color, Terminal};
 
 use crate::{
+    app::component::Mode,
     command,
     config::Config,
     events::{self, Channel},
@@ -21,34 +22,22 @@ use crate::{
 
 pub mod app_screen;
 pub mod browse_screen;
-pub mod playlist_screen;
+pub mod component;
 pub mod filtered_list;
 pub mod modal;
 pub mod notification;
+pub mod playlist_screen;
 
 use crate::events::Event;
 
-use self::app_screen::AppScreen;
+use self::{
+    app_screen::AppScreen,
+    component::{Component, MyBackend},
+};
 
 const FRAME_DELAY_MS: u16 = 16;
 const HIGH_EVENT_TIMEOUT: u16 = 1000;
 const LOW_EVENT_TIMEOUT: u16 = 17;
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-#[repr(i8)]
-pub enum Mode {
-    #[default]
-    Normal,
-    Insert,
-}
-
-pub trait Screen {
-    fn mode(&self) -> Mode;
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect);
-    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
-}
-
-pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
 
 pub struct App {
     pub channel: Channel,
@@ -120,8 +109,8 @@ impl App {
         if time::Instant::now() >= self.next_render {
             self.terminal.draw(|frame| {
                 let chunk = frame.size();
-                self.screen.borrow_mut().render(frame, chunk);
-                self.notification.render(frame);
+                self.screen.borrow_mut().render(frame, chunk, ());
+                self.notification.render(frame, frame.size(), ());
             })?;
 
             if let Some(ref visualizer) = self.visualizer {

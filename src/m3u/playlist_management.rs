@@ -70,7 +70,7 @@ impl From<io::Error> for CreatePlaylistError {
 
 /// Creates the corresponding .m3u8 file for a new playlist
 pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
-    let path =Config::playlist_path(playlist_name);
+    let path = Config::playlist_path(playlist_name);
 
     // TODO: when it's stabilized, use std::fs::File::create_new
     if path.try_exists()? {
