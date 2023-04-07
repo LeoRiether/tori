@@ -1,7 +1,8 @@
 # tori
 ## Terminal-based music player
 
-![tori](https://user-images.githubusercontent.com/8211902/228040682-7888b4f9-0dc3-425e-95ad-166a1737f388.png)
+![tori](https://user-images.githubusercontent.com/8211902/230677856-02e4886e-84bf-4d21-ad70-0a625df4f24a.jpg)
+
 ## Configuration
 Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is, depending on your operating system:
 
