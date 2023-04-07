@@ -6,6 +6,11 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# https://github.com/flamegraph-rs/flamegraph#cargo-flamegraph
+[target.x86_64-unknown-linux-gnu]
+linker = "/usr/bin/clang"
+rustflags = ["-Clink-arg=-fuse-ld=lld", "-Clink-arg=-Wl,--no-rosegment"]
+
 [dependencies]
 tui = "0.19"
 crossterm = "0.25"

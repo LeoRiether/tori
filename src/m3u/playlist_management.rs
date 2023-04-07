@@ -2,7 +2,6 @@ use std::{
     error::Error,
     fs,
     io::{self, Write},
-    path::PathBuf,
     thread,
 };
 
@@ -71,8 +70,7 @@ impl From<io::Error> for CreatePlaylistError {
 
 /// Creates the corresponding .m3u8 file for a new playlist
 pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
-    let path =
-        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let path =Config::playlist_path(playlist_name);
 
     // TODO: when it's stabilized, use std::fs::File::create_new
     if path.try_exists()? {
@@ -84,8 +82,7 @@ pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
 }
 
 pub fn delete_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
-    let path =
-        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
 
@@ -113,8 +110,7 @@ pub fn rename_song(
     index: usize,
     new_name: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let path =
-        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
 
@@ -144,8 +140,7 @@ pub fn rename_song(
 
 /// Swaps `index`-th song with the `index+1`-th (0-indexed)
 pub fn swap_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
-    let path =
-        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name));
+    let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
 
