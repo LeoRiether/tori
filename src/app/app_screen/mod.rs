@@ -18,14 +18,14 @@ pub enum Selected {
 }
 
 #[derive(Debug)]
-pub struct AppScreen {
-    browse: BrowseScreen,
+pub struct AppScreen<'a> {
+    browse: BrowseScreen<'a>,
     playlist: PlaylistScreen,
     now_playing: NowPlaying,
     selected: Selected,
 }
 
-impl AppScreen {
+impl<'a> AppScreen<'a> {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             browse: BrowseScreen::new()?,
@@ -102,7 +102,7 @@ impl AppScreen {
     }
 }
 
-impl Component for AppScreen {
+impl<'a> Component for AppScreen<'a> {
     type RenderState = ();
 
     fn mode(&self) -> Mode {

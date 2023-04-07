@@ -6,6 +6,7 @@ use crate::command;
 use crate::events::Event;
 use crate::m3u::playlist_management;
 use crossterm::event::KeyCode;
+use std::borrow::Cow;
 use std::error::Error;
 use tui::layout::Rect;
 use tui::style::Color;
@@ -46,14 +47,14 @@ enum BrowsePane {
 }
 
 #[derive(Default)]
-pub struct BrowseScreen {
+pub struct BrowseScreen<'a> {
     playlists: PlaylistsPane,
-    songs: SongsPane,
+    songs: SongsPane<'a>,
     modal: Box<dyn Modal>,
     selected_pane: BrowsePane,
 }
 
-impl std::fmt::Debug for BrowseScreen {
+impl<'a> std::fmt::Debug for BrowseScreen<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BrowseScreen")
             .field("playlists", &self.playlists)
@@ -63,7 +64,7 @@ impl std::fmt::Debug for BrowseScreen {
     }
 }
 
-impl BrowseScreen {
+impl<'a> BrowseScreen<'a> {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         let playlists = PlaylistsPane::new()?;
         let songs = SongsPane::from_playlist_pane(&playlists);
@@ -188,18 +189,18 @@ impl BrowseScreen {
         use command::Command::*;
         match cmd {
             PlayFromModal => {
-                self.open_modal(" Play ".into(), ModalType::Play);
+                self.open_modal(" Play ", ModalType::Play);
             }
             SelectRight | SelectLeft => self.select_next_panel(),
             // TODO: this should probably be in each pane's handle_event, somehow
             Add => match self.selected_pane {
                 BrowsePane::Playlists => {
-                    self.open_modal(" Add playlist ".into(), ModalType::AddPlaylist);
+                    self.open_modal(" Add playlist ", ModalType::AddPlaylist);
                 }
                 BrowsePane::Songs => {
                     if let Some(playlist) = self.playlists.selected_item() {
                         self.open_modal(
-                            " Add song ".into(),
+                            " Add song ",
                             ModalType::AddSong {
                                 playlist: playlist.to_owned(),
                             },
@@ -217,7 +218,7 @@ impl BrowseScreen {
                         (self.playlists.selected_item(), self.songs.selected_index())
                     {
                         self.open_modal(
-                            " Rename song (esc cancels) ".into(),
+                            " Rename song (esc cancels) ",
                             ModalType::RenameSong {
                                 playlist: playlist.to_owned(),
                                 index,
@@ -277,7 +278,11 @@ impl BrowseScreen {
         Ok(())
     }
 
-    fn open_modal(&mut self, title: String, modal_type: ModalType) -> &mut Box<dyn Modal> {
+    // TODO: I don't know how to make this 'a instead of 'static :(
+    fn open_modal<T>(&mut self, title: T, modal_type: ModalType) -> &mut Box<dyn Modal>
+    where
+        T: Into<Cow<'static, str>>,
+    {
         self.selected_pane = BrowsePane::Modal(modal_type);
         self.modal = Box::new(InputModal::new(title));
         &mut self.modal
@@ -303,7 +308,7 @@ impl BrowseScreen {
     }
 }
 
-impl Component for BrowseScreen {
+impl<'t> Component for BrowseScreen<'t> {
     type RenderState = ();
 
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {

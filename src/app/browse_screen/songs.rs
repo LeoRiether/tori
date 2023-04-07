@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::{error::Error, path::Path};
 
 use crate::events::Event;
@@ -17,14 +18,14 @@ use tui::{
 };
 
 #[derive(Debug, Default)]
-pub struct SongsPane {
-    title: String,
+pub struct SongsPane<'t> {
+    title: Cow<'t, str>,
     songs: Vec<m3u::Song>,
     shown: FilteredList<TableState>,
     filter: String,
 }
 
-impl SongsPane {
+impl<'t> SongsPane<'t> {
     pub fn new() -> Self {
         Self {
             title: " songs ".into(),
@@ -48,12 +49,13 @@ impl SongsPane {
         let file = std::fs::File::open(&path)
             .unwrap_or_else(|_| panic!("Couldn't open playlist file {}", path.as_ref().display()));
 
-        let title = path
-            .as_ref()
-            .file_stem()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
+        let title = Cow::Owned(
+            path.as_ref()
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+        );
 
         // TODO: maybe return Result?
         let songs = m3u::Parser::from_reader(file).all_songs().unwrap();
@@ -249,7 +251,7 @@ impl SongsPane {
     }
 }
 
-impl Component for SongsPane {
+impl<'t> Component for SongsPane<'t> {
     type RenderState = bool;
 
     fn mode(&self) -> Mode {
