@@ -190,6 +190,7 @@ impl BrowseScreen {
             PlayFromModal => {
                 self.open_modal(" Play ".into(), ModalType::Play);
             }
+            SelectRight | SelectLeft => self.select_next_panel(),
             // TODO: this should probably be in each pane's handle_event, somehow
             Add => match self.selected_pane {
                 BrowsePane::Playlists => {
@@ -257,23 +258,12 @@ impl BrowseScreen {
         app: &mut App,
         event: crossterm::event::Event,
     ) -> Result<(), Box<dyn Error>> {
-        use BrowsePane::{Playlists, Songs};
         use Event::*;
         use KeyCode::*;
 
         match event {
             crossterm::event::Event::Key(event) => match event.code {
-                Right | Left => {
-                    match self.selected_pane {
-                        Playlists => {
-                            self.selected_pane = Songs;
-                        }
-                        Songs => {
-                            self.selected_pane = Playlists;
-                        }
-                        BrowsePane::Modal(_) => {}
-                    };
-                }
+                Right | Left => self.select_next_panel(),
                 // 'c'hange
                 KeyCode::Char('c') if self.mode() == Mode::Normal => {
                     self.playlists.open_editor_for_selected()?;
@@ -297,6 +287,19 @@ impl BrowseScreen {
         self.selected_pane = BrowsePane::Modal(modal_type);
         self.modal = Box::new(ConfirmationModal::new(title));
         &mut self.modal
+    }
+
+    fn select_next_panel(&mut self) {
+        use BrowsePane::*;
+        match self.selected_pane {
+            Playlists => {
+                self.selected_pane = Songs;
+            }
+            Songs => {
+                self.selected_pane = Playlists;
+            }
+            Modal(_) => {}
+        }
     }
 }
 
