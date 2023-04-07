@@ -25,7 +25,6 @@ pub mod playlist_screen;
 pub mod filtered_list;
 pub mod modal;
 pub mod notification;
-pub mod playlist_management;
 
 use crate::events::Event;
 
@@ -52,9 +51,9 @@ pub trait Screen {
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
 
 pub struct App {
+    pub channel: Channel,
     terminal: Terminal<MyBackend>,
     mpv: Mpv,
-    channel: Channel,
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification,
@@ -84,9 +83,9 @@ impl App {
         let notification = Notification::default();
 
         Ok(App {
+            channel,
             terminal,
             mpv,
-            channel,
             next_render,
             next_poll_timeout,
             notification,
