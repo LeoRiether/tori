@@ -1,4 +1,4 @@
-use std::{error::Error, mem};
+use std::{borrow::Cow, error::Error, mem};
 
 use crossterm::event::KeyCode;
 use tui::{
@@ -43,23 +43,23 @@ impl Default for Box<dyn Modal> {
 
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
-pub struct InputModal {
-    title: String,
+pub struct InputModal<'t> {
+    title: Cow<'t, str>,
     input: String,
     style: Style,
 }
 
-impl InputModal {
-    pub fn new(title: String) -> Self {
+impl<'t> InputModal<'t> {
+    pub fn new(title: impl Into<Cow<'t, str>>) -> Self {
         Self {
-            title,
+            title: title.into(),
             input: String::new(),
             style: Style::default().fg(Color::LightBlue),
         }
     }
 }
 
-impl Modal for InputModal {
+impl<'t> Modal for InputModal<'t> {
     fn apply_style(&mut self, style: Style) {
         self.style = style;
     }
@@ -92,7 +92,7 @@ impl Modal for InputModal {
         let chunk = get_modal_chunk(size);
 
         let block = Block::default()
-            .title(self.title.as_str())
+            .title(self.title.as_ref())
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_type(BorderType::Double)
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_modal_commit_lifecycle() {
-        let mut modal = InputModal::new("commit lifecycle".into());
+        let mut modal = InputModal::new("commit lifecycle");
         assert_eq!(
             modal
                 .handle_event(Event::Terminal(key_event(Char('h'))))
@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_modal_quit_lifecycle() {
-        let mut modal = InputModal::new("commit lifecycle".into());
+        let mut modal = InputModal::new("commit lifecycle");
         assert_eq!(
             modal
                 .handle_event(Event::Terminal(key_event(Char('h'))))
