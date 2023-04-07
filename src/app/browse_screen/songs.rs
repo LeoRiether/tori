@@ -1,9 +1,9 @@
 use std::{
     error::Error,
-    path::{Path, PathBuf},
+    path::{Path},
 };
 
-use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
+use crate::{app::{filtered_list::FilteredList, App, Mode, MyBackend}, config::Config};
 use crate::events::Event;
 use crate::m3u;
 
@@ -40,10 +40,7 @@ impl SongsPane {
     }
 
     pub fn from_playlist_named(name: &str) -> Self {
-        Self::from_playlist({
-            let filename = format!("{}.m3u8", name);
-            PathBuf::from(&crate::config::Config::global().playlists_dir).join(filename)
-        })
+        Self::from_playlist(Config::playlist_path(name))
     }
 
     pub fn from_playlist(path: impl AsRef<Path>) -> Self {

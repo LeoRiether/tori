@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error, io};
+use std::{collections::HashMap, error::Error, io, path::PathBuf};
 
 use crate::{
     command::Command,
@@ -22,6 +22,10 @@ impl Config {
 
     pub fn set_global(instance: Self) {
         INSTANCE.set(instance).unwrap();
+    }
+
+    pub fn playlist_path(playlist_name: &str) -> PathBuf {
+        PathBuf::from(&Config::global().playlists_dir).join(format!("{}.m3u8", playlist_name))
     }
 
     pub fn merge(mut self, other: OptionalConfig) -> Self {

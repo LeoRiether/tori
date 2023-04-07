@@ -4,7 +4,7 @@ use crate::events::Event;
 
 use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
 use std::error::Error;
-use std::path::PathBuf;
+
 use tui::{
     layout,
     style::{Color, Style},
@@ -180,11 +180,7 @@ impl PlaylistsPane {
 
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
             std::process::Command::new(editor)
-                .arg(
-                    // playlists_dir/selected.m3u8
-                    PathBuf::from(&Config::global().playlists_dir)
-                        .join(format!("{}.m3u8", selected)),
-                )
+                .arg(Config::playlist_path(selected))
                 .status()
                 .expect("Failed to execute editor");
             self.reload_from_dir()?;
