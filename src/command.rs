@@ -16,16 +16,28 @@ pub enum Command {
     VolumeUp,
     VolumeDown,
     Mute,
-    Shuffle,
-    Rename,
-    Delete,
     ToggleVisualizer,
+
+    /// Rename selected song or playlist
+    Rename,
+
+    /// Delete selected song or playlist
+    Delete,
+
+    /// Shuffle current playlist
+    Shuffle,
 
     /// Select next item (like a song or playlist)
     SelectNext,
 
     /// Select previous item (like a song or playlist)
     SelectPrev,
+
+    /// Select the pane to the right (the same as pressing the <right> key)
+    SelectRight,
+
+    /// Select the pane to the left (the same as pressing the <left> key)
+    SelectLeft,
 
     /// Add a new song or playlist
     Add,

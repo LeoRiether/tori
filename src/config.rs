@@ -51,8 +51,10 @@ impl Default for Config {
         let normal = Shortcuts::new(HashMap::from([
             i("C-c", Command::Quit),
             i("C-d", Command::Quit),
+            i("h", Command::SelectLeft),
             i("j", Command::SelectNext),
             i("k", Command::SelectPrev),
+            i("l", Command::SelectRight),
             i(">", Command::NextSong),
             i("<", Command::PrevSong),
             i("q", Command::QueueSong),
