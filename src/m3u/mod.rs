@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::io::{self, ErrorKind, Read, Seek, Write};
 
-
 use std::time::Duration;
 
 use crate::config::Config;
@@ -117,8 +116,7 @@ impl Song {
     }
 
     pub fn add_to_playlist(&self, playlist_name: &str) -> Result<(), Box<dyn Error>> {
-        let path =
-            Config::playlist_path(playlist_name);
+        let path = Config::playlist_path(playlist_name);
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .read(true)

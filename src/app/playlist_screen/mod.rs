@@ -1,5 +1,5 @@
 use self::centered_list::{CenteredList, CenteredListItem, CenteredListState};
-use super::{App, Mode, Screen};
+use super::{component::Component, App, Mode};
 use crate::{command, events};
 use std::{error::Error, thread, time::Duration};
 use tui::{
@@ -94,12 +94,14 @@ impl PlaylistScreen {
     }
 }
 
-impl Screen for PlaylistScreen {
+impl Component for PlaylistScreen {
+    type RenderState = ();
+
     fn mode(&self) -> Mode {
         Mode::Normal
     }
 
-    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect) {
+    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect, (): ()) {
         let block = Block::default()
             .title(" Playlist ")
             .title_alignment(Alignment::Center)

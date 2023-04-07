@@ -1,4 +1,7 @@
-use std::time::{Duration, Instant};
+use std::{
+    error::Error,
+    time::{Duration, Instant},
+};
 
 use tui::{
     layout::Rect,
@@ -8,7 +11,9 @@ use tui::{
     Frame,
 };
 
-use crate::app::MyBackend;
+use crate::{app::MyBackend, events};
+
+use super::component::{Component, Mode};
 
 const WIDTH: u16 = 40;
 
@@ -50,13 +55,20 @@ impl Notification {
     pub fn is_expired(&self) -> bool {
         Instant::now() > self.show_until
     }
+}
 
-    pub fn render(&self, frame: &mut Frame<'_, MyBackend>) {
+impl Component for Notification {
+    type RenderState = ();
+
+    fn mode(&self) -> Mode {
+        Mode::Normal
+    }
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, size: Rect, (): ()) {
         if self.is_expired() {
             return;
         }
 
-        let size = frame.size();
         let chunk = Rect {
             x: size.width - WIDTH - 3,
             y: size.height - self.height - 1,
@@ -76,6 +88,15 @@ impl Notification {
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(text, chunk);
+    }
+
+    /// No-op
+    fn handle_event(
+        &mut self,
+        _app: &mut super::App,
+        _event: events::Event,
+    ) -> Result<(), Box<dyn Error>> {
+        Ok(())
     }
 }
 

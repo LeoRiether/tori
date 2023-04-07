@@ -118,7 +118,7 @@ impl Visualizer {
             let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
 
             let area = Rect {
-                x: 2*i as u16,
+                x: 2 * i as u16,
                 y: size.height.saturating_sub(height),
                 width: 1,
                 height,

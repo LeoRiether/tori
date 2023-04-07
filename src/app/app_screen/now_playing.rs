@@ -7,7 +7,10 @@ use tui::{
     Frame,
 };
 
-use crate::app::MyBackend;
+use crate::app::{
+    component::{Component, Mode},
+    MyBackend,
+};
 
 #[derive(Debug, Default)]
 pub struct NowPlaying {
@@ -32,8 +35,12 @@ impl NowPlaying {
             mpv.get_property("volume").unwrap_or_default()
         };
     }
+}
 
-    pub fn render(&self, frame: &mut Frame<'_, MyBackend>, chunk: Rect) {
+impl Component for NowPlaying {
+    type RenderState = ();
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {
         let lines = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
@@ -131,5 +138,18 @@ impl NowPlaying {
         frame.render_widget(playback_left, chunks[2]);
         frame.render_widget(playback_bar, chunks[3]);
         frame.render_widget(playback_right, chunks[4]);
+    }
+
+    fn mode(&self) -> Mode {
+        Mode::Normal
+    }
+
+    /// No-op
+    fn handle_event(
+        &mut self,
+        _app: &mut crate::app::App,
+        _event: crate::events::Event,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 }

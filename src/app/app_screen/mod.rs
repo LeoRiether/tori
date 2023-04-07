@@ -6,7 +6,9 @@ mod now_playing;
 use now_playing::NowPlaying;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
-use super::{browse_screen::BrowseScreen, playlist_screen::PlaylistScreen, App, Mode, Screen};
+use super::{
+    browse_screen::BrowseScreen, component::Component, playlist_screen::PlaylistScreen, App, Mode,
+};
 
 #[derive(Debug, Default)]
 pub enum Selected {
@@ -100,7 +102,9 @@ impl AppScreen {
     }
 }
 
-impl Screen for AppScreen {
+impl Component for AppScreen {
+    type RenderState = ();
+
     fn mode(&self) -> Mode {
         match self.selected {
             Selected::Browse => self.browse.mode(),
@@ -108,18 +112,18 @@ impl Screen for AppScreen {
         }
     }
 
-    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect) {
+    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect, (): ()) {
         let vchunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
             .split(chunk);
 
         match self.selected {
-            Selected::Browse => self.browse.render(frame, vchunks[0]),
-            Selected::Playlist => self.playlist.render(frame, vchunks[0]),
+            Selected::Browse => self.browse.render(frame, vchunks[0], ()),
+            Selected::Playlist => self.playlist.render(frame, vchunks[0], ()),
         }
 
-        self.now_playing.render(frame, vchunks[1]);
+        self.now_playing.render(frame, vchunks[1], ());
     }
 
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>> {

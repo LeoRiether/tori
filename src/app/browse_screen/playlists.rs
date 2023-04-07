@@ -1,3 +1,4 @@
+use crate::app::component::Component;
 use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::config::Config;
 use crate::events::Event;
@@ -56,85 +57,6 @@ impl PlaylistsPane {
         });
     }
 
-    pub fn render(
-        &mut self,
-        is_focused: bool,
-        frame: &mut Frame<'_, MyBackend>,
-        chunk: layout::Rect,
-    ) {
-        let title = if !self.filter.is_empty() {
-            format!(" {} ", self.filter)
-        } else {
-            " playlists ".into()
-        };
-
-        let mut block = Block::default()
-            .title(title)
-            .borders(Borders::LEFT | Borders::BOTTOM | Borders::TOP)
-            .border_type(BorderType::Plain);
-
-        if is_focused {
-            block = block.border_style(Style::default().fg(Color::LightBlue));
-        }
-
-        let playlists: Vec<_> = self
-            .shown
-            .items
-            .iter()
-            .map(|&i| ListItem::new(self.playlists[i].as_str()))
-            .collect();
-
-        let widget = List::new(playlists)
-            .block(block)
-            .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
-        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
-    }
-
-    #[allow(clippy::single_match)]
-    pub fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
-        use crate::command::Command::*;
-        use Event::*;
-        use KeyCode::*;
-
-        match event {
-            Command(cmd) => match cmd {
-                SelectNext => self.select_next(app),
-                SelectPrev => self.select_prev(app),
-                _ => {}
-            },
-            Terminal(event) => match event {
-                crossterm::event::Event::Key(event) => {
-                    if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
-                        self.refresh_shown();
-                        app.channel.send(Event::ChangedPlaylist).unwrap();
-                        return Ok(());
-                    }
-
-                    match event.code {
-                        Up => self.select_prev(app),
-                        Down => self.select_next(app),
-                        Char('/') => self.filter = "/".into(),
-                        Esc => {
-                            self.filter.clear();
-                            self.refresh_shown();
-                            app.channel.send(Event::ChangedPlaylist).unwrap();
-                        }
-                        _ => {}
-                    }
-                }
-                crossterm::event::Event::Mouse(event) => match event.kind {
-                    MouseEventKind::ScrollUp => self.select_prev(app),
-                    MouseEventKind::ScrollDown => self.select_next(app),
-                    _ => {}
-                },
-                _ => {}
-            },
-            _ => {}
-        }
-
-        Ok(())
-    }
-
     pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
         match event.code {
             KeyCode::Char(c) => {
@@ -189,12 +111,89 @@ impl PlaylistsPane {
         }
         Ok(())
     }
+}
 
-    pub fn mode(&self) -> Mode {
+impl Component for PlaylistsPane {
+    type RenderState = bool;
+
+    fn mode(&self) -> Mode {
         if self.filter.is_empty() || self.filter.as_bytes().last() == Some(&b'\n') {
             Mode::Normal
         } else {
             Mode::Insert
         }
+    }
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: layout::Rect, is_focused: bool) {
+        let title = if !self.filter.is_empty() {
+            format!(" {} ", self.filter)
+        } else {
+            " playlists ".into()
+        };
+
+        let mut block = Block::default()
+            .title(title)
+            .borders(Borders::LEFT | Borders::BOTTOM | Borders::TOP)
+            .border_type(BorderType::Plain);
+
+        if is_focused {
+            block = block.border_style(Style::default().fg(Color::LightBlue));
+        }
+
+        let playlists: Vec<_> = self
+            .shown
+            .items
+            .iter()
+            .map(|&i| ListItem::new(self.playlists[i].as_str()))
+            .collect();
+
+        let widget = List::new(playlists)
+            .block(block)
+            .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
+        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+    }
+
+    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+        use crate::command::Command::*;
+        use Event::*;
+        use KeyCode::*;
+
+        match event {
+            Command(cmd) => match cmd {
+                SelectNext => self.select_next(app),
+                SelectPrev => self.select_prev(app),
+                _ => {}
+            },
+            Terminal(event) => match event {
+                crossterm::event::Event::Key(event) => {
+                    if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
+                        self.refresh_shown();
+                        app.channel.send(Event::ChangedPlaylist).unwrap();
+                        return Ok(());
+                    }
+
+                    match event.code {
+                        Up => self.select_prev(app),
+                        Down => self.select_next(app),
+                        Char('/') => self.filter = "/".into(),
+                        Esc => {
+                            self.filter.clear();
+                            self.refresh_shown();
+                            app.channel.send(Event::ChangedPlaylist).unwrap();
+                        }
+                        _ => {}
+                    }
+                }
+                crossterm::event::Event::Mouse(event) => match event.kind {
+                    MouseEventKind::ScrollUp => self.select_prev(app),
+                    MouseEventKind::ScrollDown => self.select_next(app),
+                    _ => {}
+                },
+                _ => {}
+            },
+            _ => {}
+        }
+
+        Ok(())
     }
 }

@@ -1,10 +1,10 @@
+use crate::app::component::Component;
 use crate::app::MyBackend;
-use crate::app::Screen;
 use crate::App;
 
-use crate::m3u::playlist_management;
 use crate::command;
 use crate::events::Event;
+use crate::m3u::playlist_management;
 use crossterm::event::KeyCode;
 use std::error::Error;
 use tui::layout::Rect;
@@ -303,20 +303,22 @@ impl BrowseScreen {
     }
 }
 
-impl Screen for BrowseScreen {
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect) {
+impl Component for BrowseScreen {
+    type RenderState = ();
+
+    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {
         let hchunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
             .split(chunk);
 
         self.playlists.render(
-            self.selected_pane == BrowsePane::Playlists,
             frame,
             hchunks[0],
+            self.selected_pane == BrowsePane::Playlists,
         );
         self.songs
-            .render(self.selected_pane == BrowsePane::Songs, frame, hchunks[1]);
+            .render(frame, hchunks[1], self.selected_pane == BrowsePane::Songs);
 
         if let BrowsePane::Modal(_) = self.selected_pane {
             self.modal.render(frame);
