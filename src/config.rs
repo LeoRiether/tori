@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, io};
 
 use crate::{
     command::Command,
@@ -85,7 +85,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct OptionalConfig {
     pub playlists_dir: Option<String>,
     pub normal: Option<Shortcuts>,
@@ -94,8 +94,11 @@ pub struct OptionalConfig {
 impl OptionalConfig {
     /// Loads the shortcuts from some path
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
-        let file = std::fs::File::open(path)?;
-        Ok(serde_yaml::from_reader(file)
-            .map_err(|e| format!("Couldn't parse your config.yaml. Reason: {}", e))?)
+        match std::fs::File::open(path) {
+            Ok(file) => serde_yaml::from_reader(file)
+                .map_err(|e| format!("Couldn't parse your config.yaml. Reason: {}", e).into()),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(e) => Err(e.into()),
+        }
     }
 }
