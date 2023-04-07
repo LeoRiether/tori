@@ -2,7 +2,7 @@ use crate::app::MyBackend;
 use crate::app::Screen;
 use crate::App;
 
-use crate::app::playlist_management;
+use crate::m3u::playlist_management;
 use crate::command;
 use crate::events::Event;
 use crossterm::event::KeyCode;

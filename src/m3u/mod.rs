@@ -12,6 +12,8 @@ pub use stringreader::StringReader;
 pub mod parser;
 pub use parser::Parser;
 
+pub mod playlist_management;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Song {
     pub title: String,
