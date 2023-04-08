@@ -4,7 +4,8 @@
 ![tori](https://user-images.githubusercontent.com/8211902/230677856-02e4886e-84bf-4d21-ad70-0a625df4f24a.jpg)
 
 ## Configuration
-Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is, depending on your operating system:
+Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is,
+depending on your operating system:
 
 |Platform | Value                                 | Example                                  |
 | ------- | ------------------------------------- | ---------------------------------------- |
@@ -13,11 +14,11 @@ Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is, dep
 | Windows | `{FOLDERID_LocalAppData}`             | C:\Users\Alice\AppData\Local             |
 
 The default directory tori uses to store playlists also depends on your OS:
-|Platform | Value              | Example              |
-| ------- | ------------------ | -------------------- |
-| Linux   | `XDG_MUSIC_DIR`    | /home/alice/Music    |
-| macOS   | `$HOME`/Music      | /Users/Alice/Music   |
-| Windows | `{FOLDERID_Music}` | C:\Users\Alice\Music |
+| Platform | Value                   | Example                   |
+| -------  | ------------------      | --------------------      |
+| Linux    | `XDG_MUSIC_DIR`/tori    | /home/alice/Music/tori    |
+| macOS    | `$HOME`/Music/tori      | /Users/Alice/Music/tori   |
+| Windows  | `{FOLDERID_Music}`/tori | C:\Users\Alice\Music\tori |
 
 Here's the default configuration file:
 ```yaml
