@@ -337,7 +337,9 @@ impl<'t> Component for BrowseScreen<'t> {
                 self.handle_command(app, cmd)?;
             }
             SongAdded { playlist, song } => {
-                self.reload_songs();
+                if self.playlists.selected_item() == Some(playlist.as_str()) {
+                    self.reload_songs();
+                }
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             SecondTick => {}
