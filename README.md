@@ -12,24 +12,33 @@ Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is, dep
 | macOS   | `$HOME`/Library/Application Support   | /Users/Alice/Library/Application Support |
 | Windows | `{FOLDERID_LocalAppData}`             | C:\Users\Alice\AppData\Local             |
 
-Here's an example of a configuration file:
+The default directory tori uses to store playlists also depends on your OS:
+|Platform | Value              | Example              |
+| ------- | ------------------ | -------------------- |
+| Linux   | `XDG_MUSIC_DIR`    | /home/alice/Music    |
+| macOS   | `$HOME`/Music      | /Users/Alice/Music   |
+| Windows | `{FOLDERID_Music}` | C:\Users\Alice\Music |
+
+Here's the default configuration file:
 ```yaml
-playlists_dir: /home/leonardo/Music/tori
+playlists_dir: {audio_dir describe in the above table}
 normal:
   C-c: Quit
   C-d: Quit
+  h: SelectLeft
   j: SelectNext
   k: SelectPrev
-  '>': NextSong 
-  '<': PrevSong 
+  l: SelectRight
+  ">": NextSong
+  "<": PrevSong
   q: QueueSong
   A-enter: QueueShown
   S-right: SeekForward
   S-left: SeekBackward
   o: OpenInBrowser
-  y: CopyUrl # y for 'yank', like in vim
+  y: CopyUrl
   t: CopyTitle
-  ' ': TogglePause
+  " ": TogglePause
   A-up: VolumeUp
   A-down: VolumeDown
   m: Mute
@@ -37,7 +46,15 @@ normal:
   a: Add
   R: Rename
   X: Delete
-  ',': Shuffle
+  J: SwapSongDown
+  K: SwapSongUp
+  ",": Shuffle
+  v: ToggleVisualizer
+```
+
+You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:
+```yaml
+    A-enter: Nop
 ```
 
 ## Dependencies

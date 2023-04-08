@@ -1,0 +1,29 @@
+playlists_dir: this is a placeholder value, src/config.rs overrides it
+normal:
+  C-c: Quit
+  C-d: Quit
+  h: SelectLeft
+  j: SelectNext
+  k: SelectPrev
+  l: SelectRight
+  ">": NextSong
+  "<": PrevSong
+  q: QueueSong
+  A-enter: QueueShown
+  S-right: SeekForward
+  S-left: SeekBackward
+  o: OpenInBrowser
+  y: CopyUrl
+  t: CopyTitle
+  " ": TogglePause
+  A-up: VolumeUp
+  A-down: VolumeDown
+  m: Mute
+  p: PlayFromModal
+  a: Add
+  R: Rename
+  X: Delete
+  J: SwapSongDown
+  K: SwapSongUp
+  ",": Shuffle
+  v: ToggleVisualizer
