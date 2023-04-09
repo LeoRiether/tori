@@ -39,10 +39,10 @@ pub enum Command {
     /// Select previous item (like a song or playlist)
     SelectPrev,
 
-    /// Select the pane to the right (the same as pressing the <right> key)
+    /// Select the pane to the right (the same as pressing the \<right> key)
     SelectRight,
 
-    /// Select the pane to the left (the same as pressing the <left> key)
+    /// Select the pane to the left (the same as pressing the \<left> key)
     SelectLeft,
 
     /// Add a new song or playlist

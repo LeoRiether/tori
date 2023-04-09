@@ -253,9 +253,8 @@ impl<'a> StatefulWidget for CenteredList<'a> {
                     &blank_symbol
                 };
 
-                // NOTE: this is how we center the span :)
-                // idk why there's a +1 there
-                let offset = (list_area.width / 2).saturating_sub((line.width() + 1) as u16 / 2);
+                let offset = list_area.width.saturating_sub(line.width() as u16) / 2;
+                let offset = offset.saturating_sub(1); // idk why either
 
                 let (elem_x, max_element_width) = if has_selection {
                     let (elem_x, _) = buf.set_stringn(
