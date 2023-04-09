@@ -214,6 +214,14 @@ impl<'t> SongsPane<'t> {
                     self.select_next();
                 }
             }
+            NextSortingMode => {
+                // For now this just sorts by title
+                // BUG: sorting messes with the indices, so renaming/deleting a song does it
+                // to the wrong song!
+                self.filter.clear();
+                self.refresh_shown();
+                self.songs.sort_by(|s0, s1| s0.title.cmp(&s1.title));
+            }
             _ => {}
         }
         Ok(())

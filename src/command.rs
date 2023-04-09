@@ -17,6 +17,7 @@ pub enum Command {
     VolumeDown,
     Mute,
     ToggleVisualizer,
+    NextSortingMode,
 
     /// Rename selected song or playlist
     Rename,
