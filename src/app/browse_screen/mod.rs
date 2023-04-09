@@ -77,7 +77,9 @@ impl<'a> BrowseScreen<'a> {
     }
 
     pub fn reload_songs(&mut self) {
-        self.songs = SongsPane::from_playlist_pane(&self.playlists);
+        let state = self.songs.state();
+        self.songs = SongsPane::from_playlist_pane(&self.playlists)
+            .with_state(state);
     }
 
     /// Passes the event down to the currently selected pane.
