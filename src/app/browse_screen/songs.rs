@@ -36,9 +36,12 @@ impl<'t> SongsPane<'t> {
     pub fn state(&self) -> TableState {
         self.shown.state.clone()
     }
-    pub fn with_state(mut self, state: TableState) -> Self {
+    pub fn set_state(&mut self, state: TableState) {
         self.shown.state = state;
-        self
+    }
+
+    pub fn songs(&self) -> &[m3u::Song] {
+        &self.songs
     }
 
     pub fn from_playlist_pane(playlists: &super::playlists::PlaylistsPane) -> Self {
