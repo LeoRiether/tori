@@ -1,17 +1,18 @@
-use crate::app::component::Component;
-use crate::app::MyBackend;
-use crate::App;
+use crate::{
+    app::{component::Component, MyBackend},
+    command,
+    events::Event,
+    m3u::playlist_management,
+    App,
+};
 
-use crate::command;
-use crate::events::Event;
-use crate::m3u::playlist_management;
 use crossterm::event::KeyCode;
+
 use std::borrow::Cow;
 use std::error::Error;
 use tui::layout::Rect;
 use tui::style::Color;
 use tui::style::Style;
-
 use tui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -217,12 +218,19 @@ impl<'a> BrowseScreen<'a> {
                     if let (Some(playlist), Some(index)) =
                         (self.playlists.selected_item(), self.songs.selected_index())
                     {
+                        // kind of a hack, sorry
+                        // couldn't figure out how to downcast Box<dyn Modal> to Box<InputModal>
                         self.open_modal(
-                            " Rename song (esc cancels) ",
+                            "<placeholder>",
                             ModalType::RenameSong {
                                 playlist: playlist.to_owned(),
                                 index,
                             },
+                        );
+
+                        let song_title = self.songs.selected_item().unwrap().title.clone();
+                        self.modal = Box::new(
+                            InputModal::new(" Rename song (esc cancels) ").set_input(song_title),
                         );
                     }
                 }
@@ -261,6 +269,10 @@ impl<'a> BrowseScreen<'a> {
     ) -> Result<(), Box<dyn Error>> {
         use Event::*;
         use KeyCode::*;
+
+        if let BrowsePane::Modal(_) = self.selected_pane {
+            return self.pass_event_down(app, Terminal(event));
+        }
 
         match event {
             crossterm::event::Event::Key(event) => match event.code {
@@ -333,9 +345,7 @@ impl<'t> Component for BrowseScreen<'t> {
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
         use Event::*;
         match event {
-            Command(cmd) => {
-                self.handle_command(app, cmd)?;
-            }
+            Command(cmd) => self.handle_command(app, cmd)?,
             SongAdded { playlist, song } => {
                 if self.playlists.selected_item() == Some(playlist.as_str()) {
                     self.reload_songs();
@@ -346,9 +356,7 @@ impl<'t> Component for BrowseScreen<'t> {
             ChangedPlaylist => {
                 self.reload_songs();
             }
-            Terminal(event) => {
-                self.handle_terminal_event(app, event)?;
-            }
+            Terminal(event) => self.handle_terminal_event(app, event)?,
         }
         Ok(())
     }

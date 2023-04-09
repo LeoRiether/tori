@@ -3,7 +3,8 @@ use std::{borrow::Cow, error::Error, mem};
 use crossterm::event::KeyCode;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
@@ -12,6 +13,9 @@ use crate::events::Event;
 
 use super::{Mode, MyBackend};
 
+///////////////////////////////////////////////////
+//                    Message                    //
+///////////////////////////////////////////////////
 /// The return type for [Modal::handle_event].
 #[derive(Debug, Default, PartialEq)]
 pub enum Message {
@@ -26,8 +30,9 @@ pub enum Message {
     Commit(String),
 }
 
-// TODO: maybe I should have a Component trait? With handle_event<T>, render and mode.
-// Then modals are simply Component<Message>
+/////////////////////////////////////////////////
+//                    Modal                    //
+/////////////////////////////////////////////////
 pub trait Modal {
     fn apply_style(&mut self, style: Style);
     fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>>;
@@ -41,10 +46,14 @@ impl Default for Box<dyn Modal> {
     }
 }
 
+///////////////////////////////////////////////////////
+//                    Input Modal                    //
+///////////////////////////////////////////////////////
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
 pub struct InputModal<'t> {
     title: Cow<'t, str>,
+    cursor: usize,
     input: String,
     style: Style,
 }
@@ -53,8 +62,24 @@ impl<'t> InputModal<'t> {
     pub fn new(title: impl Into<Cow<'t, str>>) -> Self {
         Self {
             title: title.into(),
-            input: String::new(),
+            cursor: 0,
+            input: String::default(),
             style: Style::default().fg(Color::LightBlue),
+        }
+    }
+
+    pub fn set_input(mut self, input: String) -> Self {
+        self.input = input;
+        self.cursor = self.input.len();
+        self
+    }
+
+    fn move_cursor(&mut self, x: isize) {
+        let inc = |y: usize| (y as isize + x).min(self.input.len() as isize).max(0) as usize;
+        self.cursor = inc(self.cursor);
+
+        while !self.input.is_char_boundary(self.cursor) {
+            self.cursor = inc(self.cursor);
         }
     }
 }
@@ -69,9 +94,32 @@ impl<'t> Modal for InputModal<'t> {
         use KeyCode::*;
         if let Terminal(crossterm::event::Event::Key(event)) = event {
             match event.code {
-                Char(c) => self.input.push(c),
+                Char(c) => {
+                    self.input.insert(self.cursor, c);
+                    self.move_cursor(1);
+                }
                 Backspace => {
-                    self.input.pop();
+                    if self.cursor > 0 {
+                        self.move_cursor(-1);
+                        self.input.remove(self.cursor);
+                    }
+                }
+                Delete => {
+                    if self.cursor < self.input.len() {
+                        self.input.remove(self.cursor);
+                    }
+                }
+                Left => {
+                    self.move_cursor(-1);
+                }
+                Right => {
+                    self.move_cursor(1);
+                }
+                Home => {
+                    self.cursor = 0;
+                }
+                End => {
+                    self.cursor = self.input.len();
                 }
                 Esc => {
                     self.input.clear();
@@ -98,9 +146,24 @@ impl<'t> Modal for InputModal<'t> {
             .border_type(BorderType::Double)
             .border_style(self.style);
 
-        let paragraph = Paragraph::new(format!("\n{}", self.input))
-            .block(block)
-            .alignment(Alignment::Center);
+        // split input as [left, cursor, right]
+        let (left, right) = self.input.split_at(self.cursor);
+        let mut indices = right.char_indices();
+        let (in_cursor, right) = indices
+            .next()
+            .map(|_| right.split_at(indices.next().map(|(w, _)| w).unwrap_or(right.len())))
+            .unwrap_or((" ", ""));
+
+        let paragraph = Paragraph::new(vec![
+            Spans::from(vec![]), // empty first line
+            Spans::from(vec![
+                Span::raw(left),
+                Span::styled(in_cursor, Style::default().add_modifier(Modifier::REVERSED)),
+                Span::raw(right),
+            ]),
+        ])
+        .block(block)
+        .alignment(Alignment::Center);
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
@@ -111,6 +174,9 @@ impl<'t> Modal for InputModal<'t> {
     }
 }
 
+//////////////////////////////////////////////////////////////
+//                    Confirmation Modal                    //
+//////////////////////////////////////////////////////////////
 /// A confirmation modal box that asks for user yes/no input
 #[derive(Debug, Default)]
 pub struct ConfirmationModal {
