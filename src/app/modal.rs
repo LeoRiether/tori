@@ -326,4 +326,49 @@ mod tests {
             Some(Message::Quit)
         );
     }
+
+    #[test]
+    fn test_modal_cursor_ascii() {
+        let mut modal = InputModal::new("modal cursor");
+        modal.input = "Hello World!".into();
+        assert_eq!(modal.cursor, 0);
+
+        modal.move_cursor(1);
+        assert_eq!(modal.cursor, 1);
+
+        modal.move_cursor(1);
+        assert_eq!(modal.cursor, 2);
+
+        modal.move_cursor(-1);
+        assert_eq!(modal.cursor, 1);
+
+        modal.move_cursor(-1);
+        assert_eq!(modal.cursor, 0);
+
+        modal.move_cursor(-1);
+        assert_eq!(modal.cursor, 0);
+
+        modal.move_cursor(1000);
+        assert_eq!(modal.cursor, modal.input.len());
+    }
+
+    #[test]
+    fn test_modal_cursor_unicode() {
+        let mut modal = InputModal::new("modal cursor");
+        modal.input = "おはよう".into();
+        assert_eq!(modal.cursor, 0);
+
+        modal.move_cursor(1);
+        assert_eq!(modal.cursor, 3);
+
+        modal.move_cursor(1);
+        assert_eq!(modal.cursor, 6);
+
+        modal.move_cursor(-1);
+        assert_eq!(modal.cursor, 3);
+
+        modal.move_cursor(-1);
+        assert_eq!(modal.cursor, 0);
+    }
+
 }
