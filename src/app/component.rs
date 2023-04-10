@@ -25,3 +25,4 @@ pub trait Component {
     );
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
 }
+

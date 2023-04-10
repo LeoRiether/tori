@@ -3,10 +3,11 @@ use crate::{
     command,
     events::Event,
     m3u::playlist_management,
+    util::RectContains,
     App,
 };
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, MouseButton, MouseEvent, MouseEventKind};
 
 use std::borrow::Cow;
 use std::error::Error;
@@ -287,11 +288,33 @@ impl<'a> BrowseScreen<'a> {
                 }
                 _ => self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?,
             },
-            _ => {
-                self.pass_event_down(app, Terminal(event))?;
-            }
+            crossterm::event::Event::Mouse(mouse) => self.handle_mouse(app, mouse)?,
+            _ => self.pass_event_down(app, Terminal(event))?,
         }
         Ok(())
+    }
+
+    fn handle_mouse(&mut self, app: &mut App, mouse: MouseEvent) -> Result<(), Box<dyn Error>> {
+        let event = Event::Terminal(crossterm::event::Event::Mouse(mouse));
+
+        if let BrowsePane::Modal(_) = self.selected_pane {
+            return self.pass_event_down(app, event);
+        }
+
+        let hchunks = self.subcomponent_chunks(app.frame_size());
+        if hchunks[0].contains(mouse.column, mouse.row) {
+            if let MouseEventKind::Down(_) = mouse.kind {
+                self.selected_pane = BrowsePane::Playlists;
+            }
+            self.playlists
+                .handle_event(app, event)
+        } else {
+            if let MouseEventKind::Down(_) = mouse.kind {
+                self.selected_pane = BrowsePane::Songs;
+            }
+            self.songs
+                .handle_event(app, Event::Terminal(crossterm::event::Event::Mouse(mouse)))
+        }
     }
 
     // TODO: I don't know how to make this 'a instead of 'static :(
@@ -322,16 +345,20 @@ impl<'a> BrowseScreen<'a> {
             Modal(_) => {}
         }
     }
+
+    fn subcomponent_chunks(&self, chunk: Rect) -> Vec<Rect> {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
+            .split(chunk)
+    }
 }
 
 impl<'t> Component for BrowseScreen<'t> {
     type RenderState = ();
 
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {
-        let hchunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
-            .split(chunk);
+        let hchunks = self.subcomponent_chunks(chunk);
 
         self.playlists.render(
             frame,

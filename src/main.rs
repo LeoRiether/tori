@@ -6,6 +6,7 @@ pub mod events;
 pub mod m3u;
 pub mod shortcuts;
 pub mod visualizer;
+pub mod util;
 
 use app::App;
 use argh::FromArgs;

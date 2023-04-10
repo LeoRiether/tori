@@ -10,7 +10,7 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, style::Color, Terminal};
+use tui::{backend::CrosstermBackend, style::Color, Terminal, layout::Rect};
 
 use crate::{
     app::component::Mode,
@@ -242,6 +242,13 @@ impl<'a> App<'a> {
         self.notification =
             Notification::new(text, Duration::from_secs(4)).colored(Color::LightGreen);
     }
+
+    /////////////////////////
+    //        Frame        //
+    /////////////////////////
+    pub fn frame_size(&mut self) -> Rect {
+        self.terminal.get_frame().size()
+    }
 }
 
 pub fn setup_terminal() -> Result<(), Box<dyn Error>> {
@@ -255,3 +262,4 @@ pub fn reset_terminal() -> Result<(), Box<dyn Error>> {
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
 }
+

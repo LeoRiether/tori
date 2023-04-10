@@ -1,15 +1,18 @@
 use std::borrow::Cow;
+use std::time::{Duration, Instant};
 use std::{error::Error, path::Path};
 
 use crate::events::Event;
 use crate::m3u;
+use crate::util::{ClickInfo, ClickUpdateSummary};
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
     config::Config,
 };
 
 use clipboard::{ClipboardContext, ClipboardProvider};
-use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
+use tui::layout::Rect;
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
@@ -23,6 +26,7 @@ pub struct SongsPane<'t> {
     songs: Vec<m3u::Song>,
     shown: FilteredList<TableState>,
     filter: String,
+    last_click: Option<ClickInfo>,
 }
 
 impl<'t> SongsPane<'t> {
@@ -77,6 +81,7 @@ impl<'t> SongsPane<'t> {
             songs,
             shown,
             filter: String::new(),
+            last_click: None,
         };
 
         me.refresh_shown();
@@ -110,15 +115,7 @@ impl<'t> SongsPane<'t> {
                 }
 
                 match event.code {
-                    Enter => {
-                        if let Some(song) = self.selected_item() {
-                            app.mpv.playlist_load_files(&[(
-                                &song.path,
-                                libmpv::FileState::Replace,
-                                None,
-                            )])?;
-                        }
-                    }
+                    Enter => self.play_selected(app)?,
                     Esc => {
                         self.filter.clear();
                         self.refresh_shown();
@@ -138,6 +135,10 @@ impl<'t> SongsPane<'t> {
             crossterm::event::Event::Mouse(event) => match event.kind {
                 MouseEventKind::ScrollUp => self.select_prev(),
                 MouseEventKind::ScrollDown => self.select_next(),
+                MouseEventKind::Down(MouseButton::Left) => {
+                    let frame_size = app.frame_size();
+                    self.click(app, frame_size, event.row)?;
+                }
                 _ => {}
             },
             _ => {}
@@ -253,12 +254,52 @@ impl<'t> SongsPane<'t> {
         }
     }
 
+    pub fn play_selected(&self, app: &mut App) -> Result<(), Box<dyn Error>> {
+        if let Some(song) = self.selected_item() {
+            app.mpv
+                .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])?;
+        }
+        Ok(())
+    }
+
+    fn click(&mut self, app: &mut App, frame: Rect, y: u16) -> Result<(), Box<dyn Error>> {
+        // Compute clicked line
+        let top = frame
+            .inner(&layout::Margin {
+                vertical: 1,
+                horizontal: 1,
+            })
+            .top();
+        let line = y.saturating_sub(top) as usize;
+
+        // Update self.last_click with current click
+        let click_summary = ClickInfo::update(&mut self.last_click, y);
+
+        // User clicked outside the list
+        if line >= self.shown.items.len() {
+            return Ok(());
+        }
+
+        // Select song
+        self.select_index(Some(line));
+
+        // If it's a double click, play this selected song 
+        if click_summary.double_click {
+            self.play_selected(app)?;
+        }
+        Ok(())
+    }
+
     pub fn select_next(&mut self) {
         self.shown.select_next();
     }
 
     pub fn select_prev(&mut self) {
         self.shown.select_prev();
+    }
+
+    pub fn select_index(&mut self, i: Option<usize>) {
+        self.shown.state.select(i);
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
@@ -344,3 +385,4 @@ impl<'t> Component for SongsPane<'t> {
         Ok(())
     }
 }
+

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{command, events};
+use crate::{command, events, util::RectContains};
 
 mod now_playing;
 use now_playing::NowPlaying;
@@ -100,6 +100,13 @@ impl<'a> AppScreen<'a> {
         }
         Ok(())
     }
+
+    fn subcomponent_chunks(&self, frame: Rect) -> Vec<Rect> {
+        Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
+            .split(frame)
+    }
 }
 
 impl<'a> Component for AppScreen<'a> {
@@ -113,10 +120,7 @@ impl<'a> Component for AppScreen<'a> {
     }
 
     fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect, (): ()) {
-        let vchunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
-            .split(chunk);
+        let vchunks = self.subcomponent_chunks(chunk);
 
         match self.selected {
             Selected::Browse => self.browse.render(frame, vchunks[0], ()),
@@ -141,6 +145,16 @@ impl<'a> Component for AppScreen<'a> {
                 }
                 _ => self.pass_event_down(app, event)?,
             },
+            Terminal(crossterm::event::Event::Mouse(mouse)) => {
+                let vchunks = self.subcomponent_chunks(app.frame_size());
+                if vchunks[0].contains(mouse.column, mouse.row) {
+                    // pass down to BrowseScreen or PlaylistScreen
+                    return self.pass_event_down(app, event);
+                }
+                if vchunks[1].contains(mouse.column, mouse.row) {
+                    return self.now_playing.handle_event(app, event);
+                }
+            }
             SecondTick => {
                 self.now_playing.update(&app.mpv);
                 self.pass_event_down(app, event)?;

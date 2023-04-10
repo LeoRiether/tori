@@ -3,8 +3,9 @@ use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::config::Config;
 use crate::events::Event;
 
-use crossterm::event::{KeyCode, KeyEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use std::error::Error;
+use tui::layout::Rect;
 
 use tui::{
     layout,
@@ -89,6 +90,11 @@ impl PlaylistsPane {
         app.channel.send(Event::ChangedPlaylist).unwrap();
     }
 
+    pub fn select_index(&mut self, app: &mut App, i: Option<usize>) {
+        self.shown.state.select(i);
+        app.channel.send(Event::ChangedPlaylist).unwrap();
+    }
+
     pub fn selected_item(&self) -> Option<&str> {
         self.shown
             .selected_item()
@@ -110,6 +116,19 @@ impl PlaylistsPane {
             crate::app::setup_terminal().unwrap();
         }
         Ok(())
+    }
+
+    fn click(&mut self, app: &mut App, frame: Rect, y: u16) {
+        let top = frame
+            .inner(&layout::Margin {
+                vertical: 1,
+                horizontal: 1,
+            })
+            .top();
+        let line = y.saturating_sub(top) as usize;
+        if line < self.shown.items.len() {
+            self.select_index(app, Some(line));
+        }
     }
 }
 
@@ -187,6 +206,10 @@ impl Component for PlaylistsPane {
                 crossterm::event::Event::Mouse(event) => match event.kind {
                     MouseEventKind::ScrollUp => self.select_prev(app),
                     MouseEventKind::ScrollDown => self.select_next(app),
+                    MouseEventKind::Down(MouseButton::Left) => {
+                        let frame_size = app.frame_size();
+                        self.click(app, frame_size, event.row);
+                    }
                     _ => {}
                 },
                 _ => {}
