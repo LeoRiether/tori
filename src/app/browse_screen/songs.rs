@@ -369,10 +369,16 @@ impl<'t> Component for SongsPane<'t> {
     }
 
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: layout::Rect, is_focused: bool) {
+        let sorting = match self.sorting_method {
+            SortingMethod::Index => "",
+            SortingMethod::Title => " [↑ Title]",
+            SortingMethod::Duration => " [↑ Duration]",
+        };
+
         let title = if !self.filter.is_empty() {
-            format!(" {} ", self.filter)
+            format!(" {}{} ", self.filter, sorting)
         } else {
-            format!(" {} ", self.title)
+            format!(" {}{} ", self.title, sorting)
         };
 
         let mut block = Block::default()

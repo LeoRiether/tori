@@ -51,11 +51,15 @@ impl PlaylistsPane {
     }
 
     fn refresh_shown(&mut self) {
-        self.shown.filter(&self.playlists, |s| {
-            self.filter.is_empty()
-                || s.to_lowercase()
-                    .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
-        }, |i, j| i.cmp(&j));
+        self.shown.filter(
+            &self.playlists,
+            |s| {
+                self.filter.is_empty()
+                    || s.to_lowercase()
+                        .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
+            },
+            |i, j| i.cmp(&j),
+        );
     }
 
     pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
