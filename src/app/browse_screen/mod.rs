@@ -7,7 +7,7 @@ use crate::{
     App,
 };
 
-use crossterm::event::{KeyCode, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};
 
 use std::borrow::Cow;
 use std::error::Error;
@@ -306,8 +306,7 @@ impl<'a> BrowseScreen<'a> {
             if let MouseEventKind::Down(_) = mouse.kind {
                 self.selected_pane = BrowsePane::Playlists;
             }
-            self.playlists
-                .handle_event(app, event)
+            self.playlists.handle_event(app, event)
         } else {
             if let MouseEventKind::Down(_) = mouse.kind {
                 self.selected_pane = BrowsePane::Songs;

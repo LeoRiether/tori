@@ -5,8 +5,8 @@ pub mod dbglog;
 pub mod events;
 pub mod m3u;
 pub mod shortcuts;
-pub mod visualizer;
 pub mod util;
+pub mod visualizer;
 
 use app::App;
 use argh::FromArgs;

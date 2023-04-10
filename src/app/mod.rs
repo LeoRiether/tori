@@ -10,7 +10,7 @@ use std::{
     io,
     time::{self, Duration},
 };
-use tui::{backend::CrosstermBackend, style::Color, Terminal, layout::Rect};
+use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
 
 use crate::{
     app::component::Mode,
@@ -262,4 +262,3 @@ pub fn reset_terminal() -> Result<(), Box<dyn Error>> {
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
 }
-

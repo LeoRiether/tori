@@ -370,5 +370,4 @@ mod tests {
         modal.move_cursor(-1);
         assert_eq!(modal.cursor, 0);
     }
-
 }

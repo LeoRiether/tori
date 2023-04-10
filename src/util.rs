@@ -46,7 +46,7 @@ impl ClickInfo {
             ClickUpdateSummary { double_click }
         } else {
             ClickUpdateSummary {
-                double_click: false
+                double_click: false,
             }
         };
 

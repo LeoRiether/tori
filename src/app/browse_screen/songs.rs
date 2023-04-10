@@ -1,10 +1,10 @@
 use std::borrow::Cow;
-use std::time::{Duration, Instant};
+
 use std::{error::Error, path::Path};
 
 use crate::events::Event;
 use crate::m3u;
-use crate::util::{ClickInfo, ClickUpdateSummary};
+use crate::util::ClickInfo;
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
     config::Config,
@@ -283,7 +283,7 @@ impl<'t> SongsPane<'t> {
         // Select song
         self.select_index(Some(line));
 
-        // If it's a double click, play this selected song 
+        // If it's a double click, play this selected song
         if click_summary.double_click {
             self.play_selected(app)?;
         }
@@ -385,4 +385,3 @@ impl<'t> Component for SongsPane<'t> {
         Ok(())
     }
 }
-
