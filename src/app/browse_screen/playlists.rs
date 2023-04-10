@@ -55,7 +55,7 @@ impl PlaylistsPane {
             self.filter.is_empty()
                 || s.to_lowercase()
                     .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
-        }, |i, j, _method| i.cmp(&j));
+        }, |i, j| i.cmp(&j));
     }
 
     pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {

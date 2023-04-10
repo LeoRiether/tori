@@ -29,29 +29,6 @@ impl Selectable for TableState {
 }
 
 /////////////////////////////////
-//        SortingMethod        //
-/////////////////////////////////
-#[derive(Debug, Default, Clone, Copy)]
-pub enum SortingMethod {
-    #[default]
-    /// identity permutation
-    Index,
-    Title,
-    Duration,
-}
-
-impl SortingMethod {
-    pub fn next(&self) -> Self {
-        use SortingMethod::*;
-        match self {
-            Index => Title,
-            Title => Duration,
-            Duration => Index,
-        }
-    }
-}
-
-/////////////////////////////////
 //        Filtered List        //
 /////////////////////////////////
 #[derive(Debug, Default)]
@@ -59,14 +36,13 @@ pub struct FilteredList<St: Selectable> {
     /// List of indices of the original list
     pub items: Vec<usize>,
     pub state: St,
-    pub sorting_method: SortingMethod,
 }
 
 impl<St: Selectable> FilteredList<St> {
-    pub fn filter<T, P, S>(&mut self, items: &[T], pred: P, comparison: S)
+    pub fn filter<T, P, S>(&mut self, items: &[T], pred: P, sorting: S)
     where
         P: Fn(&T) -> bool,
-        S: Fn(usize, usize, SortingMethod) -> std::cmp::Ordering,
+        S: Fn(usize, usize) -> std::cmp::Ordering,
     {
         let previous_selection = self.selected_item();
 
@@ -77,9 +53,7 @@ impl<St: Selectable> FilteredList<St> {
             })
             .collect();
 
-        if !matches!(self.sorting_method, SortingMethod::Index) {
-            self.items.sort_by(|&i, &j| comparison(i, j, self.sorting_method));
-        }
+        self.items.sort_by(|&i, &j| sorting(i, j));
 
         let new_selection = self
             .items
@@ -90,10 +64,6 @@ impl<St: Selectable> FilteredList<St> {
             .or(if self.items.is_empty() { None } else { Some(0) });
 
         self.state.select(new_selection);
-    }
-
-    pub fn next_sorting_method(&mut self) {
-        self.sorting_method = self.sorting_method.next();
     }
 
     pub fn select_next(&mut self) {

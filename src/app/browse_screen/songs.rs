@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use std::{error::Error, path::Path};
 
-use crate::app::filtered_list::SortingMethod;
 use crate::events::Event;
 use crate::m3u;
 use crate::util::ClickInfo;
@@ -21,13 +20,39 @@ use tui::{
     Frame,
 };
 
-fn compare_songs(a: &m3u::Song, b: &m3u::Song, method: SortingMethod) -> std::cmp::Ordering {
+/////////////////////////////////
+//        SortingMethod        //
+/////////////////////////////////
+#[derive(Debug, Default, Clone, Copy)]
+enum SortingMethod {
+    #[default]
+    /// identity permutation
+    Index,
+    Title,
+    Duration,
+}
+
+impl SortingMethod {
+    pub fn next(&self) -> Self {
+        use SortingMethod::*;
+        match self {
+            Index => Title,
+            Title => Duration,
+            Duration => Index,
+        }
+    }
+}
+
+fn compare_songs(
+    i: usize,
+    j: usize,
+    songs: &[m3u::Song],
+    method: SortingMethod,
+) -> std::cmp::Ordering {
     match method {
-        SortingMethod::Index => unreachable!(
-            "SortingMethod::Index should generate the identity permutation instead of calling sort"
-        ),
-        SortingMethod::Title => a.title.cmp(&b.title),
-        SortingMethod::Duration => a.duration.cmp(&b.duration),
+        SortingMethod::Index => i.cmp(&j),
+        SortingMethod::Title => songs[i].title.cmp(&songs[j].title),
+        SortingMethod::Duration => songs[i].duration.cmp(&songs[j].duration),
     }
 }
 
@@ -36,6 +61,7 @@ pub struct SongsPane<'t> {
     title: Cow<'t, str>,
     songs: Vec<m3u::Song>,
     shown: FilteredList<TableState>,
+    sorting_method: SortingMethod,
     filter: String,
     last_click: Option<ClickInfo>,
 }
@@ -116,8 +142,12 @@ impl<'t> SongsPane<'t> {
                     .to_lowercase()
                     .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
         };
-        let comparison = |i, j, method| compare_songs(&self.songs[i], &self.songs[j], method);
+        let comparison = |i, j| compare_songs(i, j, &self.songs, self.sorting_method);
         self.shown.filter(&self.songs, pred, comparison);
+    }
+
+    fn next_sorting_method(&mut self) {
+        self.sorting_method = self.sorting_method.next();
     }
 
     fn handle_terminal_event(
@@ -239,7 +269,7 @@ impl<'t> SongsPane<'t> {
                 }
             }
             NextSortingMode => {
-                self.shown.next_sorting_method();
+                self.next_sorting_method();
                 self.refresh_shown();
             }
             _ => {}
@@ -319,9 +349,7 @@ impl<'t> SongsPane<'t> {
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.shown
-            .selected_item()
-            .and_then(|i| self.songs.get(i))
+        self.shown.selected_item().and_then(|i| self.songs.get(i))
     }
 
     pub fn selected_index(&self) -> Option<usize> {
