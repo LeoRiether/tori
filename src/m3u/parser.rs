@@ -128,6 +128,9 @@ impl<L: LineReader> Parser<L> {
                 }
             } else {
                 song.path = line.into();
+                if song.title.is_empty() {
+                    song.title = song.path.clone();
+                }
                 return Ok(Some(song));
             }
         }

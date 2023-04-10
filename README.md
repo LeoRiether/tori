@@ -26,31 +26,32 @@ playlists_dir: {audio_dir describe in the above table}
 normal:
   C-c: Quit
   C-d: Quit
-  h: SelectLeft
-  j: SelectNext
-  k: SelectPrev
-  l: SelectRight
   ">": NextSong
   "<": PrevSong
-  q: QueueSong
-  A-enter: QueueShown
+  " ": TogglePause
   S-right: SeekForward
   S-left: SeekBackward
   o: OpenInBrowser
   y: CopyUrl
   t: CopyTitle
-  " ": TogglePause
   A-up: VolumeUp
   A-down: VolumeDown
   m: Mute
-  p: PlayFromModal
-  a: Add
+  v: ToggleVisualizer
+  s: NextSortingMode
   R: Rename
   X: Delete
   J: SwapSongDown
   K: SwapSongUp
   ",": Shuffle
-  v: ToggleVisualizer
+  h: SelectLeft
+  j: SelectNext
+  k: SelectPrev
+  l: SelectRight
+  a: Add
+  q: QueueSong
+  A-enter: QueueShown
+  p: PlayFromModal
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:
