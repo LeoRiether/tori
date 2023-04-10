@@ -311,8 +311,7 @@ impl<'a> BrowseScreen<'a> {
             if let MouseEventKind::Down(_) = mouse.kind {
                 self.selected_pane = BrowsePane::Songs;
             }
-            self.songs
-                .handle_event(app, Event::Terminal(crossterm::event::Event::Mouse(mouse)))
+            self.songs.handle_event(app, event)
         }
     }
 
