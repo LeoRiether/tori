@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use std::{error::Error, path::Path};
 
+use crate::app::filtered_list::SortingMethod;
 use crate::events::Event;
 use crate::m3u;
 use crate::util::ClickInfo;
@@ -19,6 +20,16 @@ use tui::{
     widgets::{Block, BorderType, Borders, Row, Table, TableState},
     Frame,
 };
+
+fn compare_songs(a: &m3u::Song, b: &m3u::Song, method: SortingMethod) -> std::cmp::Ordering {
+    match method {
+        SortingMethod::Index => unreachable!(
+            "SortingMethod::Index should generate the identity permutation instead of calling sort"
+        ),
+        SortingMethod::Title => a.title.cmp(&b.title),
+        SortingMethod::Duration => a.duration.cmp(&b.duration),
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct SongsPane<'t> {
@@ -44,22 +55,24 @@ impl<'t> SongsPane<'t> {
         self.shown.state = state;
     }
 
-    pub fn songs(&self) -> &[m3u::Song] {
-        &self.songs
-    }
-
-    pub fn from_playlist_pane(playlists: &super::playlists::PlaylistsPane) -> Self {
+    pub fn update_from_playlist_pane(
+        &mut self,
+        playlists: &super::playlists::PlaylistsPane,
+    ) -> Result<(), Box<dyn Error>> {
         match playlists.selected_item() {
-            Some(playlist) => SongsPane::from_playlist_named(playlist),
-            None => SongsPane::new(),
+            Some(playlist) => self.update_from_playlist_named(playlist),
+            None => {
+                *self = SongsPane::new();
+                Ok(())
+            }
         }
     }
 
-    pub fn from_playlist_named(name: &str) -> Self {
-        Self::from_playlist(Config::playlist_path(name))
+    pub fn update_from_playlist_named(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
+        self.update_from_playlist(Config::playlist_path(name))
     }
 
-    pub fn from_playlist(path: impl AsRef<Path>) -> Self {
+    pub fn update_from_playlist(&mut self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
         // TODO: maybe return Result?
         let file = std::fs::File::open(&path)
             .unwrap_or_else(|_| panic!("Couldn't open playlist file {}", path.as_ref().display()));
@@ -72,24 +85,29 @@ impl<'t> SongsPane<'t> {
                 .to_string(),
         );
 
-        // TODO: maybe return Result?
-        let songs = m3u::Parser::from_reader(file).all_songs().unwrap();
-        let shown = FilteredList::default();
+        let songs = m3u::Parser::from_reader(file).all_songs()?;
+        let state = self.state();
 
-        let mut me = Self {
-            title,
-            songs,
-            shown,
-            filter: String::new(),
-            last_click: None,
-        };
+        // Update stuff
+        self.title = title;
+        self.songs = songs;
+        self.filter.clear();
+        self.refresh_shown();
 
-        me.refresh_shown();
-        me
+        // Try to reuse previous state
+        if matches!(state.selected(), Some(i) if i < self.songs.len()) {
+            self.set_state(state);
+        } else if self.shown.items.is_empty() {
+            self.select_index(None);
+        } else {
+            self.select_index(Some(0));
+        }
+
+        Ok(())
     }
 
     fn refresh_shown(&mut self) {
-        self.shown.filter(&self.songs, |s| {
+        let pred = |s: &m3u::Song| {
             self.filter.is_empty()
                 || s.title
                     .to_lowercase()
@@ -97,7 +115,9 @@ impl<'t> SongsPane<'t> {
                 || s.path
                     .to_lowercase()
                     .contains(&self.filter[1..].trim_end_matches('\n').to_lowercase())
-        });
+        };
+        let comparison = |i, j, method| compare_songs(&self.songs[i], &self.songs[j], method);
+        self.shown.filter(&self.songs, pred, comparison);
     }
 
     fn handle_terminal_event(
@@ -219,12 +239,8 @@ impl<'t> SongsPane<'t> {
                 }
             }
             NextSortingMode => {
-                // For now this just sorts by title
-                // BUG: sorting messes with the indices, so renaming/deleting a song does it
-                // to the wrong song!
-                self.filter.clear();
+                self.shown.next_sorting_method();
                 self.refresh_shown();
-                self.songs.sort_by(|s0, s1| s0.title.cmp(&s1.title));
             }
             _ => {}
         }
@@ -303,7 +319,9 @@ impl<'t> SongsPane<'t> {
     }
 
     pub fn selected_item(&self) -> Option<&m3u::Song> {
-        self.shown.selected_item().and_then(|i| self.songs.get(i))
+        self.shown
+            .selected_item()
+            .and_then(|i| self.songs.get(i))
     }
 
     pub fn selected_index(&self) -> Option<usize> {

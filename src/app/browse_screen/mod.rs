@@ -69,7 +69,8 @@ impl<'a> std::fmt::Debug for BrowseScreen<'a> {
 impl<'a> BrowseScreen<'a> {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         let playlists = PlaylistsPane::new()?;
-        let songs = SongsPane::from_playlist_pane(&playlists);
+        let mut songs = SongsPane::default();
+        songs.update_from_playlist_pane(&playlists)?;
         Ok(Self {
             playlists,
             songs,
@@ -77,12 +78,8 @@ impl<'a> BrowseScreen<'a> {
         })
     }
 
-    pub fn reload_songs(&mut self) {
-        let state = self.songs.state();
-        self.songs = SongsPane::from_playlist_pane(&self.playlists);
-        if matches!(state.selected(), Some(i) if i < self.songs.songs().len()) {
-            self.songs.set_state(state);
-        }
+    pub fn reload_songs(&mut self) -> Result<(), Box<dyn Error>> {
+        self.songs.update_from_playlist_pane(&self.playlists)
     }
 
     /// Passes the event down to the currently selected pane.
@@ -160,7 +157,7 @@ impl<'a> BrowseScreen<'a> {
                 }
                 (RenameSong { playlist, index }, Commit(new_name)) => {
                     playlist_management::rename_song(playlist, *index, &new_name)?;
-                    self.reload_songs();
+                    self.reload_songs()?;
                     self.selected_pane = BrowsePane::Songs;
                 }
 
@@ -176,7 +173,7 @@ impl<'a> BrowseScreen<'a> {
                 }
                 (DeleteSong { playlist, index }, Commit(_)) => {
                     playlist_management::delete_song(playlist, *index)?;
-                    self.reload_songs();
+                    self.reload_songs()?;
                     self.selected_pane = BrowsePane::Songs;
                 }
             }
@@ -377,13 +374,13 @@ impl<'t> Component for BrowseScreen<'t> {
             Command(cmd) => self.handle_command(app, cmd)?,
             SongAdded { playlist, song } => {
                 if self.playlists.selected_item() == Some(playlist.as_str()) {
-                    self.reload_songs();
+                    self.reload_songs()?;
                 }
                 app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             SecondTick => {}
             ChangedPlaylist => {
-                self.reload_songs();
+                self.reload_songs()?;
             }
             Terminal(event) => self.handle_terminal_event(app, event)?,
         }
