@@ -62,6 +62,7 @@ You can override shortcuts in your config file, or remove some by binding them t
 ## Dependencies
 - [mpv](https://mpv.io/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (or youtube-dl)
+- [cava](https://github.com/karlstav/cava) for the visualizer
 
 ## yt-dlp
 If you want to use yt-dlp instead of youtube-dl, edit your `mpv.conf` and paste the following line:
