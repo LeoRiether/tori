@@ -25,6 +25,12 @@ struct MyTableState {
     _selected: Option<usize>,
 }
 
+fn horrible_hack_to_get_offset(state: &TableState) -> usize {
+    // SAFETY: there are some tests that try to check if ListState and MyListState have the same
+    // layout, but that's it :)
+    unsafe { std::mem::transmute::<&TableState, &MyTableState>(state).offset }
+}
+
 /////////////////////////////////
 //        SortingMethod        //
 /////////////////////////////////
@@ -322,7 +328,7 @@ impl<'t> SongsPane<'t> {
             })
             .top();
         let line = y.saturating_sub(top) as usize;
-        let index = line + self.horrible_hack_to_get_offset();
+        let index = line + horrible_hack_to_get_offset(&self.shown.state);
 
         // Update self.last_click with current click
         let click_summary = ClickInfo::update(&mut self.last_click, y);
@@ -340,12 +346,6 @@ impl<'t> SongsPane<'t> {
             self.play_selected(app)?;
         }
         Ok(())
-    }
-
-    fn horrible_hack_to_get_offset(&self) -> usize {
-        // SAFETY: should work as long as the tui TableState doesn't change and rustc
-        // compiles it to the same thing as MyTableState. So, very little!
-        unsafe { std::mem::transmute::<&TableState, &MyTableState>(&self.shown.state).offset }
     }
 
     pub fn select_next(&mut self) {
@@ -453,11 +453,41 @@ impl<'t> Component for SongsPane<'t> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{thread_rng, Rng};
     use std::mem::size_of;
+    use tui::buffer::{Buffer, Cell};
+    use tui::widgets::StatefulWidget;
 
     #[test]
-    fn test_my_table_state() {
+    fn test_my_table_state_size() {
         assert_eq!(size_of::<MyTableState>(), size_of::<TableState>());
     }
-}
 
+    #[test]
+    fn test_my_table_state_offset() {
+        let area = Rect {
+            x: 0,
+            width: 64,
+            y: 0,
+            height: 1, // ensures offset == selected
+        };
+        let mut buf = Buffer {
+            area,
+            content: vec![Cell::default(); 64],
+        };
+
+        let items = 32;
+        let mut state = TableState::default();
+        for _ in 0..10 {
+            let offset = thread_rng().gen_range(0..32);
+            state.select(Some(offset));
+
+            // Render table in a really small area so it changes the state.offset
+            let table = Table::new(vec![Row::new(vec!["Hello World!"]); items]);
+            table.render(area, &mut buf, &mut state);
+
+            // Assert our hack worked
+            assert_eq!(horrible_hack_to_get_offset(&state), offset);
+        }
+    }
+}
