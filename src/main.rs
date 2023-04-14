@@ -1,3 +1,7 @@
+//! tori is a terminal-based music player and playlist manager that can play music from anywhere,
+//! including external URLs supported by yt-dlp and local files.
+//! ![tori](https://user-images.githubusercontent.com/8211902/230677856-02e4886e-84bf-4d21-ad70-0a625df4f24a.jpg)
+
 pub mod app;
 pub mod command;
 pub mod config;
