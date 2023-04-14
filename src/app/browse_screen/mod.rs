@@ -25,13 +25,12 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
-use super::modal::ConfirmationModal;
-use super::modal::Modal;
-use super::modal::{self, InputModal};
+use super::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
 use super::Mode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ModalType {
+    Help,
     Play,
     AddSong { playlist: String },
     AddPlaylist,
@@ -107,6 +106,10 @@ impl<'a> BrowseScreen<'a> {
             use ModalType::*;
             match (modal_type, msg) {
                 (_, Nothing) => {}
+
+                (Help, _) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
 
                 // AddSong
                 (AddSong { playlist: _ }, Quit) => {
@@ -279,10 +282,13 @@ impl<'a> BrowseScreen<'a> {
         match event {
             crossterm::event::Event::Key(event) => match event.code {
                 Right | Left => self.select_next_panel(),
-                // 'c'hange
-                KeyCode::Char('c') if self.mode() == Mode::Normal => {
-                    self.playlists.open_editor_for_selected()?;
+                Char('?') if self.mode() == Mode::Normal => {
+                    self.open_help_modal();
                 }
+                // 'c'hange
+                // KeyCode::Char('c') if self.mode() == Mode::Normal => {
+                //     self.playlists.open_editor_for_selected()?;
+                // }
                 _ => self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?,
             },
             crossterm::event::Event::Mouse(mouse) => self.handle_mouse(app, mouse)?,
@@ -325,6 +331,12 @@ impl<'a> BrowseScreen<'a> {
     fn open_confirmation(&mut self, title: &str, modal_type: ModalType) -> &mut Box<dyn Modal> {
         self.selected_pane = BrowsePane::Modal(modal_type);
         self.modal = Box::new(ConfirmationModal::new(title));
+        &mut self.modal
+    }
+
+    fn open_help_modal(&mut self) -> &mut Box<dyn Modal> {
+        self.selected_pane = BrowsePane::Modal(ModalType::Help);
+        self.modal = Box::new(HelpModal::new());
         &mut self.modal
     }
 

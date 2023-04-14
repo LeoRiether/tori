@@ -247,5 +247,48 @@ mod tests {
                 }
             ]),
         );
+
+        let mut parser = Parser::from_string(
+            r#"
+            #EXTM3U
+            #DOESNOTBEGINWITHEXT
+            something.mp3
+            "#,
+        );
+
+        assert_eq!(
+            parser.all_songs().ok(),
+            Some(vec![
+                Song {
+                    title: "#DOESNOTBEGINWITHEXT".into(),
+                    duration: Duration::default(),
+                    path: "#DOESNOTBEGINWITHEXT".into(),
+                },
+                Song {
+                    title: "something.mp3".into(),
+                    duration: Duration::default(),
+                    path: "something.mp3".into()
+                },
+            ]),
+        );
+    }
+
+    #[test]
+    fn test_extline_errors() {
+        let mut parser = Parser::from_string(
+            r#"
+            #EXTM3U
+
+            #EXTINF:10,Artist - Title
+            https://www.youtube.com/watch?v=dQw4w9WgXcQ
+            #EXTNOTSUPPORTED
+            /path/to/local/song
+            "#,
+        );
+
+        assert!(matches!(
+            parser.all_songs(),
+            Err(ParserError::UnknownExtline(s)) if s == "#EXTNOTSUPPORTED"
+        ));
     }
 }
