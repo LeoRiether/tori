@@ -14,6 +14,12 @@ use tui::{
     Frame,
 };
 
+// For the horrible_hack_to_get_offset
+struct MyListState {
+    offset: usize,
+    _selected: Option<usize>,
+}
+
 #[derive(Debug, Default)]
 pub struct PlaylistsPane {
     playlists: Vec<String>,
@@ -130,9 +136,16 @@ impl PlaylistsPane {
             })
             .top();
         let line = y.saturating_sub(top) as usize;
-        if line < self.shown.items.len() {
-            self.select_index(app, Some(line));
+        let index = line + self.horrible_hack_to_get_offset();
+        if index < self.shown.items.len() {
+            self.select_index(app, Some(index));
         }
+    }
+
+    fn horrible_hack_to_get_offset(&self) -> usize {
+        // SAFETY: should work as long as the tui ListState doesn't change and rustc
+        // compiles it to the same thing as MyListState. So, very little!
+        unsafe { std::mem::transmute::<&ListState, &MyListState>(&self.shown.state).offset }
     }
 }
 
@@ -224,3 +237,15 @@ impl Component for PlaylistsPane {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn test_my_list_state() {
+        assert_eq!(size_of::<MyListState>(), size_of::<ListState>());
+    }
+}
+

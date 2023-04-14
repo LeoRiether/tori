@@ -20,6 +20,11 @@ use tui::{
     Frame,
 };
 
+struct MyTableState {
+    offset: usize,
+    _selected: Option<usize>,
+}
+
 /////////////////////////////////
 //        SortingMethod        //
 /////////////////////////////////
@@ -309,7 +314,7 @@ impl<'t> SongsPane<'t> {
     }
 
     fn click(&mut self, app: &mut App, frame: Rect, y: u16) -> Result<(), Box<dyn Error>> {
-        // Compute clicked line
+        // Compute clicked item
         let top = frame
             .inner(&layout::Margin {
                 vertical: 1,
@@ -317,23 +322,30 @@ impl<'t> SongsPane<'t> {
             })
             .top();
         let line = y.saturating_sub(top) as usize;
+        let index = line + self.horrible_hack_to_get_offset();
 
         // Update self.last_click with current click
         let click_summary = ClickInfo::update(&mut self.last_click, y);
 
         // User clicked outside the list
-        if line >= self.shown.items.len() {
+        if index >= self.shown.items.len() {
             return Ok(());
         }
 
         // Select song
-        self.select_index(Some(line));
+        self.select_index(Some(index));
 
         // If it's a double click, play this selected song
         if click_summary.double_click {
             self.play_selected(app)?;
         }
         Ok(())
+    }
+
+    fn horrible_hack_to_get_offset(&self) -> usize {
+        // SAFETY: should work as long as the tui TableState doesn't change and rustc
+        // compiles it to the same thing as MyTableState. So, very little!
+        unsafe { std::mem::transmute::<&TableState, &MyTableState>(&self.shown.state).offset }
     }
 
     pub fn select_next(&mut self) {
@@ -437,3 +449,15 @@ impl<'t> Component for SongsPane<'t> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn test_my_table_state() {
+        assert_eq!(size_of::<MyTableState>(), size_of::<TableState>());
+    }
+}
+
