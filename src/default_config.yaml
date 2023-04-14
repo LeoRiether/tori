@@ -1,5 +1,6 @@
 playlists_dir: this is a placeholder value, src/config.rs overrides it
 normal:
+  '?': OpenHelpModal
   C-c: Quit
   C-d: Quit
   ">": NextSong

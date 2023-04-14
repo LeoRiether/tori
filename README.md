@@ -24,6 +24,7 @@ Here's the default configuration file:
 ```yaml
 playlists_dir: {audio_dir describe in the above table}
 normal:
+  '?': OpenHelpModal
   C-c: Quit
   C-d: Quit
   ">": NextSong

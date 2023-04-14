@@ -197,6 +197,9 @@ impl<'a> BrowseScreen<'a> {
             PlayFromModal => {
                 self.open_modal(" Play ", ModalType::Play);
             }
+            OpenHelpModal => {
+                self.open_help_modal();
+            }
             SelectRight | SelectLeft => self.select_next_panel(),
             // TODO: this should probably be in each pane's handle_event, somehow
             Add => match self.selected_pane {
@@ -282,9 +285,6 @@ impl<'a> BrowseScreen<'a> {
         match event {
             crossterm::event::Event::Key(event) => match event.code {
                 Right | Left => self.select_next_panel(),
-                Char('?') if self.mode() == Mode::Normal => {
-                    self.open_help_modal();
-                }
                 // 'c'hange
                 // KeyCode::Char('c') if self.mode() == Mode::Normal => {
                 //     self.playlists.open_editor_for_selected()?;
