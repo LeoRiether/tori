@@ -16,7 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    # - name: Build
-    #   run: cargo build --verbose
+    - name: Install libmpv
+      run: sudo apt-get -y install libmpv-dev
+    - name: Build
+      run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
