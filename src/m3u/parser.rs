@@ -8,6 +8,37 @@ use std::{
 use super::Song;
 use super::StringReader;
 
+/////////////////////////
+//        Error        //
+/////////////////////////
+#[derive(Debug)]
+pub enum ParserError {
+    Io(io::Error),
+    UnknownExtline(String),
+}
+
+impl Error for ParserError {}
+
+impl From<io::Error> for ParserError {
+    fn from(e: io::Error) -> Self {
+        ParserError::Io(e)
+    }
+}
+
+impl std::fmt::Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParserError::Io(e) => write!(f, "IO error: {}", e),
+            ParserError::UnknownExtline(s) => write!(f, "Unknown EXT directive: {}", s),
+        }
+    }
+}
+
+pub type Result<T> = std::result::Result<T, ParserError>;
+
+//////////////////////////////////
+//        Ext Directives        //
+//////////////////////////////////
 #[derive(Debug, PartialEq)]
 enum Ext {
     Extm3u,
@@ -18,11 +49,11 @@ enum Ext {
 //        LineReader        //
 //////////////////////////////
 pub trait LineReader {
-    fn next_line(&mut self) -> Result<(String, usize), io::Error>;
+    fn next_line(&mut self) -> std::result::Result<(String, usize), io::Error>;
 }
 
 impl<R: Read> LineReader for BufReader<R> {
-    fn next_line(&mut self) -> Result<(String, usize), io::Error> {
+    fn next_line(&mut self) -> std::result::Result<(String, usize), io::Error> {
         let mut buf = String::new();
         let count = self.read_line(&mut buf)?;
         Ok((buf, count))
@@ -47,7 +78,7 @@ impl Parser<BufReader<fs::File>> {
         }
     }
 
-    pub fn from_path(path: impl AsRef<std::path::Path>) -> Result<Self, Box<dyn Error>> {
+    pub fn from_path(path: impl AsRef<std::path::Path>) -> Result<Self> {
         let file = fs::File::open(path)?;
         Ok(Self::from_file(file))
     }
@@ -78,7 +109,7 @@ impl<L: LineReader> Parser<L> {
         self.cursor
     }
 
-    fn peek_line(&mut self) -> Result<Option<&str>, Box<dyn Error>> {
+    fn peek_line(&mut self) -> Result<Option<&str>> {
         if self.line_buf.is_none() {
             let (mut line, bytes) = self.reader.next_line()?;
             if bytes == 0 {
@@ -97,12 +128,12 @@ impl<L: LineReader> Parser<L> {
         Ok(self.line_buf.as_deref())
     }
 
-    fn consume_line(&mut self) -> Result<Option<String>, Box<dyn Error>> {
+    fn consume_line(&mut self) -> Result<Option<String>> {
         self.peek_line()?;
         Ok(self.line_buf.take())
     }
 
-    pub fn next_header(&mut self) -> Result<bool, Box<dyn Error>> {
+    pub fn next_header(&mut self) -> Result<bool> {
         match self.peek_line()? {
             Some(line) if line.starts_with("#EXTM3U") => {
                 self.consume_line()?;
@@ -112,12 +143,12 @@ impl<L: LineReader> Parser<L> {
         }
     }
 
-    pub fn next_song(&mut self) -> Result<Option<Song>, Box<dyn Error>> {
+    pub fn next_song(&mut self) -> Result<Option<Song>> {
         let mut song = Song::default();
         while let Some(line) = self.consume_line()? {
             let line = line.trim();
             if line.is_empty() {
-            } else if line.starts_with('#') {
+            } else if line.starts_with("#EXT") {
                 use Ext::*;
                 match parse_extline(line)? {
                     Extm3u => {}
@@ -137,7 +168,7 @@ impl<L: LineReader> Parser<L> {
         Ok(None)
     }
 
-    pub fn all_songs(&mut self) -> Result<Vec<Song>, Box<dyn Error>> {
+    pub fn all_songs(&mut self) -> Result<Vec<Song>> {
         let mut songs = Vec::new();
         while let Some(song) = self.next_song()? {
             songs.push(song);
@@ -146,7 +177,7 @@ impl<L: LineReader> Parser<L> {
     }
 }
 
-fn parse_extline(line: &str) -> Result<Ext, Box<dyn Error>> {
+fn parse_extline(line: &str) -> Result<Ext> {
     use Ext::*;
     if line.starts_with("#EXTM3U") {
         return Ok(Extm3u);
@@ -164,8 +195,7 @@ fn parse_extline(line: &str) -> Result<Ext, Box<dyn Error>> {
         return Ok(Extinf(duration, title));
     }
 
-    // TODO: improve error handling here
-    Err(format!("Unknown extline: {}", line).into())
+    Err(ParserError::UnknownExtline(line.to_string()))
 }
 
 #[cfg(test)]
