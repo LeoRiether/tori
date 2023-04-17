@@ -58,6 +58,9 @@ pub enum Command {
 
     /// Queries the user for a song to play, without adding it to a playlist
     PlayFromModal,
+
+    /// Open the playlist file in the configured by the environment variable `EDITOR`.
+    OpenInEditor,
 }
 
 #[cfg(test)]

@@ -264,6 +264,7 @@ impl<'a> BrowseScreen<'a> {
                 }
                 _ => {}
             },
+            OpenInEditor => self.playlists.open_editor_for_selected(app)?,
             _ => self.pass_event_down(app, Event::Command(cmd))?,
         }
         Ok(())
@@ -285,10 +286,6 @@ impl<'a> BrowseScreen<'a> {
         match event {
             crossterm::event::Event::Key(event) => match event.code {
                 Right | Left => self.select_next_panel(),
-                // 'c'hange
-                // KeyCode::Char('c') if self.mode() == Mode::Normal => {
-                //     self.playlists.open_editor_for_selected()?;
-                // }
                 _ => self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?,
             },
             crossterm::event::Event::Mouse(mouse) => self.handle_mouse(app, mouse)?,

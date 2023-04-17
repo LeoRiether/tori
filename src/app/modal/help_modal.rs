@@ -107,6 +107,6 @@ impl Modal for HelpModal {
     }
 
     fn mode(&self) -> Mode {
-        Mode::Normal
+        Mode::Insert
     }
 }

@@ -4,11 +4,13 @@ use crate::config::Config;
 use crate::events::Event;
 
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::ExecutableCommand;
 use std::error::Error;
-use tui::layout::Rect;
+use std::io;
 
 use tui::{
-    layout,
+    layout::{self, Rect},
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, List, ListItem, ListState},
     Frame,
@@ -118,18 +120,23 @@ impl PlaylistsPane {
             .map(|s| s.as_str())
     }
 
-    pub fn open_editor_for_selected(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn open_editor_for_selected(&mut self, app: &mut App) -> Result<(), Box<dyn Error>> {
         if let Some(selected) = self.selected_item() {
-            crate::app::reset_terminal().unwrap();
-
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
-            std::process::Command::new(editor)
+
+            let _lock = app.channel.receiving_crossterm.lock().unwrap();
+            io::stdout().execute(LeaveAlternateScreen)?;
+
+            let res = std::process::Command::new(&editor)
                 .arg(Config::playlist_path(selected))
                 .status()
-                .expect("Failed to execute editor");
-            self.reload_from_dir()?;
+                .map_err(|err| format!("Failed to execute editor '{}': {}", editor, err));
 
-            crate::app::setup_terminal().unwrap();
+            io::stdout().execute(EnterAlternateScreen)?;
+
+            res?;
+            self.reload_from_dir()?;
+            app.terminal.clear()?;
         }
         Ok(())
     }

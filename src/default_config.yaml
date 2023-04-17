@@ -29,3 +29,4 @@ normal:
   q: QueueSong
   A-enter: QueueShown
   p: PlayFromModal
+  E: OpenInEditor
