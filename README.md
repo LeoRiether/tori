@@ -1,6 +1,8 @@
 # tori
 ## Terminal-based music player
 
+tori is a terminal-based music player and playlist manager that can play music from anywhere, including external URLs supported by yt-dlp and local files.
+
 ![tori](https://user-images.githubusercontent.com/8211902/230677856-02e4886e-84bf-4d21-ad70-0a625df4f24a.jpg)
 
 ## Configuration
@@ -14,6 +16,7 @@ depending on your operating system:
 | Windows | `{FOLDERID_LocalAppData}`             | C:\Users\Alice\AppData\Local             |
 
 The default directory tori uses to store playlists also depends on your OS:
+
 | Platform | Value                   | Example                   |
 | -------  | ------------------      | --------------------      |
 | Linux    | `XDG_MUSIC_DIR`/tori    | /home/alice/Music/tori    |
@@ -23,6 +26,9 @@ The default directory tori uses to store playlists also depends on your OS:
 Here's the default configuration file:
 ```yaml
 playlists_dir: {audio_dir describe in the above table}
+visualizer_gradient:
+  - [46, 20, 66]
+  - [16, 30, 71]
 normal:
   '?': OpenHelpModal
   C-c: Quit
@@ -42,6 +48,8 @@ normal:
   s: NextSortingMode
   R: Rename
   X: Delete
+  S-down: SwapSongDown
+  S-up: SwapSongUp
   J: SwapSongDown
   K: SwapSongUp
   ",": Shuffle
@@ -53,6 +61,7 @@ normal:
   q: QueueSong
   A-enter: QueueShown
   p: PlayFromModal
+  E: OpenInEditor
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:

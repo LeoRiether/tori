@@ -17,6 +17,8 @@ use tui::{
     style::{Color, Style},
 };
 
+use crate::config::Config;
+
 macro_rules! cava_config {
     () => {
         r#"
@@ -94,27 +96,24 @@ impl Visualizer {
 
     pub fn render(&self, buffer: &mut tui::buffer::Buffer) {
         let lerp = |from: u8, to: u8, perc: f64| {
-            (perc * (to as f64) + (1. - perc) * (from as f64)).round() as u8
+            (from as f64 + perc * (to as f64 - from as f64)).round() as u8
         };
-        let lerp_rgb = |from: (u8, u8, u8), to: (u8, u8, u8), perc| {
+        let lerp_grad = |gradient: [(u8, u8, u8); 2], perc| {
             Color::Rgb(
-                lerp(from.0, to.0, perc),
-                lerp(from.1, to.1, perc),
-                lerp(from.2, to.2, perc),
+                lerp(gradient[0].0, gradient[1].0, perc),
+                lerp(gradient[0].1, gradient[1].1, perc),
+                lerp(gradient[0].2, gradient[1].2, perc),
             )
         };
 
-        // let left_color = (37, 28, 156);
-        // let right_color = (104, 27, 171);
-        let left_color = (40, 17, 105);
-        let right_color = (21, 71, 133);
+        let gradient = Config::global().visualizer_gradient;
 
         let data = self.data.lock().unwrap();
         let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
         let size = *buffer.area();
         for i in 0..columns {
             let perc = i as f64 / columns as f64;
-            let style = Style::default().bg(lerp_rgb(left_color, right_color, perc));
+            let style = Style::default().bg(lerp_grad(gradient, perc));
             let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
 
             let area = Rect {

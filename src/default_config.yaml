@@ -1,4 +1,7 @@
 playlists_dir: this is a placeholder value, src/config.rs overrides it
+visualizer_gradient:
+  - [46, 20, 66]
+  - [16, 30, 71]
 normal:
   '?': OpenHelpModal
   C-c: Quit
@@ -18,6 +21,8 @@ normal:
   s: NextSortingMode
   R: Rename
   X: Delete
+  S-down: SwapSongDown
+  S-up: SwapSongUp
   J: SwapSongDown
   K: SwapSongUp
   ",": Shuffle

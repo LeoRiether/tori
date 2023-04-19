@@ -7,6 +7,7 @@ use crate::shortcuts::Shortcuts;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub playlists_dir: String,
+    pub visualizer_gradient: [(u8, u8, u8); 2],
     pub normal: Shortcuts,
 }
 
@@ -36,6 +37,10 @@ impl Config {
             }
         }
 
+        if let Some(visualizer_gradient) = other.visualizer_gradient {
+            self.visualizer_gradient = visualizer_gradient;
+        }
+
         self
     }
 }
@@ -57,6 +62,7 @@ impl Default for Config {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct OptionalConfig {
     pub playlists_dir: Option<String>,
+    pub visualizer_gradient: Option<[(u8, u8, u8); 2]>,
     pub normal: Option<Shortcuts>,
 }
 
