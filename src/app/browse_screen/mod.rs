@@ -133,6 +133,9 @@ impl<'a> BrowseScreen<'a> {
                         Err(CreatePlaylistError::PlaylistAlreadyExists) => {
                             app.notify_err(format!("Playlist '{}' already exists!", playlist));
                         }
+                        Err(CreatePlaylistError::InvalidChar(c)) => {
+                            app.notify_err(format!("Playlist names cannot contain '{}'", c));
+                        }
                         Err(CreatePlaylistError::IOError(e)) => return Err(e.into()),
                     }
                     self.selected_pane = BrowsePane::Playlists;

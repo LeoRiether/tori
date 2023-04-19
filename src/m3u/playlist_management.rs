@@ -59,6 +59,7 @@ fn image_file(file: &std::path::Path) -> bool {
 #[derive(Debug)]
 pub enum CreatePlaylistError {
     PlaylistAlreadyExists,
+    InvalidChar(char),
     IOError(io::Error),
 }
 
@@ -70,6 +71,13 @@ impl From<io::Error> for CreatePlaylistError {
 
 /// Creates the corresponding .m3u8 file for a new playlist
 pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
+    if playlist_name.contains('/') {
+        return Err(CreatePlaylistError::InvalidChar('/'));
+    }
+    if playlist_name.contains('\\') {
+        return Err(CreatePlaylistError::InvalidChar('\\'));
+    }
+
     let path = Config::playlist_path(playlist_name);
 
     // TODO: when it's stabilized, use std::fs::File::create_new
