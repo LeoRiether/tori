@@ -96,6 +96,7 @@ pub mod m3u;
 pub mod shortcuts;
 pub mod util;
 pub mod visualizer;
+pub mod widgets;
 
 use app::App;
 use argh::FromArgs;

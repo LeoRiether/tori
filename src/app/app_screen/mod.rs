@@ -7,7 +7,10 @@ use now_playing::NowPlaying;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 use super::{
-    browse_screen::BrowseScreen, component::Component, playlist_screen::PlaylistScreen, App, Mode,
+    browse_screen::BrowseScreen,
+    component::{MouseHandler, Component},
+    playlist_screen::PlaylistScreen,
+    App, Mode,
 };
 
 #[derive(Debug, Default)]
@@ -145,22 +148,34 @@ impl<'a> Component for AppScreen<'a> {
                 }
                 _ => self.pass_event_down(app, event)?,
             },
-            Terminal(crossterm::event::Event::Mouse(mouse)) => {
-                let vchunks = self.subcomponent_chunks(app.frame_size());
-                if vchunks[0].contains(mouse.column, mouse.row) {
-                    // pass down to BrowseScreen or PlaylistScreen
-                    return self.pass_event_down(app, event);
-                }
-                if vchunks[1].contains(mouse.column, mouse.row) {
-                    return self.now_playing.handle_event(app, event);
-                }
-            }
             SecondTick => {
                 self.now_playing.update(&app.mpv);
                 self.pass_event_down(app, event)?;
             }
             _ => self.pass_event_down(app, event)?,
         }
+        Ok(())
+    }
+}
+
+impl<'a> MouseHandler for AppScreen<'a> {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>> {
+        let vchunks = self.subcomponent_chunks(chunk);
+        if vchunks[0].contains(event.column, event.row) {
+            return match self.selected {
+                Selected::Browse => self.browse.handle_mouse(app, vchunks[0], event),
+                Selected::Playlist => self.playlist.handle_mouse(app, vchunks[0], event),
+            };
+        }
+        if vchunks[1].contains(event.column, event.row) {
+            return self.now_playing.handle_mouse(app, vchunks[1], event);
+        }
+
         Ok(())
     }
 }

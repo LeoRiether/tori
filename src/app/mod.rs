@@ -1,5 +1,7 @@
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyEvent, KeyModifiers},
+    event::{
+        DisableMouseCapture, EnableMouseCapture, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind,
+    },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -32,7 +34,7 @@ use crate::events::Event;
 
 use self::{
     app_screen::AppScreen,
-    component::{Component, MyBackend},
+    component::{MouseHandler, Component, MyBackend},
 };
 
 const FRAME_DELAY_MS: u16 = 16;
@@ -174,9 +176,19 @@ impl<'a> App<'a> {
     }
 
     fn handle_event(&mut self, event: events::Event) -> Result<(), Box<dyn Error>> {
+
         match &event {
             Event::Command(command::Command::ToggleVisualizer) => {
                 self.toggle_visualizer()?;
+            }
+            Event::Terminal(crossterm::event::Event::Mouse(mouse_event))
+                 =>
+            {
+                let screen = self.screen.clone();
+                let chunk = self.frame_size();
+                screen
+                    .borrow_mut()
+                    .handle_mouse(self, chunk, *mouse_event)?;
             }
             _otherwise => {
                 let screen = self.screen.clone();

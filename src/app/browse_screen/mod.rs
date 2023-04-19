@@ -25,7 +25,7 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
-use super::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
+use super::{modal::{self, ConfirmationModal, HelpModal, InputModal, Modal}, component::MouseHandler};
 use super::Mode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -312,31 +312,9 @@ impl<'a> BrowseScreen<'a> {
                 Right | Left => self.select_next_panel(),
                 _ => self.pass_event_down(app, Terminal(crossterm::event::Event::Key(event)))?,
             },
-            crossterm::event::Event::Mouse(mouse) => self.handle_mouse(app, mouse)?,
             _ => self.pass_event_down(app, Terminal(event))?,
         }
         Ok(())
-    }
-
-    fn handle_mouse(&mut self, app: &mut App, mouse: MouseEvent) -> Result<(), Box<dyn Error>> {
-        let event = Event::Terminal(crossterm::event::Event::Mouse(mouse));
-
-        if let BrowsePane::Modal(_) = self.selected_pane {
-            return self.pass_event_down(app, event);
-        }
-
-        let hchunks = self.subcomponent_chunks(app.frame_size());
-        if hchunks[0].contains(mouse.column, mouse.row) {
-            if let MouseEventKind::Down(_) = mouse.kind {
-                self.selected_pane = BrowsePane::Playlists;
-            }
-            self.playlists.handle_event(app, event)
-        } else {
-            if let MouseEventKind::Down(_) = mouse.kind {
-                self.selected_pane = BrowsePane::Songs;
-            }
-            self.songs.handle_event(app, event)
-        }
     }
 
     // TODO: I don't know how to make this 'a instead of 'static :(
@@ -426,6 +404,28 @@ impl<'t> Component for BrowseScreen<'t> {
             Playlists => self.playlists.mode(),
             Songs => self.songs.mode(),
             Modal(_) => self.modal.mode(),
+        }
+    }
+}
+
+impl<'a> MouseHandler for BrowseScreen<'a> {
+    fn handle_mouse(&mut self, app: &mut App, chunk: Rect, event: MouseEvent) -> Result<(), Box<dyn Error>> {
+        if let BrowsePane::Modal(_) = self.selected_pane {
+            // No modal clicks for now
+            return Ok(());
+        }
+
+        let hchunks = self.subcomponent_chunks(app.frame_size());
+        if hchunks[0].contains(event.column, event.row) {
+            if let MouseEventKind::Down(_) = event.kind {
+                self.selected_pane = BrowsePane::Playlists;
+            }
+            self.playlists.handle_mouse(app, hchunks[0], event)
+        } else {
+            if let MouseEventKind::Down(_) = event.kind {
+                self.selected_pane = BrowsePane::Songs;
+            }
+            self.songs.handle_mouse(app, hchunks[1], event)
         }
     }
 }

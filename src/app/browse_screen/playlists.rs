@@ -1,4 +1,4 @@
-use crate::app::component::Component;
+use crate::app::component::{Component, MouseHandler};
 use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
 use crate::config::Config;
 use crate::events::Event;
@@ -228,12 +228,6 @@ impl Component for PlaylistsPane {
                     }
                 }
                 crossterm::event::Event::Mouse(event) => match event.kind {
-                    MouseEventKind::ScrollUp => self.select_prev(app),
-                    MouseEventKind::ScrollDown => self.select_next(app),
-                    MouseEventKind::Down(MouseButton::Left) => {
-                        let frame_size = app.frame_size();
-                        self.click(app, frame_size, event.row);
-                    }
                     _ => {}
                 },
                 _ => {}
@@ -241,6 +235,23 @@ impl Component for PlaylistsPane {
             _ => {}
         }
 
+        Ok(())
+    }
+}
+
+impl MouseHandler for PlaylistsPane {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>> {
+        match event.kind {
+            MouseEventKind::ScrollUp => self.select_prev(app),
+            MouseEventKind::ScrollDown => self.select_next(app),
+            MouseEventKind::Down(MouseButton::Left) => self.click(app, chunk, event.row),
+            _ => {}
+        }
         Ok(())
     }
 }

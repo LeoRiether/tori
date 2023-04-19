@@ -2,9 +2,11 @@ use std::borrow::Cow;
 
 use std::{error::Error, path::Path};
 
+use crate::app::component::MouseHandler;
 use crate::events::Event;
 use crate::m3u;
 use crate::util::ClickInfo;
+use crate::widgets::Scrollbar;
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
     config::Config,
@@ -161,6 +163,7 @@ impl<'t> SongsPane<'t> {
         self.sorting_method = self.sorting_method.next();
     }
 
+    #[allow(clippy::single_match)]
     fn handle_terminal_event(
         &mut self,
         app: &mut App,
@@ -193,15 +196,6 @@ impl<'t> SongsPane<'t> {
                     _ => {}
                 }
             }
-            crossterm::event::Event::Mouse(event) => match event.kind {
-                MouseEventKind::ScrollUp => self.select_prev(),
-                MouseEventKind::ScrollDown => self.select_next(),
-                MouseEventKind::Down(MouseButton::Left) => {
-                    let frame_size = app.frame_size();
-                    self.click(app, frame_size, event.row)?;
-                }
-                _ => {}
-            },
             _ => {}
         }
         Ok(())
@@ -311,17 +305,22 @@ impl<'t> SongsPane<'t> {
         }
     }
 
-    pub fn play_selected(&self, app: &mut App) -> Result<(), Box<dyn Error>> {
-        if let Some(song) = self.selected_item() {
-            app.mpv
-                .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])?;
+    pub fn click(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        (x, y): (u16, u16),
+    ) -> Result<(), Box<dyn Error>> {
+        // Clicked on the scrollbar
+        if x + 1 == chunk.right() {
+            let perc = (y as f64 - chunk.top() as f64) / chunk.height as f64;
+            let len = self.shown.items.len().saturating_sub(1);
+            self.select_index(Some(((perc * len as f64) as usize).max(0).min(len)));
+            return Ok(());
         }
-        Ok(())
-    }
 
-    fn click(&mut self, app: &mut App, frame: Rect, y: u16) -> Result<(), Box<dyn Error>> {
         // Compute clicked item
-        let top = frame
+        let top = chunk
             .inner(&layout::Margin {
                 vertical: 1,
                 horizontal: 1,
@@ -344,6 +343,14 @@ impl<'t> SongsPane<'t> {
         // If it's a double click, play this selected song
         if click_summary.double_click {
             self.play_selected(app)?;
+        }
+        Ok(())
+    }
+
+    pub fn play_selected(&self, app: &mut App) -> Result<(), Box<dyn Error>> {
+        if let Some(song) = self.selected_item() {
+            app.mpv
+                .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])?;
         }
         Ok(())
     }
@@ -393,14 +400,17 @@ impl<'t> Component for SongsPane<'t> {
             format!(" {}{} ", self.title, sorting)
         };
 
-        let mut block = Block::default()
+        let border_style = if is_focused {
+            Style::default().fg(Color::LightBlue)
+        } else {
+            Style::default()
+        };
+
+        let block = Block::default()
             .title(title)
             .borders(Borders::ALL)
-            .border_type(BorderType::Plain);
-
-        if is_focused {
-            block = block.border_style(Style::default().fg(Color::LightBlue));
-        }
+            .border_type(BorderType::Plain)
+            .border_style(border_style);
 
         let songlist: Vec<_> = self
             .shown
@@ -419,6 +429,12 @@ impl<'t> Component for SongsPane<'t> {
             })
             .collect();
 
+        let scrollbar = Scrollbar::new(
+            self.selected_index().unwrap_or(0) as u16,
+            songlist.len() as u16,
+        )
+        .with_style(border_style);
+
         let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
         let widget = Table::new(songlist)
             .block(block)
@@ -426,6 +442,13 @@ impl<'t> Component for SongsPane<'t> {
             .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
             .highlight_symbol(" ◇");
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+        frame.render_widget(
+            scrollbar,
+            chunk.inner(&tui::layout::Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+        );
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
@@ -446,6 +469,25 @@ impl<'t> Component for SongsPane<'t> {
             _ => {}
         }
 
+        Ok(())
+    }
+}
+
+impl<'a> MouseHandler for SongsPane<'a> {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>> {
+        match event.kind {
+            MouseEventKind::ScrollUp => self.select_prev(),
+            MouseEventKind::ScrollDown => self.select_next(),
+            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left) => {
+                self.click(app, chunk, (event.column, event.row))?
+            }
+            _ => {}
+        }
         Ok(())
     }
 }

@@ -11,7 +11,7 @@ use tui::{
 
 use crate::{
     app::{
-        component::{Component, Mode},
+        component::{Component, Mode, MouseHandler},
         App, MyBackend,
     },
     events,
@@ -208,21 +208,27 @@ impl Component for NowPlaying {
 
     fn handle_event(
         &mut self,
-        app: &mut App,
-        event: events::Event,
+        _app: &mut App,
+        _event: events::Event,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        use crossterm::event::{Event::Mouse, MouseButton, MouseEventKind};
-        use events::Event::Terminal;
+        Ok(())
+    }
+}
 
-        if let Terminal(Mouse(mouse_event)) = event {
-            if matches!(
-                mouse_event.kind,
-                MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left)
-            ) {
-                self.click(app, mouse_event.column, mouse_event.row)?;
-            }
+impl MouseHandler for NowPlaying {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        _chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>> {
+        use crossterm::event::{MouseButton, MouseEventKind};
+        if matches!(
+            event.kind,
+            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left)
+        ) {
+            self.click(app, event.column, event.row)?;
         }
-
         Ok(())
     }
 }

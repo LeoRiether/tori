@@ -1,5 +1,8 @@
 use self::centered_list::{CenteredList, CenteredListItem, CenteredListState};
-use super::{component::Component, App, Mode};
+use super::{
+    component::{MouseHandler, Component},
+    App, Mode,
+};
 use crate::{command, events};
 use std::{error::Error, thread, time::Duration};
 use tui::{
@@ -137,6 +140,17 @@ impl Component for PlaylistScreen {
             }
             _ => {}
         }
+        Ok(())
+    }
+}
+
+impl MouseHandler for PlaylistScreen {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 }

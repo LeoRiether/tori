@@ -25,3 +25,12 @@ pub trait Component {
     );
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
 }
+
+pub trait MouseHandler {
+    fn handle_mouse(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        event: crossterm::event::MouseEvent,
+    ) -> Result<(), Box<dyn Error>>;
+}
