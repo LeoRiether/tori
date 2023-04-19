@@ -34,6 +34,7 @@ enum ModalType {
     Play,
     AddSong { playlist: String },
     AddPlaylist,
+    DeletePlaylist { playlist: String },
     RenameSong { playlist: String, index: usize },
     DeleteSong { playlist: String, index: usize },
 }
@@ -138,6 +139,17 @@ impl<'a> BrowseScreen<'a> {
                         }
                         Err(CreatePlaylistError::IOError(e)) => return Err(e.into()),
                     }
+                    self.selected_pane = BrowsePane::Playlists;
+                }
+
+                // DeletePlaylist
+                (DeletePlaylist { playlist: _ }, Quit) => {
+                    self.selected_pane = BrowsePane::Playlists;
+                }
+                (DeletePlaylist { playlist }, Commit(_)) => {
+                    playlist_management::delete_playlist(playlist)?;
+                    self.playlists = PlaylistsPane::new()?;
+                    self.reload_songs()?;
                     self.selected_pane = BrowsePane::Playlists;
                 }
 
@@ -248,7 +260,16 @@ impl<'a> BrowseScreen<'a> {
                 _ => {}
             },
             Delete => match self.selected_pane {
-                BrowsePane::Playlists => {}
+                BrowsePane::Playlists => {
+                    if let Some(playlist) = self.playlists.selected_item() {
+                        let title = format!("Do you really want to delete '{}'?", playlist);
+                        let modal_type = ModalType::DeletePlaylist {
+                            playlist: playlist.to_owned(),
+                        };
+                        self.open_confirmation(title.as_str(), modal_type)
+                            .apply_style(Style::default().fg(Color::LightRed));
+                    }
+                }
                 BrowsePane::Songs => {
                     if let (Some(playlist), Some(index)) =
                         (self.playlists.selected_item(), self.songs.selected_index())

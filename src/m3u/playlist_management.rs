@@ -175,3 +175,9 @@ pub fn swap_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>
 
     Ok(())
 }
+
+pub fn delete_playlist(playlist_name: &str) -> Result<(), Box<dyn Error>> {
+    let path = Config::playlist_path(playlist_name);
+    fs::remove_file(path)?;
+    Ok(())
+}
