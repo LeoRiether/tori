@@ -1,7 +1,7 @@
 [package]
 name = "tori"
 description = "The frictionless music player for the terminal"
-author = "Leonardo Riether <riether.leonardo@gmail.com>"
+authors = ["Leonardo Riether <riether.leonardo@gmail.com>"]
 readme = "README.md"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/LeoRiether/tori"
