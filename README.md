@@ -4,7 +4,7 @@
 tori is a terminal-based music player and playlist manager that can play music from local files
 and external URLs (supported by yt-dlp).
 
-![tori](https://user-images.githubusercontent.com/8211902/233261190-a69a02f8-7337-4515-b1b6-50cfea5b246f.png)
+![tori screenshot](https://user-images.githubusercontent.com/8211902/233261347-f1cb6597-0d2f-41e5-88b0-32590de43946.png)
 
 ## Features
 - Plays songs from local files and external URLs
