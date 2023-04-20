@@ -1,6 +1,6 @@
 use self::centered_list::{CenteredList, CenteredListItem, CenteredListState};
 use super::{
-    component::{MouseHandler, Component},
+    component::{Component, MouseHandler},
     App, Mode,
 };
 use crate::{command, events};
@@ -147,9 +147,9 @@ impl Component for PlaylistScreen {
 impl MouseHandler for PlaylistScreen {
     fn handle_mouse(
         &mut self,
-        app: &mut App,
-        chunk: Rect,
-        event: crossterm::event::MouseEvent,
+        _app: &mut App,
+        _chunk: Rect,
+        _event: crossterm::event::MouseEvent,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }

@@ -8,7 +8,7 @@ use tui::layout::{Constraint, Direction, Layout, Rect};
 
 use super::{
     browse_screen::BrowseScreen,
-    component::{MouseHandler, Component},
+    component::{Component, MouseHandler},
     playlist_screen::PlaylistScreen,
     App, Mode,
 };

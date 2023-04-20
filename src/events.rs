@@ -1,4 +1,3 @@
-
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{self};
 use std::{
@@ -50,7 +49,7 @@ impl Channel {
             {
                 // WARNING: very short-lived lock.
                 // Otherwise this mutex keeps relocking and starving the other thread.
-                // I'm sure this will work in all cases (spoiler: no it doesn't (but maybe it does)) 
+                // I'm sure this will work in all cases (spoiler: no it doesn't (but maybe it does))
                 let _lock = receiving_crossterm.lock().unwrap();
             };
 

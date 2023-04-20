@@ -1,7 +1,6 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::{error::Error};
-
+use std::error::Error;
 
 use tui::{
     layout::{Alignment, Constraint},

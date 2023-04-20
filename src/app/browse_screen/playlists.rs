@@ -196,6 +196,8 @@ impl Component for PlaylistsPane {
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
     }
 
+    #[allow(clippy::collapsible_match)]
+    #[allow(clippy::single_match)]
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
         use crate::command::Command::*;
         use Event::*;
@@ -227,9 +229,6 @@ impl Component for PlaylistsPane {
                         _ => {}
                     }
                 }
-                crossterm::event::Event::Mouse(event) => match event.kind {
-                    _ => {}
-                },
                 _ => {}
             },
             _ => {}
