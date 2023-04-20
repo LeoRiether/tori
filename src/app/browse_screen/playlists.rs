@@ -150,7 +150,7 @@ impl PlaylistsPane {
             .top();
         let line = y.saturating_sub(top) as usize;
         let index = line + horrible_hack_to_get_offset(&self.shown.state);
-        if index < self.shown.items.len() {
+        if index < self.shown.items.len() && Some(index) != self.shown.selected_item() {
             self.select_index(app, Some(index));
         }
     }
@@ -248,7 +248,9 @@ impl MouseHandler for PlaylistsPane {
         match event.kind {
             MouseEventKind::ScrollUp => self.select_prev(app),
             MouseEventKind::ScrollDown => self.select_next(app),
-            MouseEventKind::Down(MouseButton::Left) => self.click(app, chunk, event.row),
+            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left) => {
+                self.click(app, chunk, event.row)
+            }
             _ => {}
         }
         Ok(())

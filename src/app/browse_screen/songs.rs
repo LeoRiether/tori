@@ -310,6 +310,7 @@ impl<'t> SongsPane<'t> {
         app: &mut App,
         chunk: Rect,
         (x, y): (u16, u16),
+        kind: MouseEventKind,
     ) -> Result<(), Box<dyn Error>> {
         // Clicked on the scrollbar
         if x + 1 == chunk.right() {
@@ -341,7 +342,7 @@ impl<'t> SongsPane<'t> {
         self.select_index(Some(index));
 
         // If it's a double click, play this selected song
-        if click_summary.double_click {
+        if click_summary.double_click && matches!(kind, MouseEventKind::Down(MouseButton::Left)) {
             self.play_selected(app)?;
         }
         Ok(())
@@ -484,7 +485,7 @@ impl<'a> MouseHandler for SongsPane<'a> {
             MouseEventKind::ScrollUp => self.select_prev(),
             MouseEventKind::ScrollDown => self.select_next(),
             MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left) => {
-                self.click(app, chunk, (event.column, event.row))?
+                self.click(app, chunk, (event.column, event.row), event.kind)?
             }
             _ => {}
         }
