@@ -1,4 +1,4 @@
-# ![tori](https://raw.githubusercontent.com/LeoRiether/tori/assets/assets/tori_64x60.png) tori
+# ![tori](https://raw.githubusercontent.com/LeoRiether/tori/master/assets/tori_64x60.png) tori
 ### The frictionless music player for the terminal
 
 tori is a terminal-based music player and playlist manager that can play music from local files
