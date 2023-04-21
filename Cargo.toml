@@ -5,6 +5,7 @@ authors = ["Leonardo Riether <riether.leonardo@gmail.com>"]
 readme = "README.md"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/LeoRiether/tori"
+docs = "https://docs.rs/crate/tori"
 keywords = ["music", "player", "tui", "terminal"]
 exclude = ["/assets"]
 version = "0.1.0"
