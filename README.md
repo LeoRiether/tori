@@ -94,7 +94,7 @@ You can override shortcuts in your config file, or remove some by binding them t
     A-enter: Nop
 ```
 
-The list of all commands that can be used can be found [in the documentation TODO:]().
+The list of all commands that can be used can be found [in the documentation](https://docs.rs/tori/latest/tori/command/enum.Command.html).
 
 ## Alternatives
 - [musikcube](https://github.com/clangen/musikcube) is what I used before writing tori.
