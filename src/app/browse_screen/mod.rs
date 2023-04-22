@@ -1,10 +1,9 @@
 use crate::{
-    app::{component::Component, MyBackend},
+    app::{component::Component, App, MyBackend},
     command,
     events::Event,
     m3u::playlist_management,
     util::RectContains,
-    App,
 };
 
 use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};

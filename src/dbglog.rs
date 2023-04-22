@@ -7,6 +7,7 @@ macro_rules! log {
     };
 }
 
+#[allow(dead_code)]
 pub fn write(s: &str) {
     let mut f = std::fs::OpenOptions::new()
         .create(true)
