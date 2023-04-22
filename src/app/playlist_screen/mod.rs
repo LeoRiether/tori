@@ -82,14 +82,14 @@ impl PlaylistScreen {
         Ok(())
     }
 
-    fn select_next(&self, app: &mut App) {
+    pub fn select_next(&self, app: &mut App) {
         app.mpv
             .playlist_next_weak()
             .unwrap_or_else(|_| app.notify_err("No next song"));
         self.update_after_delay(app);
     }
 
-    fn select_prev(&self, app: &mut App) {
+    pub fn select_prev(&self, app: &mut App) {
         app.mpv
             .playlist_previous_weak()
             .unwrap_or_else(|_| app.notify_err("No previous song"));
