@@ -68,14 +68,29 @@ fn compare_songs(
     }
 }
 
+//////////////////////////////////////
+//        MousePressLocation        //
+//////////////////////////////////////
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum MousePressLocation {
+    List,
+    Scrollbar,
+}
+
+/////////////////////////////
+//        SongsPane        //
+/////////////////////////////
+/// Displays the list of songs of a given playlist
 #[derive(Debug, Default)]
 pub struct SongsPane<'t> {
+    /// Generally the name of the playlist
     title: Cow<'t, str>,
     songs: Vec<m3u::Song>,
     shown: FilteredList<TableState>,
     sorting_method: SortingMethod,
     filter: String,
     last_click: Option<ClickInfo>,
+    mouse_press_location: Option<MousePressLocation>,
 }
 
 impl<'t> SongsPane<'t> {
@@ -111,9 +126,8 @@ impl<'t> SongsPane<'t> {
     }
 
     pub fn update_from_playlist(&mut self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
-        // TODO: maybe return Result?
         let file = std::fs::File::open(&path)
-            .unwrap_or_else(|_| panic!("Couldn't open playlist file {}", path.as_ref().display()));
+            .map_err(|_| format!("Couldn't open playlist file {}", path.as_ref().display()))?;
 
         let title = Cow::Owned(
             path.as_ref()
@@ -182,6 +196,12 @@ impl<'t> SongsPane<'t> {
                     Esc => {
                         self.filter.clear();
                         self.refresh_shown();
+                    }
+                    // Go to the top, kind of like in vim
+                    Char('g') => {
+                        if !self.shown.items.is_empty() {
+                            self.shown.state.select(Some(self.shown.items.len() - 1));
+                        }
                     }
                     // Go to the bottom, also like in vim
                     Char('G') => {
@@ -308,6 +328,7 @@ impl<'t> SongsPane<'t> {
         }
     }
 
+    /// Handle a click on the song component
     pub fn click(
         &mut self,
         app: &mut App,
@@ -315,12 +336,60 @@ impl<'t> SongsPane<'t> {
         (x, y): (u16, u16),
         kind: MouseEventKind,
     ) -> Result<(), Box<dyn Error>> {
-        // Clicked on the scrollbar
-        if x + 1 == chunk.right() {
-            let perc = (y as f64 - chunk.top() as f64) / chunk.height as f64;
-            let len = self.shown.items.len().saturating_sub(1);
-            self.select_index(Some(((perc * len as f64) as usize).max(0).min(len)));
-            return Ok(());
+        match kind {
+            MouseEventKind::Up(MouseButton::Left) => {
+                self.mouse_press_location = None;
+            }
+            // If the mouse press (MouseEventKind::Down event) was done on the scrollbar,
+            // any drag events will still be handled by the scrollbar, even if the mouse
+            // is moved outside of the scrollbar.
+            MouseEventKind::Drag(MouseButton::Left)
+                if self.mouse_press_location == Some(MousePressLocation::Scrollbar) =>
+            {
+                self.click_scrollbar(app, chunk, (x, y), kind)?;
+            }
+            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left) => {
+                if x + 1 == chunk.right() {
+                    // Clicked on the scrollbar
+                    self.click_scrollbar(app, chunk, (x, y), kind)?;
+                } else {
+                    // Clicked on the song list
+                    self.click_list(app, chunk, (x, y), kind)?;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Handle a click on the scrollbar
+    fn click_scrollbar(
+        &mut self,
+        _app: &mut App,
+        chunk: Rect,
+        (_x, y): (u16, u16),
+        kind: MouseEventKind,
+    ) -> Result<(), Box<dyn Error>> {
+        if let MouseEventKind::Down(MouseButton::Left) = kind {
+            self.mouse_press_location = Some(MousePressLocation::Scrollbar);
+        }
+
+        let perc = (y as f64 - chunk.top() as f64 - 1.0) / (chunk.height - 2) as f64;
+        let len = self.shown.items.len().saturating_sub(1);
+        self.select_index(Some(((perc * len as f64) as usize).max(0).min(len)));
+        Ok(())
+    }
+
+    /// Handle a click on the song list
+    fn click_list(
+        &mut self,
+        app: &mut App,
+        chunk: Rect,
+        (_x, y): (u16, u16),
+        kind: MouseEventKind,
+    ) -> Result<(), Box<dyn Error>> {
+        if let MouseEventKind::Down(MouseButton::Left) = kind {
+            self.mouse_press_location = Some(MousePressLocation::List);
         }
 
         // Compute clicked item
@@ -432,13 +501,9 @@ impl<'t> Component for SongsPane<'t> {
                 ])
             })
             .collect();
+        let songlist_len = songlist.len();
 
-        let scrollbar = Scrollbar::new(
-            self.selected_index().unwrap_or(0) as u16,
-            songlist.len() as u16,
-        )
-        .with_style(border_style);
-
+        // Render table
         let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
         let widget = Table::new(songlist)
             .block(block)
@@ -446,13 +511,22 @@ impl<'t> Component for SongsPane<'t> {
             .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
             .highlight_symbol(" ◇");
         frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
-        frame.render_widget(
-            scrollbar,
-            chunk.inner(&tui::layout::Margin {
-                vertical: 1,
-                horizontal: 0,
-            }),
-        );
+
+        if self.shown.items.len() > chunk.height as usize - 2 {
+            // Render scrollbar
+            let scrollbar = Scrollbar::new(
+                self.selected_index().unwrap_or(0) as u16,
+                songlist_len as u16,
+            )
+            .with_style(border_style);
+            frame.render_widget(
+                scrollbar,
+                chunk.inner(&tui::layout::Margin {
+                    vertical: 1,
+                    horizontal: 0,
+                }),
+            );
+        }
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
