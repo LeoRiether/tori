@@ -34,7 +34,10 @@ crossterm = "0.25"
 # https://github.com/ParadoxSpiral/libmpv-rs/pull/28
 libmpv-sirno = "2.0.2-fork.1"
 
+# clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
+# also because I couldn't make any other clipboard crate work
 clipboard = { version = "0.5.0", optional = true }
+
 serde_json = "1.0.94"
 unicode-width = "0.1.10"
 dirs = "5.0.0"
