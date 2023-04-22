@@ -94,6 +94,8 @@ You can override shortcuts in your config file, or remove some by binding them t
     A-enter: Nop
 ```
 
+The list of all commands that can be used can be found [in the documentation TODO:]().
+
 ## Alternatives
 - [musikcube](https://github.com/clangen/musikcube) is what I used before writing tori.
   It's a great player, but only plays from local files.
