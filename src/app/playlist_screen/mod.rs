@@ -3,7 +3,7 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{command, events};
+use crate::{command, events, widgets::Scrollbar};
 use std::{error::Error, thread, time::Duration};
 use tui::{
     layout::{Alignment, Rect},
@@ -13,6 +13,7 @@ use tui::{
 
 mod centered_list;
 
+/// Screen that shows the current mpv playlist. You can press '2' to access it.
 #[derive(Debug, Default)]
 pub struct PlaylistScreen {
     songs: Vec<String>,
@@ -124,6 +125,14 @@ impl Component for PlaylistScreen {
             .highlight_symbol_right("‹");
 
         frame.render_stateful_widget(list, chunk, &mut self.playing);
+
+        if self.songs.len() > chunk.height as usize - 2 {
+            if let Some(index) = self.playing.selected() {
+                let scrollbar = Scrollbar::new(index as u16, self.songs.len() as u16)
+                    .with_style(Style::default().fg(Color::Red));
+                frame.render_widget(scrollbar, chunk);
+            }
+        }
     }
 
     fn handle_event(
