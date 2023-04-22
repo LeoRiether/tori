@@ -58,20 +58,6 @@ impl<'a> CenteredListItem<'a> {
     }
 }
 
-/// A widget to display several items among which one can be selected (optional)
-///
-/// # Examples
-///
-/// ```
-/// # use tui::widgets::{Block, Borders, List, CenteredListItem};
-/// # use tui::style::{Style, Color, Modifier};
-/// let items = [CenteredListItem::new("Item 1"), CenteredListItem::new("Item 2"), CenteredListItem::new("Item 3")];
-/// List::new(items)
-///     .block(Block::default().title("List").borders(Borders::ALL))
-///     .style(Style::default().fg(Color::White))
-///     .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-///     .highlight_symbol(">>");
-/// ```
 #[derive(Debug, Clone)]
 pub struct CenteredList<'a> {
     block: Option<Block<'a>>,

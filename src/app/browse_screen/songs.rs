@@ -12,7 +12,7 @@ use crate::{
     config::Config,
 };
 
-use clipboard::{ClipboardContext, ClipboardProvider};
+use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use tui::layout::Rect;
 use tui::{
@@ -246,15 +246,15 @@ impl<'t> SongsPane<'t> {
             }
             CopyUrl => {
                 if let Some(song) = self.selected_item() {
-                    let mut ctx: ClipboardContext = ClipboardProvider::new()?;
-                    ctx.set_contents(song.path.clone())?;
+                    let mut clip = Clipboard::new()?;
+                    clip.set_text(&song.path)?;
                     app.notify_info(format!("Copied {} to the clipboard", song.path));
                 }
             }
             CopyTitle => {
                 if let Some(song) = self.selected_item() {
-                    let mut ctx: ClipboardContext = ClipboardProvider::new()?;
-                    ctx.set_contents(song.title.clone())?;
+                    let mut clip = Clipboard::new()?;
+                    clip.set_text(&song.title)?;
                     app.notify_info(format!("Copied {} to the clipboard", song.title));
                 }
             }

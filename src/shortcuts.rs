@@ -7,6 +7,18 @@ use serde::{Deserialize, Serialize};
 ///
 /// For example:
 /// ```
+/// use tori::shortcuts::InputStr;
+/// use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+///
+/// fn key_event(modifiers: KeyModifiers, code: KeyCode) -> KeyEvent {
+///     KeyEvent {
+///         code,
+///         modifiers,
+///         kind: KeyEventKind::Press,
+///         state: KeyEventState::NONE,
+///     }
+/// }
+///
 /// assert_eq!(
 ///     InputStr::from(key_event(KeyModifiers::NONE, KeyCode::Char('a'))),
 ///     InputStr("a".into())

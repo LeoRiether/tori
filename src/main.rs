@@ -1,4 +1,4 @@
-use tori::*;
+pub use tori::*;
 
 use app::App;
 use argh::FromArgs;
