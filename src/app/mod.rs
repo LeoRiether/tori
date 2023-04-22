@@ -4,7 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use libmpv::Mpv;
-use notification::Notification;
+use crate::widgets::notification::Notification;
 use std::{borrow::Cow, cell::RefCell, error::Error, rc::Rc, sync::mpsc};
 use std::{
     io,
@@ -24,8 +24,6 @@ pub mod app_screen;
 pub mod browse_screen;
 pub mod component;
 pub mod filtered_list;
-pub mod modal;
-pub mod notification;
 pub mod playlist_screen;
 
 use crate::events::Event;

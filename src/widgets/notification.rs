@@ -1,9 +1,9 @@
+use crate::{events, app::{component::{Component, Mode, MyBackend}, App}};
 use std::{
     borrow::Cow,
     error::Error,
     time::{Duration, Instant},
 };
-
 use tui::{
     layout::Rect,
     style::{Color, Style},
@@ -11,10 +11,6 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
-
-use crate::{app::MyBackend, events};
-
-use super::component::{Component, Mode};
 
 const WIDTH: u16 = 40;
 
@@ -98,7 +94,7 @@ impl<'t> Component for Notification<'t> {
     /// No-op
     fn handle_event(
         &mut self,
-        _app: &mut super::App,
+        _app: &mut App,
         _event: events::Event,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())

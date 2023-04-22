@@ -14,9 +14,7 @@ use tui::{
     Frame,
 };
 
-use crate::events::Event;
-
-use super::{Mode, MyBackend};
+use crate::{events::Event, app::component::{MyBackend, Mode}};
 
 ///////////////////////////////////////////////////
 //                    Message                    //
