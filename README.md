@@ -24,7 +24,7 @@ and external URLs (supported by yt-dlp).
 
 ### yt-dlp
 If you want to use yt-dlp instead of youtube-dl, edit your `mpv.conf` and paste the following line:
-```
+```conf
 script-opts=ytdl_hook-ytdl_path=yt-dlp
 ```
 

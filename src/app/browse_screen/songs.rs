@@ -4,15 +4,14 @@ use std::{error::Error, path::Path};
 
 use crate::app::component::MouseHandler;
 use crate::events::Event;
-use crate::m3u;
 use crate::util::ClickInfo;
 use crate::widgets::Scrollbar;
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
     config::Config,
 };
+use crate::{m3u, util};
 
-use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use tui::layout::Rect;
 use tui::{
@@ -246,16 +245,20 @@ impl<'t> SongsPane<'t> {
             }
             CopyUrl => {
                 if let Some(song) = self.selected_item() {
-                    let mut clip = Clipboard::new()?;
-                    clip.set_text(&song.path)?;
+                    util::copy_to_clipboard(song.path.clone());
+                    #[cfg(feature = "clip")]
                     app.notify_info(format!("Copied {} to the clipboard", song.path));
+                    #[cfg(not(feature = "clip"))]
+                    app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
             }
             CopyTitle => {
                 if let Some(song) = self.selected_item() {
-                    let mut clip = Clipboard::new()?;
-                    clip.set_text(&song.title)?;
+                    util::copy_to_clipboard(song.title.clone());
+                    #[cfg(feature = "clip")]
                     app.notify_info(format!("Copied {} to the clipboard", song.title));
+                    #[cfg(not(feature = "clip"))]
+                    app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
             }
             SwapSongUp if self.filter.is_empty() => match self.selected_index() {
