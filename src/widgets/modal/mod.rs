@@ -12,7 +12,11 @@ use tui::{
     Frame,
 };
 
-use crate::{error::Result, events::Event, app::component::{MyBackend, Mode}};
+use crate::{
+    app::component::{Mode, MyBackend},
+    error::Result,
+    events::Event,
+};
 
 ///////////////////////////////////////////////////
 //                    Message                    //

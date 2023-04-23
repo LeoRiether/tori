@@ -1,5 +1,5 @@
 use super::App;
-use crate::{events, error::Result};
+use crate::{error::Result, events};
 use std::io;
 use tui::{backend::CrosstermBackend, layout::Rect, Frame};
 

@@ -3,10 +3,10 @@
 pub mod app;
 pub mod command;
 pub mod config;
+pub mod error;
 pub mod m3u;
 pub mod shortcuts;
 pub mod visualizer;
-pub mod error;
 
 mod dbglog;
 mod events;

@@ -1,4 +1,11 @@
-use crate::{error::Result, events, app::{component::{Component, Mode, MyBackend}, App}};
+use crate::{
+    app::{
+        component::{Component, Mode, MyBackend},
+        App,
+    },
+    error::Result,
+    events,
+};
 use std::{
     borrow::Cow,
     time::{Duration, Instant},
@@ -91,11 +98,7 @@ impl<'t> Component for Notification<'t> {
     }
 
     /// No-op
-    fn handle_event(
-        &mut self,
-        _app: &mut App,
-        _event: events::Event,
-    ) -> Result<()> {
+    fn handle_event(&mut self, _app: &mut App, _event: events::Event) -> Result<()> {
         Ok(())
     }
 }

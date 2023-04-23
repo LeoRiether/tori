@@ -1,4 +1,4 @@
-use crate::{error::Result, command, events, util::RectContains};
+use crate::{command, error::Result, events, util::RectContains};
 
 mod now_playing;
 use now_playing::NowPlaying;
@@ -40,22 +40,14 @@ impl<'a> AppScreen<'a> {
         self.selected = selection;
     }
 
-    pub fn pass_event_down(
-        &mut self,
-        app: &mut App,
-        event: events::Event,
-    ) -> Result<()> {
+    pub fn pass_event_down(&mut self, app: &mut App, event: events::Event) -> Result<()> {
         match self.selected {
             Selected::Browse => self.browse.handle_event(app, event),
             Selected::Playlist => self.playlist.handle_event(app, event),
         }
     }
 
-    fn handle_command(
-        &mut self,
-        app: &mut App,
-        cmd: command::Command,
-    ) -> Result<()> {
+    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
         use command::Command::*;
         match cmd {
             Quit => {

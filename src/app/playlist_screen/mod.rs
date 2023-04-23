@@ -3,8 +3,8 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{error::Result, command, events, widgets::Scrollbar};
-use std::{thread, time::Duration, result::Result as StdResult};
+use crate::{command, error::Result, events, widgets::Scrollbar};
+use std::{result::Result as StdResult, thread, time::Duration};
 use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
@@ -53,11 +53,7 @@ impl PlaylistScreen {
         });
     }
 
-    fn handle_command(
-        &mut self,
-        app: &mut App,
-        cmd: command::Command,
-    ) -> Result<()> {
+    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
         use command::Command::*;
         match cmd {
             SelectNext | NextSong => self.select_next(app),
@@ -135,11 +131,7 @@ impl Component for PlaylistScreen {
         }
     }
 
-    fn handle_event(
-        &mut self,
-        app: &mut App,
-        event: events::Event,
-    ) -> Result<()> {
+    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<()> {
         use events::Event::*;
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,

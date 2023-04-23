@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use std::path::Path;
 
-use crate::error::Result;
 use crate::app::component::MouseHandler;
+use crate::error::Result;
 use crate::events::Event;
 use crate::util::ClickInfo;
 use crate::widgets::Scrollbar;
@@ -221,11 +221,7 @@ impl<'t> SongsPane<'t> {
         Ok(())
     }
 
-    fn handle_command(
-        &mut self,
-        app: &mut App,
-        cmd: crate::command::Command,
-    ) -> Result<()> {
+    fn handle_command(&mut self, app: &mut App, cmd: crate::command::Command) -> Result<()> {
         use crate::command::Command::*;
 
         match cmd {

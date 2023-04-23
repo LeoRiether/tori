@@ -1,9 +1,9 @@
 use std::{
-    result::Result as StdResult,
     fs::File,
     io::{self, Read, Write},
     path::PathBuf,
     process::Stdio,
+    result::Result as StdResult,
     sync::{
         atomic::{self, AtomicBool},
         Arc, Mutex,
@@ -17,7 +17,7 @@ use tui::{
     style::{Color, Style},
 };
 
-use crate::{error::Result, config::Config};
+use crate::{config::Config, error::Result};
 
 macro_rules! cava_config {
     () => {

@@ -2,7 +2,7 @@ use std::io::{self, ErrorKind, Read, Seek, Write};
 
 use std::time::Duration;
 
-use crate::{error::Result, config::Config};
+use crate::{config::Config, error::Result};
 
 pub mod stringreader;
 pub use stringreader::StringReader;

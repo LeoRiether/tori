@@ -10,10 +10,10 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    error::Result,
     app::component::{Mode, MyBackend},
     command::Command,
     config::Config,
+    error::Result,
     events::Event,
     shortcuts::InputStr,
 };

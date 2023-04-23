@@ -1,9 +1,9 @@
 pub use tori::*;
 
-pub use error::{Result, Error};
 use app::App;
 use argh::FromArgs;
 use config::{Config, OptionalConfig};
+pub use error::{Error, Result};
 use std::path::PathBuf;
 
 #[derive(FromArgs)]

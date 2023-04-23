@@ -12,8 +12,8 @@ use tui::{
 };
 
 use crate::{
-    error::Result,
     app::component::{Mode, MyBackend},
+    error::Result,
     events::Event,
 };
 

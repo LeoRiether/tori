@@ -8,11 +8,11 @@ use tui::{
 };
 
 use crate::{
-    error::Result,
     app::{
         component::{Component, Mode, MouseHandler},
         App, MyBackend,
     },
+    error::Result,
     events,
     util::RectContains,
 };
@@ -205,11 +205,7 @@ impl Component for NowPlaying {
         Mode::Normal
     }
 
-    fn handle_event(
-        &mut self,
-        _app: &mut App,
-        _event: events::Event,
-    ) -> Result<()> {
+    fn handle_event(&mut self, _app: &mut App, _event: events::Event) -> Result<()> {
         Ok(())
     }
 }

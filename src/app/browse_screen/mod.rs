@@ -1,7 +1,7 @@
 use crate::{
-    error::Result,
     app::{component::Component, App, MyBackend},
     command,
+    error::Result,
     events::Event,
     m3u::playlist_management,
     util::RectContains,
@@ -24,8 +24,8 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
-use super::Mode;
 use super::component::MouseHandler;
+use super::Mode;
 use crate::widgets::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,11 +97,7 @@ impl<'a> BrowseScreen<'a> {
 
     /// When a modal handles an event, it returns a message, which can be Nothing, Quit, or
     /// Commit(String). This method handles that message.
-    fn handle_modal_message(
-        &mut self,
-        app: &mut App,
-        msg: modal::Message,
-    ) -> Result<()> {
+    fn handle_modal_message(&mut self, app: &mut App, msg: modal::Message) -> Result<()> {
         if let BrowsePane::Modal(modal_type) = &self.selected_pane {
             use modal::Message::*;
             use ModalType::*;
@@ -202,11 +198,7 @@ impl<'a> BrowseScreen<'a> {
     }
 
     /// Handles an Event::Command(cmd)
-    fn handle_command(
-        &mut self,
-        app: &mut App,
-        cmd: command::Command,
-    ) -> Result<()> {
+    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
         use command::Command::*;
         match cmd {
             PlayFromModal => {
@@ -409,12 +401,7 @@ impl<'t> Component for BrowseScreen<'t> {
 }
 
 impl<'a> MouseHandler for BrowseScreen<'a> {
-    fn handle_mouse(
-        &mut self,
-        app: &mut App,
-        chunk: Rect,
-        event: MouseEvent,
-    ) -> Result<()> {
+    fn handle_mouse(&mut self, app: &mut App, chunk: Rect, event: MouseEvent) -> Result<()> {
         if let BrowsePane::Modal(_) = self.selected_pane {
             // No modal clicks for now
             return Ok(());

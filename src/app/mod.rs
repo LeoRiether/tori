@@ -12,13 +12,13 @@ use std::{
 use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
 
 use crate::{
-    error::Result,
     app::component::Mode,
     command,
     config::Config,
+    error::Result,
     events::{self, Channel},
     visualizer::Visualizer,
-widgets::notification::Notification,
+    widgets::notification::Notification,
 };
 
 pub mod app_screen;
