@@ -198,13 +198,13 @@ impl<'t> SongsPane<'t> {
                         self.refresh_shown();
                     }
                     // Go to the top, kind of like in vim
-                    Char('g') => {
+                    Char('g') if self.mode() == Mode::Normal => {
                         if !self.shown.items.is_empty() {
-                            self.shown.state.select(Some(self.shown.items.len() - 1));
+                            self.shown.state.select(Some(0));
                         }
                     }
                     // Go to the bottom, also like in vim
-                    Char('G') => {
+                    Char('G') if self.mode() == Mode::Normal => {
                         if !self.shown.items.is_empty() {
                             self.shown.state.select(Some(self.shown.items.len() - 1));
                         }
