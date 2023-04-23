@@ -1,6 +1,6 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::{borrow::Cow, error::Error, mem};
+use std::{borrow::Cow, mem};
 
 use crossterm::event::KeyCode;
 use tui::{
@@ -12,6 +12,7 @@ use tui::{
 };
 
 use crate::{
+    error::Result,
     app::component::{Mode, MyBackend},
     events::Event,
 };
@@ -56,7 +57,7 @@ impl<'t> Modal for InputModal<'t> {
         self.style = style;
     }
 
-    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
+    fn handle_event(&mut self, event: Event) -> Result<Message> {
         use Event::*;
         use KeyCode::*;
         if let Terminal(crossterm::event::Event::Key(event)) = event {

@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use libmpv::Mpv;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -10,6 +8,7 @@ use tui::{
 };
 
 use crate::{
+    error::Result,
     app::{
         component::{Component, Mode, MouseHandler},
         App, MyBackend,
@@ -57,7 +56,7 @@ impl NowPlaying {
         (playback_left_str, playback_right_str)
     }
 
-    pub fn click(&mut self, app: &mut App, x: u16, y: u16) -> Result<(), Box<dyn Error>> {
+    pub fn click(&mut self, app: &mut App, x: u16, y: u16) -> Result<()> {
         let frame = app.frame_size();
         let chunks = self.subcomponent_chunks(frame);
 
@@ -210,7 +209,7 @@ impl Component for NowPlaying {
         &mut self,
         _app: &mut App,
         _event: events::Event,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         Ok(())
     }
 }
@@ -221,7 +220,7 @@ impl MouseHandler for NowPlaying {
         app: &mut App,
         _chunk: Rect,
         event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use crossterm::event::{MouseButton, MouseEventKind};
         if matches!(
             event.kind,

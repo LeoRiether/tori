@@ -1,6 +1,4 @@
-use std::error::Error;
-
-use crate::{command, events, util::RectContains};
+use crate::{error::Result, command, events, util::RectContains};
 
 mod now_playing;
 use now_playing::NowPlaying;
@@ -29,7 +27,7 @@ pub struct AppScreen<'a> {
 }
 
 impl<'a> AppScreen<'a> {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
             browse: BrowseScreen::new()?,
             playlist: PlaylistScreen::default(),
@@ -46,7 +44,7 @@ impl<'a> AppScreen<'a> {
         &mut self,
         app: &mut App,
         event: events::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         match self.selected {
             Selected::Browse => self.browse.handle_event(app, event),
             Selected::Playlist => self.playlist.handle_event(app, event),
@@ -57,7 +55,7 @@ impl<'a> AppScreen<'a> {
         &mut self,
         app: &mut App,
         cmd: command::Command,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use command::Command::*;
         match cmd {
             Quit => {
@@ -133,7 +131,7 @@ impl<'a> Component for AppScreen<'a> {
         self.now_playing.render(frame, vchunks[1], ());
     }
 
-    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<()> {
         use crossterm::event::KeyCode;
         use events::Event::*;
         match &event {
@@ -164,7 +162,7 @@ impl<'a> MouseHandler for AppScreen<'a> {
         app: &mut App,
         chunk: Rect,
         event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         let vchunks = self.subcomponent_chunks(chunk);
         if vchunks[0].contains(event.column, event.row) {
             return match self.selected {

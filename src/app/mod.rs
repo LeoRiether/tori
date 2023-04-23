@@ -4,8 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use libmpv::Mpv;
-use crate::widgets::notification::Notification;
-use std::{borrow::Cow, cell::RefCell, error::Error, rc::Rc, sync::mpsc};
+use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::mpsc};
 use std::{
     io,
     time::{self, Duration},
@@ -13,11 +12,13 @@ use std::{
 use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
 
 use crate::{
+    error::Result,
     app::component::Mode,
     command,
     config::Config,
     events::{self, Channel},
     visualizer::Visualizer,
+widgets::notification::Notification,
 };
 
 pub mod app_screen;
@@ -50,7 +51,7 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
@@ -82,7 +83,7 @@ impl<'a> App<'a> {
         })
     }
 
-    pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn run(&mut self) -> Result<()> {
         self.chain_hook();
         setup_terminal()?;
 
@@ -103,7 +104,7 @@ impl<'a> App<'a> {
     }
 
     #[inline]
-    fn render(&mut self) -> Result<(), Box<dyn Error>> {
+    fn render(&mut self) -> Result<()> {
         if time::Instant::now() >= self.next_render {
             self.terminal.draw(|frame| {
                 let chunk = frame.size();
@@ -123,7 +124,7 @@ impl<'a> App<'a> {
     }
 
     #[inline]
-    fn recv_event(&mut self) -> Result<(), Box<dyn Error>> {
+    fn recv_event(&mut self) -> Result<()> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
         // immediately after the last event, which triggers a fast render.
@@ -171,7 +172,7 @@ impl<'a> App<'a> {
         }
     }
 
-    fn handle_event(&mut self, event: events::Event) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, event: events::Event) -> Result<()> {
         match &event {
             Event::Command(command::Command::ToggleVisualizer) => {
                 self.toggle_visualizer()?;
@@ -203,7 +204,7 @@ impl<'a> App<'a> {
         }
     }
 
-    fn toggle_visualizer(&mut self) -> Result<(), Box<dyn Error>> {
+    fn toggle_visualizer(&mut self) -> Result<()> {
         if self.visualizer.take().is_none() {
             let opts = crate::visualizer::CavaOptions {
                 bars: self.terminal.get_frame().size().width as usize / 2,
@@ -256,13 +257,13 @@ impl<'a> App<'a> {
     }
 }
 
-pub fn setup_terminal() -> Result<(), Box<dyn Error>> {
+pub fn setup_terminal() -> Result<()> {
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
     enable_raw_mode()?;
     Ok(())
 }
 
-pub fn reset_terminal() -> Result<(), Box<dyn Error>> {
+pub fn reset_terminal() -> Result<()> {
     disable_raw_mode()?;
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())

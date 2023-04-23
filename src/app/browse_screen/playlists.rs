@@ -1,14 +1,18 @@
-use crate::app::component::{Component, MouseHandler};
-use crate::app::{filtered_list::FilteredList, App, Mode, MyBackend};
-use crate::config::Config;
-use crate::events::Event;
-
+use crate::{
+    app::{
+        component::{Component, MouseHandler},
+        filtered_list::FilteredList,
+        App, Mode, MyBackend,
+    },
+    config::Config,
+    error::Result,
+    events::Event,
+};
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
-use std::error::Error;
 use std::io;
-
+use std::result::Result as StdResult;
 use tui::{
     layout::{self, Rect},
     style::{Color, Style},
@@ -36,19 +40,18 @@ pub struct PlaylistsPane {
 }
 
 impl PlaylistsPane {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self> {
         let mut me = Self::default();
         me.reload_from_dir()?;
         Ok(me)
     }
 
-    pub fn reload_from_dir(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn reload_from_dir(&mut self) -> Result<()> {
         let dir = std::fs::read_dir(&Config::global().playlists_dir)
             .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
         use std::fs::DirEntry;
-        use std::io::Error;
-        let extract_playlist_name = |entry: Result<DirEntry, Error>| {
+        let extract_playlist_name = |entry: StdResult<DirEntry, io::Error>| {
             entry
                 .unwrap()
                 .file_name()
@@ -76,7 +79,7 @@ impl PlaylistsPane {
         );
     }
 
-    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
+    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool> {
         match event.code {
             KeyCode::Char(c) => {
                 self.filter.push(c);
@@ -120,7 +123,7 @@ impl PlaylistsPane {
             .map(|s| s.as_str())
     }
 
-    pub fn open_editor_for_selected(&mut self, app: &mut App) -> Result<(), Box<dyn Error>> {
+    pub fn open_editor_for_selected(&mut self, app: &mut App) -> Result<()> {
         if let Some(selected) = self.selected_item() {
             let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
 
@@ -198,7 +201,7 @@ impl Component for PlaylistsPane {
 
     #[allow(clippy::collapsible_match)]
     #[allow(clippy::single_match)]
-    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
         use crate::command::Command::*;
         use Event::*;
         use KeyCode::*;
@@ -244,7 +247,7 @@ impl MouseHandler for PlaylistsPane {
         app: &mut App,
         chunk: Rect,
         event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         match event.kind {
             MouseEventKind::ScrollUp => self.select_prev(app),
             MouseEventKind::ScrollDown => self.select_next(app),

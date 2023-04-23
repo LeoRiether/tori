@@ -1,4 +1,5 @@
 use crate::{
+    error::Result,
     app::{component::Component, App, MyBackend},
     command,
     events::Event,
@@ -9,7 +10,6 @@ use crate::{
 use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};
 
 use std::borrow::Cow;
-use std::error::Error;
 use tui::layout::Rect;
 use tui::style::Color;
 use tui::style::Style;
@@ -67,7 +67,7 @@ impl<'a> std::fmt::Debug for BrowseScreen<'a> {
 }
 
 impl<'a> BrowseScreen<'a> {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self> {
         let playlists = PlaylistsPane::new()?;
         let mut songs = SongsPane::default();
         songs.update_from_playlist_pane(&playlists)?;
@@ -78,12 +78,12 @@ impl<'a> BrowseScreen<'a> {
         })
     }
 
-    pub fn reload_songs(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn reload_songs(&mut self) -> Result<()> {
         self.songs.update_from_playlist_pane(&self.playlists)
     }
 
     /// Passes the event down to the currently selected pane.
-    fn pass_event_down(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn pass_event_down(&mut self, app: &mut App, event: Event) -> Result<()> {
         use BrowsePane::*;
         match self.selected_pane {
             Playlists => self.playlists.handle_event(app, event),
@@ -101,7 +101,7 @@ impl<'a> BrowseScreen<'a> {
         &mut self,
         app: &mut App,
         msg: modal::Message,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         if let BrowsePane::Modal(modal_type) = &self.selected_pane {
             use modal::Message::*;
             use ModalType::*;
@@ -206,7 +206,7 @@ impl<'a> BrowseScreen<'a> {
         &mut self,
         app: &mut App,
         cmd: command::Command,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use command::Command::*;
         match cmd {
             PlayFromModal => {
@@ -299,7 +299,7 @@ impl<'a> BrowseScreen<'a> {
         &mut self,
         app: &mut App,
         event: crossterm::event::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use Event::*;
         use KeyCode::*;
 
@@ -379,7 +379,7 @@ impl<'t> Component for BrowseScreen<'t> {
         }
     }
 
-    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
         use Event::*;
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
@@ -414,7 +414,7 @@ impl<'a> MouseHandler for BrowseScreen<'a> {
         app: &mut App,
         chunk: Rect,
         event: MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         if let BrowsePane::Modal(_) = self.selected_pane {
             // No modal clicks for now
             return Ok(());

@@ -3,8 +3,8 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{command, events, widgets::Scrollbar};
-use std::{error::Error, thread, time::Duration};
+use crate::{error::Result, command, events, widgets::Scrollbar};
+use std::{thread, time::Duration, result::Result as StdResult};
 use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
@@ -22,7 +22,7 @@ pub struct PlaylistScreen {
 
 impl PlaylistScreen {
     /// See <https://mpv.io/manual/master/#command-interface-playlist>
-    pub fn update(&mut self, mpv: &libmpv::Mpv) -> Result<&mut Self, Box<dyn Error>> {
+    pub fn update(&mut self, mpv: &libmpv::Mpv) -> Result<&mut Self> {
         let n = mpv.get_property("playlist/count")?;
 
         self.songs = (0..n)
@@ -30,7 +30,7 @@ impl PlaylistScreen {
                 mpv.get_property(&format!("playlist/{}/title", i))
                     .or_else(|_| mpv.get_property(&format!("playlist/{}/filename", i)))
             })
-            .collect::<Result<_, libmpv::Error>>()?;
+            .collect::<StdResult<_, libmpv::Error>>()?;
 
         self.playing
             .select(match mpv.get_property::<i64>("playlist-playing-pos").ok() {
@@ -57,7 +57,7 @@ impl PlaylistScreen {
         &mut self,
         app: &mut App,
         cmd: command::Command,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use command::Command::*;
         match cmd {
             SelectNext | NextSong => self.select_next(app),
@@ -71,7 +71,7 @@ impl PlaylistScreen {
         &mut self,
         app: &mut App,
         event: crossterm::event::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use crossterm::event::{Event, KeyCode};
         if let Event::Key(key_event) = event {
             match key_event.code {
@@ -139,7 +139,7 @@ impl Component for PlaylistScreen {
         &mut self,
         app: &mut App,
         event: events::Event,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         use events::Event::*;
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
@@ -159,7 +159,7 @@ impl MouseHandler for PlaylistScreen {
         _app: &mut App,
         _chunk: Rect,
         _event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         Ok(())
     }
 }

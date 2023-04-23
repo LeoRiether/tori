@@ -1,9 +1,8 @@
-use std::error::Error;
 use std::io::{self, ErrorKind, Read, Seek, Write};
 
 use std::time::Duration;
 
-use crate::config::Config;
+use crate::{error::Result, config::Config};
 
 pub mod stringreader;
 pub use stringreader::StringReader;
@@ -22,7 +21,7 @@ pub struct Song {
 
 impl Song {
     /// Parse a song from a given path. The path can be a url or a local file.
-    pub fn from_path(path: &str) -> Result<Song, Box<dyn Error>> {
+    pub fn from_path(path: &str) -> Result<Song> {
         if let Some(path) = path.strip_prefix("ytdl://") {
             let mut song = Song::parse_ytdlp(path)?;
             song.path = format!("ytdl://{}", song.path);
@@ -35,7 +34,7 @@ impl Song {
     }
 
     /// Parses the song using yt-dlp
-    pub fn parse_ytdlp(url: &str) -> Result<Song, Box<dyn Error>> {
+    pub fn parse_ytdlp(url: &str) -> Result<Song> {
         // TODO: maybe the user doesn't want to use yt-dlp?
         let output = std::process::Command::new("yt-dlp")
             .arg("--dump-single-json")
@@ -63,7 +62,7 @@ impl Song {
     }
 
     /// Parses song from a local file using lofty.
-    pub fn parse_local_file(path: &str) -> Result<Song, Box<dyn Error>> {
+    pub fn parse_local_file(path: &str) -> Result<Song> {
         use lofty::{
             error::ErrorKind::{NotAPicture, UnknownFormat, UnsupportedPicture, UnsupportedTag},
             Accessor, AudioFile, TaggedFileExt,
@@ -115,7 +114,7 @@ impl Song {
         format!("#EXTINF:{},{}\n{}\n", duration, self.title, self.path)
     }
 
-    pub fn add_to_playlist(&self, playlist_name: &str) -> Result<(), Box<dyn Error>> {
+    pub fn add_to_playlist(&self, playlist_name: &str) -> Result<()> {
         let path = Config::playlist_path(playlist_name);
         let mut file = std::fs::OpenOptions::new()
             .create(true)

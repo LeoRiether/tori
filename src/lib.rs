@@ -6,6 +6,7 @@ pub mod config;
 pub mod m3u;
 pub mod shortcuts;
 pub mod visualizer;
+pub mod error;
 
 mod dbglog;
 mod events;

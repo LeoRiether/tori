@@ -1,7 +1,5 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::error::Error;
-
 use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Style},
@@ -12,6 +10,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
+    error::Result,
     app::component::{Mode, MyBackend},
     command::Command,
     config::Config,
@@ -65,7 +64,7 @@ impl HelpModal {
 impl Modal for HelpModal {
     fn apply_style(&mut self, _style: Style) {}
 
-    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
+    fn handle_event(&mut self, event: Event) -> Result<Message> {
         if let Event::Terminal(crossterm::event::Event::Key(_)) = event {
             return Ok(Message::Quit);
         }

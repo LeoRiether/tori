@@ -1,7 +1,5 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::error::Error;
-
 use crossterm::event::KeyCode;
 use tui::{
     layout::Alignment,
@@ -11,6 +9,7 @@ use tui::{
 };
 
 use crate::{
+    error::Result,
     app::component::{Mode, MyBackend},
     events::Event,
 };
@@ -36,7 +35,7 @@ impl Modal for ConfirmationModal {
         self.style = style;
     }
 
-    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>> {
+    fn handle_event(&mut self, event: Event) -> Result<Message> {
         use Event::*;
         use KeyCode::*;
         if let Terminal(crossterm::event::Event::Key(event)) = event {

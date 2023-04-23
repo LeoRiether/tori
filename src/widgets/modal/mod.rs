@@ -6,15 +6,13 @@ pub use confirmation_modal::ConfirmationModal;
 pub use help_modal::HelpModal;
 pub use input_modal::InputModal;
 
-use std::error::Error;
-
 use tui::{
     layout::{Constraint, Direction, Layout},
     style::Style,
     Frame,
 };
 
-use crate::{events::Event, app::component::{MyBackend, Mode}};
+use crate::{error::Result, events::Event, app::component::{MyBackend, Mode}};
 
 ///////////////////////////////////////////////////
 //                    Message                    //
@@ -38,7 +36,7 @@ pub enum Message {
 /////////////////////////////////////////////////
 pub trait Modal {
     fn apply_style(&mut self, style: Style);
-    fn handle_event(&mut self, event: Event) -> Result<Message, Box<dyn Error>>;
+    fn handle_event(&mut self, event: Event) -> Result<Message>;
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
     fn mode(&self) -> Mode;
 }

@@ -1,9 +1,10 @@
 pub use tori::*;
 
+pub use error::{Result, Error};
 use app::App;
 use argh::FromArgs;
 use config::{Config, OptionalConfig};
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 
 #[derive(FromArgs)]
 /// Terminal-based music player
@@ -15,7 +16,7 @@ struct Args {
     config: Option<String>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let args: Args = argh::from_env();
     Config::set_global({
         let opt_conf = OptionalConfig::from_path(

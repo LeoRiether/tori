@@ -1,6 +1,6 @@
 use super::App;
-use crate::events;
-use std::{error::Error, io};
+use crate::{events, error::Result};
+use std::io;
 use tui::{backend::CrosstermBackend, layout::Rect, Frame};
 
 pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
@@ -23,7 +23,7 @@ pub trait Component {
         chunk: Rect,
         render_state: Self::RenderState,
     );
-    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<(), Box<dyn Error>>;
+    fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<()>;
 }
 
 pub trait MouseHandler {
@@ -32,5 +32,5 @@ pub trait MouseHandler {
         app: &mut App,
         chunk: Rect,
         event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>>;
+    ) -> Result<()>;
 }

@@ -1,11 +1,11 @@
 use std::{
-    error::Error,
+    result::Result as StdResult,
     fs,
     io::{self, Write},
     thread,
 };
 
-use crate::{app::App, config::Config, events::Event, m3u};
+use crate::{error::Result, app::App, config::Config, events::Event, m3u};
 
 /// Adds a song to an existing playlist
 pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
@@ -70,7 +70,7 @@ impl From<io::Error> for CreatePlaylistError {
 }
 
 /// Creates the corresponding .m3u8 file for a new playlist
-pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
+pub fn create_playlist(playlist_name: &str) -> StdResult<(), CreatePlaylistError> {
     if playlist_name.contains('/') {
         return Err(CreatePlaylistError::InvalidChar('/'));
     }
@@ -89,7 +89,7 @@ pub fn create_playlist(playlist_name: &str) -> Result<(), CreatePlaylistError> {
     }
 }
 
-pub fn delete_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
+pub fn delete_song(playlist_name: &str, index: usize) -> Result<()> {
     let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
@@ -117,7 +117,7 @@ pub fn rename_song(
     playlist_name: &str,
     index: usize,
     new_name: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
@@ -147,7 +147,7 @@ pub fn rename_song(
 }
 
 /// Swaps `index`-th song with the `index+1`-th (0-indexed)
-pub fn swap_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>> {
+pub fn swap_song(playlist_name: &str, index: usize) -> Result<()> {
     let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
@@ -176,7 +176,7 @@ pub fn swap_song(playlist_name: &str, index: usize) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-pub fn delete_playlist(playlist_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn delete_playlist(playlist_name: &str) -> Result<()> {
     let path = Config::playlist_path(playlist_name);
     fs::remove_file(path)?;
     Ok(())

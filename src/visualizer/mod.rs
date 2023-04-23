@@ -1,5 +1,5 @@
 use std::{
-    error::Error,
+    result::Result as StdResult,
     fs::File,
     io::{self, Read, Write},
     path::PathBuf,
@@ -17,7 +17,7 @@ use tui::{
     style::{Color, Style},
 };
 
-use crate::config::Config;
+use crate::{error::Result, config::Config};
 
 macro_rules! cava_config {
     () => {
@@ -55,7 +55,7 @@ pub struct Visualizer {
 }
 
 impl Visualizer {
-    pub fn new(opts: CavaOptions) -> Result<Self, Box<dyn Error>> {
+    pub fn new(opts: CavaOptions) -> Result<Self> {
         let tmp_path = tori_tempfile(&opts)?;
 
         let mut process = std::process::Command::new("cava")
@@ -135,7 +135,7 @@ impl Drop for Visualizer {
     }
 }
 
-fn tori_tempfile(opts: &CavaOptions) -> Result<PathBuf, std::io::Error> {
+fn tori_tempfile(opts: &CavaOptions) -> StdResult<PathBuf, std::io::Error> {
     let path = std::env::temp_dir().join(format!("tori-{:x}", thread_rng().gen::<u32>()));
 
     if path.is_file() {

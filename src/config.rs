@@ -1,8 +1,8 @@
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, io, path::PathBuf};
+use std::{io, path::PathBuf};
 
-use crate::shortcuts::Shortcuts;
+use crate::{error::Result, shortcuts::Shortcuts};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -68,7 +68,7 @@ pub struct OptionalConfig {
 
 impl OptionalConfig {
     /// Loads the shortcuts from some path
-    pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Box<dyn Error>> {
+    pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
         match std::fs::File::open(path) {
             Ok(file) => serde_yaml::from_reader(file)
                 .map_err(|e| format!("Couldn't parse your config.yaml. Reason: {}", e).into()),

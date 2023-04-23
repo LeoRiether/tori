@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 
-use std::{error::Error, path::Path};
+use std::path::Path;
 
+use crate::error::Result;
 use crate::app::component::MouseHandler;
 use crate::events::Event;
 use crate::util::ClickInfo;
@@ -111,7 +112,7 @@ impl<'t> SongsPane<'t> {
     pub fn update_from_playlist_pane(
         &mut self,
         playlists: &super::playlists::PlaylistsPane,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         match playlists.selected_item() {
             Some(playlist) => self.update_from_playlist_named(playlist),
             None => {
@@ -121,11 +122,11 @@ impl<'t> SongsPane<'t> {
         }
     }
 
-    pub fn update_from_playlist_named(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
+    pub fn update_from_playlist_named(&mut self, name: &str) -> Result<()> {
         self.update_from_playlist(Config::playlist_path(name))
     }
 
-    pub fn update_from_playlist(&mut self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
+    pub fn update_from_playlist(&mut self, path: impl AsRef<Path>) -> Result<()> {
         let file = std::fs::File::open(&path)
             .map_err(|_| format!("Couldn't open playlist file {}", path.as_ref().display()))?;
 
@@ -181,7 +182,7 @@ impl<'t> SongsPane<'t> {
         &mut self,
         app: &mut App,
         event: crossterm::event::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use KeyCode::*;
 
         match event {
@@ -224,7 +225,7 @@ impl<'t> SongsPane<'t> {
         &mut self,
         app: &mut App,
         cmd: crate::command::Command,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         use crate::command::Command::*;
 
         match cmd {
@@ -306,7 +307,7 @@ impl<'t> SongsPane<'t> {
     }
 
     /// Handles a key event when the filter is active.
-    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool, Box<dyn Error>> {
+    pub fn handle_filter_key_event(&mut self, event: KeyEvent) -> Result<bool> {
         match event.code {
             KeyCode::Char(c) => {
                 self.filter.push(c);
@@ -335,7 +336,7 @@ impl<'t> SongsPane<'t> {
         chunk: Rect,
         (x, y): (u16, u16),
         kind: MouseEventKind,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         match kind {
             MouseEventKind::Up(MouseButton::Left) => {
                 self.mouse_press_location = None;
@@ -369,7 +370,7 @@ impl<'t> SongsPane<'t> {
         chunk: Rect,
         (_x, y): (u16, u16),
         kind: MouseEventKind,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         if let MouseEventKind::Down(MouseButton::Left) = kind {
             self.mouse_press_location = Some(MousePressLocation::Scrollbar);
         }
@@ -387,7 +388,7 @@ impl<'t> SongsPane<'t> {
         chunk: Rect,
         (_x, y): (u16, u16),
         kind: MouseEventKind,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         if let MouseEventKind::Down(MouseButton::Left) = kind {
             self.mouse_press_location = Some(MousePressLocation::List);
         }
@@ -420,7 +421,7 @@ impl<'t> SongsPane<'t> {
         Ok(())
     }
 
-    pub fn play_selected(&self, app: &mut App) -> Result<(), Box<dyn Error>> {
+    pub fn play_selected(&self, app: &mut App) -> Result<()> {
         if let Some(song) = self.selected_item() {
             app.mpv
                 .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])?;
@@ -529,7 +530,7 @@ impl<'t> Component for SongsPane<'t> {
         }
     }
 
-    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<(), Box<dyn Error>> {
+    fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
         use Event::*;
 
         match event {
@@ -557,7 +558,7 @@ impl<'a> MouseHandler for SongsPane<'a> {
         app: &mut App,
         chunk: Rect,
         event: crossterm::event::MouseEvent,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         match event.kind {
             MouseEventKind::ScrollUp => self.select_prev(),
             MouseEventKind::ScrollDown => self.select_next(),

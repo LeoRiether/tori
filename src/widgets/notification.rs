@@ -1,7 +1,6 @@
-use crate::{events, app::{component::{Component, Mode, MyBackend}, App}};
+use crate::{error::Result, events, app::{component::{Component, Mode, MyBackend}, App}};
 use std::{
     borrow::Cow,
-    error::Error,
     time::{Duration, Instant},
 };
 use tui::{
@@ -96,7 +95,7 @@ impl<'t> Component for Notification<'t> {
         &mut self,
         _app: &mut App,
         _event: events::Event,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         Ok(())
     }
 }
