@@ -1,15 +1,21 @@
 use std::{
-    result::Result as StdResult,
     fs,
     io::{self, Write},
+    result::Result as StdResult,
     thread,
 };
 
-use crate::{error::Result, app::App, config::Config, events::Event, m3u};
+use crate::{app::App, config::Config, error::Result, events::Event, m3u};
 
 /// Adds a song to an existing playlist
 pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
     app.notify_info(format!("Adding {}...", song_path));
+
+    if surely_invalid_path(&song_path) {
+        app.notify_err(format!("Failed to add song path '{}'. Doesn't look like a URL and is not a valid path in your filesystem.", song_path));
+        return;
+    }
+
     let sender = app.channel.sender.clone();
     let playlist = playlist.to_string();
     thread::spawn(move || {
@@ -32,21 +38,36 @@ fn add_song_recursively(path: &str, playlist_name: &str) {
     let file = std::path::Path::new(&path);
     if file.is_dir() && !file.is_symlink() {
         let mut entries: Vec<_> = std::fs::read_dir(path)
-            .expect("Failed to read dir")
+            .unwrap_or_else(|e| panic!("Failed to read directory '{}'. Error: {}", path, e))
             .map(|entry| entry.expect("Failed to read entry").path())
             .collect();
 
         entries.sort();
 
         for path in entries {
-            let path = path.to_str().expect("Failed to convert path to str");
+            let path = path.to_str().unwrap_or_else(|| {
+                panic!(
+                    "Failed to add '{}' to playlist. Path is not valid UTF-8",
+                    path.display()
+                )
+            });
             add_song_recursively(path, playlist_name);
         }
     } else if !image_file(file) {
-        let song = m3u::Song::from_path(path).expect("Failed to parse song");
+        let song = m3u::Song::from_path(path)
+            .unwrap_or_else(|e| panic!("Failed to add '{}' to playlist. Error: {}", path, e));
         song.add_to_playlist(playlist_name)
             .unwrap_or_else(|e| panic!("Failed to add '{}' to playlist. Error: {}", path, e));
     }
+}
+
+fn surely_invalid_path(path: &str) -> bool {
+    let file = std::path::Path::new(&path);
+    !file.is_dir() // not a directory...
+        && !file.exists() // ...or a valid filepath...
+        && !path.starts_with("http://") // ...or a URL...
+        && !path.starts_with("https://")
+        && !path.starts_with("ytdl://")
 }
 
 fn image_file(file: &std::path::Path) -> bool {
@@ -113,11 +134,7 @@ pub fn delete_song(playlist_name: &str, index: usize) -> Result<()> {
     Ok(())
 }
 
-pub fn rename_song(
-    playlist_name: &str,
-    index: usize,
-    new_name: &str,
-) -> Result<()> {
+pub fn rename_song(playlist_name: &str, index: usize, new_name: &str) -> Result<()> {
     let path = Config::playlist_path(playlist_name);
     let content = fs::read_to_string(&path)?;
     let mut parser = m3u::Parser::from_string(&content);
