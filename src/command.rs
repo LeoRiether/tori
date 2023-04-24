@@ -19,6 +19,7 @@ pub enum Command {
     ToggleVisualizer,
     NextSortingMode,
     OpenHelpModal,
+    OpenHotkeyModal,
 
     /// Rename selected song or playlist
     Rename,

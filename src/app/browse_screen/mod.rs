@@ -24,13 +24,14 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
-use super::component::MouseHandler;
+use super::{component::MouseHandler, modal::HotkeyModal};
 use super::Mode;
 use crate::app::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ModalType {
     Help,
+    Hotkey,
     Play,
     AddSong { playlist: String },
     AddPlaylist,
@@ -105,6 +106,9 @@ impl<'a> BrowseScreen<'a> {
                 (_, Nothing) => {}
 
                 (Help, _) => {
+                    self.selected_pane = BrowsePane::Songs;
+                }
+                (Hotkey, _) => {
                     self.selected_pane = BrowsePane::Songs;
                 }
 
@@ -206,6 +210,9 @@ impl<'a> BrowseScreen<'a> {
             }
             OpenHelpModal => {
                 self.open_help_modal();
+            }
+            OpenHotkeyModal => {
+                self.open_hotkey_modal();
             }
             SelectRight | SelectLeft => self.select_next_panel(),
             // TODO: this should probably be in each pane's handle_event, somehow
@@ -328,6 +335,12 @@ impl<'a> BrowseScreen<'a> {
     fn open_help_modal(&mut self) -> &mut Box<dyn Modal> {
         self.selected_pane = BrowsePane::Modal(ModalType::Help);
         self.modal = Box::new(HelpModal::new());
+        &mut self.modal
+    }
+
+    fn open_hotkey_modal(&mut self) -> &mut Box<dyn Modal> {
+        self.selected_pane = BrowsePane::Modal(ModalType::Hotkey);
+        self.modal = Box::new(HotkeyModal::default());
         &mut self.modal
     }
 

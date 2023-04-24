@@ -1,10 +1,12 @@
 pub mod confirmation_modal;
 pub mod help_modal;
 pub mod input_modal;
+pub mod hotkey_modal;
 
 pub use confirmation_modal::ConfirmationModal;
 pub use help_modal::HelpModal;
 pub use input_modal::InputModal;
+pub use hotkey_modal::HotkeyModal;
 
 use tui::{
     layout::{Constraint, Direction, Layout},
