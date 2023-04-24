@@ -29,9 +29,8 @@ script-opts=ytdl_hook-ytdl_path=yt-dlp
 ```
 
 Either this or follow [the guide I followed :)](https://www.funkyspacemonkey.com/replace-youtube-dl-with-yt-dlp-how-to-make-mpv-work-with-yt-dlp)
-
 ## Configuration
-Configuration can be defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is,
+All of tori's configuration is defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is,
 depending on your operating system:
 
 | Platform | Value                                 | Example                                  |
