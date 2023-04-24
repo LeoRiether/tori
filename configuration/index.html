@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    <link rel="canonical" href="https://leoriether.github.io/tori/configuration/">
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Configuration - tori</title>
+    <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/highlight.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../js/jquery-3.2.1.min.js"></script>
+    <script src="../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "Configuration", url: "#_top", children: [
+          ]},
+        ];
+
+    </script>
+    <script src="../js/base.js"></script>
+      <script src="../search/main.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../getting_started/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../getting_started/" class="btn btn-xs btn-link">
+        Getting Started
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href=".." class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href=".." class="btn btn-xs btn-link">
+        Hello World!
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h1 id="configuration">Configuration</h1>
+<p>All of tori's configuration is defined in $CONFIG_DIR/tori.yaml, where $CONFIG_DIR is,
+depending on your operating system:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Value</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td><code>$XDG_CONFIG_HOME</code> or <code>$HOME</code>/.config</td>
+<td>/home/alice/.config</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>$HOME</code>/Library/Application Support</td>
+<td>/Users/Alice/Library/Application Support</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>{FOLDERID_LocalAppData}</code></td>
+<td>C:\Users\Alice\AppData\Local</td>
+</tr>
+</tbody>
+</table>
+<p>The default directory tori uses to store playlists also depends on your OS:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Value</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td><code>XDG_MUSIC_DIR</code>/tori</td>
+<td>/home/alice/Music/tori</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>$HOME</code>/Music/tori</td>
+<td>/Users/Alice/Music/tori</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>{FOLDERID_Music}</code>/tori</td>
+<td>C:\Users\Alice\Music\tori</td>
+</tr>
+</tbody>
+</table>
+<p>Here's the default configuration file:</p>
+<pre><code class="language-yaml">playlists_dir: {audio_dir described in the above table}
+visualizer_gradient:
+  - [46, 20, 66]
+  - [16, 30, 71]
+normal:
+  '?': OpenHelpModal
+  C-c: Quit
+  C-d: Quit
+  &quot;&gt;&quot;: NextSong
+  &quot;&lt;&quot;: PrevSong
+  &quot; &quot;: TogglePause
+  S-right: SeekForward
+  S-left: SeekBackward
+  o: OpenInBrowser
+  y: CopyUrl
+  t: CopyTitle
+  A-up: VolumeUp
+  A-down: VolumeDown
+  m: Mute
+  v: ToggleVisualizer
+  s: NextSortingMode
+  R: Rename
+  X: Delete
+  S-down: SwapSongDown
+  S-up: SwapSongUp
+  J: SwapSongDown
+  K: SwapSongUp
+  &quot;,&quot;: Shuffle
+  h: SelectLeft
+  j: SelectNext
+  k: SelectPrev
+  l: SelectRight
+  a: Add
+  q: QueueSong
+  C-q: QueueShown
+  p: PlayFromModal
+  E: OpenInEditor
+  '!': OpenHotkeyModal 
+</code></pre>
+<p>You can override shortcuts in your config file, or remove some by binding them to <code>Nop</code> like so:</p>
+<pre><code class="language-yaml">    A-enter: Nop
+</code></pre>
+<p>The list of all commands can be found <a href="https://docs.rs/tori/latest/tori/command/enum.Command.html">at docs.rs</a>.</p>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../getting_started/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../getting_started/" class="btn btn-xs btn-link">
+        Getting Started
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href=".." class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href=".." class="btn btn-xs btn-link">
+        Hello World!
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="col-md-12 wm-page-content">
+  <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a> using <a href="None">Windmill Dark</a> theme by None (noraj).</p>
+</footer>
+
+</body>
+</html>

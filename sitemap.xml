@@ -6,6 +6,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://leoriether.github.io/tori/configuration/</loc>
+         <lastmod>2023-04-24</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://leoriether.github.io/tori/getting_started/</loc>
          <lastmod>2023-04-24</lastmod>
          <changefreq>daily</changefreq>
