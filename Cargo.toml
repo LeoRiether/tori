@@ -6,7 +6,7 @@ readme = "README.md"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/LeoRiether/tori"
 keywords = ["music", "player", "tui", "terminal"]
-exclude = ["/assets"]
+exclude = ["/assets", "/docs"]
 version = "0.1.2"
 edition = "2021"
 
