@@ -26,6 +26,7 @@ pub mod browse_screen;
 pub mod component;
 pub mod filtered_list;
 pub mod playlist_screen;
+pub mod modal;
 
 use crate::events::Event;
 

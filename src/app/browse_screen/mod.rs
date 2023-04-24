@@ -26,7 +26,7 @@ use songs::SongsPane;
 
 use super::component::MouseHandler;
 use super::Mode;
-use crate::widgets::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
+use crate::app::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ModalType {
