@@ -340,7 +340,7 @@ impl<'a> BrowseScreen<'a> {
 
     fn open_hotkey_modal(&mut self) -> &mut Box<dyn Modal> {
         self.selected_pane = BrowsePane::Modal(ModalType::Hotkey);
-        self.modal = Box::new(HotkeyModal::default());
+        self.modal = Box::<HotkeyModal>::default();
         &mut self.modal
     }
 

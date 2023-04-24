@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// For example:
 /// ```
-/// use tori::shortcuts::InputStr;
+/// use tori::config::shortcuts::InputStr;
 /// use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 ///
 /// fn key_event(modifiers: KeyModifiers, code: KeyCode) -> KeyEvent {
