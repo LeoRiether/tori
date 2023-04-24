@@ -50,7 +50,7 @@ The default directory tori uses to store playlists also depends on your OS:
 
 Here's the default configuration file:
 ```yaml
-playlists_dir: {audio_dir describe in the above table}
+playlists_dir: {audio_dir described in the above table}
 visualizer_gradient:
   - [46, 20, 66]
   - [16, 30, 71]
@@ -84,9 +84,10 @@ normal:
   l: SelectRight
   a: Add
   q: QueueSong
-  A-enter: QueueShown
+  C-q: QueueShown
   p: PlayFromModal
   E: OpenInEditor
+  '!': OpenHotkeyModal 
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:
