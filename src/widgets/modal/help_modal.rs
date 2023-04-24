@@ -12,10 +12,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     app::component::{Mode, MyBackend},
     command::Command,
-    config::Config,
+    config::{Config, shortcuts::InputStr},
     error::Result,
     events::Event,
-    shortcuts::InputStr,
 };
 
 /// A modal box that asks for user input

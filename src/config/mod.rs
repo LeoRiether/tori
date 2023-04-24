@@ -1,8 +1,10 @@
+use crate::error::Result;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::{io, path::PathBuf};
 
-use crate::{error::Result, shortcuts::Shortcuts};
+pub mod shortcuts;
+use shortcuts::Shortcuts;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -47,7 +49,7 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let mut me: Self = serde_yaml::from_str(std::include_str!("default_config.yaml"))
+        let mut me: Self = serde_yaml::from_str(std::include_str!("../default_config.yaml"))
             .expect("src/default_config.yaml is not valid yaml!");
 
         me.playlists_dir = dirs::audio_dir()
