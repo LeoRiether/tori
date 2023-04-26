@@ -130,6 +130,7 @@ impl<'a> BrowseScreen<'a> {
                     match playlist_management::create_playlist(&playlist) {
                         Ok(_) => {
                             self.playlists.reload_from_dir()?;
+                            self.reload_songs()?;
                         }
                         Err(CreatePlaylistError::PlaylistAlreadyExists) => {
                             app.notify_err(format!("Playlist '{}' already exists!", playlist));
