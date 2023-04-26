@@ -17,6 +17,7 @@ script-opts=ytdl_hook-ytdl_path=yt-dlp
 ```
 
 Either this or follow [the guide I followed :)](https://www.funkyspacemonkey.com/replace-youtube-dl-with-yt-dlp-how-to-make-mpv-work-with-yt-dlp)
+
 ## First Steps
 
 After installing, you should now be able to run `tori` in your terminal and be greeted
@@ -37,7 +38,8 @@ Now, add a song by focusing the songs pane and pressing `a` again:
 
 ![getting started 03](./assets/getting_started_03.jpg)
 
-Now you have your first song!
+You have now added your first song! Local files are also accepted, and adding a folder will add
+all of the songs inside it.
 
 ![getting started 04](./assets/getting_started_04.jpg)
 
@@ -50,3 +52,13 @@ tori has many configurable commands. You can press `?` to see the current bindin
 to some Nhato tunes preferably~~:
 
 ![getting started 05](./assets/getting_started_05.jpg)
+
+## Searching
+
+Pressing `/` will enter "search mode", which filters songs based on the input. You can also use it
+on the playlists pane to filter playlists.
+
+![searching](./assets/searching.jpg)
+
+`esc` clears the filter and `enter` "commits" the filter so you can use commands while a filter
+is active.
