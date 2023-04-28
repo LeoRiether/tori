@@ -30,7 +30,7 @@ impl HelpModal {
 
         let playlists_dir = format!("playlists folder: {}", config.playlists_dir);
 
-        let mut entries: Vec<_> = config.normal.0.iter().collect();
+        let mut entries: Vec<_> = config.keybindings.0.iter().collect();
         entries.sort_unstable_by(|(k0, _), (k1, _)| k0.cmp(k1));
         let max_key_length = entries
             .iter()

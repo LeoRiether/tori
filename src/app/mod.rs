@@ -199,7 +199,7 @@ impl<'a> App<'a> {
         use crate::command::Command::Nop;
         use crossterm::event::Event::Key;
         use Event::*;
-        match Config::global().normal.get_from_event(key_event) {
+        match Config::global().keybindings.get_from_event(key_event) {
             Some(cmd) if cmd != Nop => Command(cmd),
             _ => Terminal(Key(key_event)),
         }

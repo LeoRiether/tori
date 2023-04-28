@@ -39,7 +39,7 @@ playlists_dir: {audio_dir described in the above table}
 visualizer_gradient:
   - [46, 20, 66]
   - [16, 30, 71]
-normal:
+keybindings:
   '?': OpenHelpModal
   C-c: Quit
   C-d: Quit

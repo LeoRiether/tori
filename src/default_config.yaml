@@ -2,7 +2,7 @@ playlists_dir: this is a placeholder value, src/config.rs overrides it
 visualizer_gradient:
   - [46, 20, 66]
   - [16, 30, 71]
-normal:
+keybindings:
   '?': OpenHelpModal
   C-c: Quit
   C-d: Quit

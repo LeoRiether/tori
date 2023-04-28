@@ -10,7 +10,7 @@ use shortcuts::Shortcuts;
 pub struct Config {
     pub playlists_dir: String,
     pub visualizer_gradient: [(u8, u8, u8); 2],
-    pub normal: Shortcuts,
+    pub keybindings: Shortcuts,
 }
 
 static INSTANCE: OnceCell<Config> = OnceCell::new();
@@ -33,9 +33,9 @@ impl Config {
             self.playlists_dir = playlists_dir;
         }
 
-        if let Some(normal) = other.normal {
-            for (k, v) in normal.0 {
-                self.normal.0.insert(k, v);
+        if let Some(keybindings) = other.keybindings {
+            for (k, v) in keybindings.0 {
+                self.keybindings.0.insert(k, v);
             }
         }
 
@@ -65,7 +65,7 @@ impl Default for Config {
 pub struct OptionalConfig {
     pub playlists_dir: Option<String>,
     pub visualizer_gradient: Option<[(u8, u8, u8); 2]>,
-    pub normal: Option<Shortcuts>,
+    pub keybindings: Option<Shortcuts>,
 }
 
 impl OptionalConfig {
