@@ -1,3 +1,15 @@
 site_name: tori
 site_url: https://leoriether.github.io/tori/
-theme: windmill-dark
+extra_css: [style/extra.css]
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: custom
+    accent: custom
+plugins:
+  - search
+nav:
+  - index.md
+  - getting_started.md
+  - configuration.md

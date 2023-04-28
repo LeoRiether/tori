@@ -2,6 +2,7 @@ use std::io::Read;
 
 use super::parser::LineReader;
 
+/// Implements io::Read and parser::LineReader for strings
 pub struct StringReader<'s> {
     string: &'s str,
     cursor: usize,

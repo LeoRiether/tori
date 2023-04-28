@@ -37,7 +37,7 @@ pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
 fn add_song_recursively(path: &str, playlist_name: &str) {
     let file = std::path::Path::new(&path);
     if file.is_dir() && !file.is_symlink() {
-        let mut entries: Vec<_> = std::fs::read_dir(path)
+        let mut entries: Vec<_> = fs::read_dir(path)
             .unwrap_or_else(|e| panic!("Failed to read directory '{}'. Error: {}", path, e))
             .map(|entry| entry.expect("Failed to read entry").path())
             .collect();
@@ -105,7 +105,7 @@ pub fn create_playlist(playlist_name: &str) -> StdResult<(), CreatePlaylistError
     if path.try_exists()? {
         Err(CreatePlaylistError::PlaylistAlreadyExists)
     } else {
-        std::fs::File::create(path)?;
+        fs::File::create(path)?;
         Ok(())
     }
 }
