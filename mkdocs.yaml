@@ -1,5 +1,6 @@
 site_name: tori
 site_url: https://leoriether.github.io/tori/
+repo_url: https://github.com/LeoRiether/tori
 extra_css: [style/extra.css]
 theme:
   name: material
