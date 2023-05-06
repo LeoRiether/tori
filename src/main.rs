@@ -7,7 +7,7 @@ pub use error::{Error, Result};
 use std::path::{Path, PathBuf};
 
 #[derive(FromArgs)]
-/// Terminal-based music player
+/// The frictionless music player for the terminal
 struct Args {
     #[argh(option, short = 'c')]
     /// the path to an alternative config file. If not present, the config is loaded from
