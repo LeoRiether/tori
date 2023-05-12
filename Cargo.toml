@@ -7,8 +7,13 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/LeoRiether/tori"
 keywords = ["music", "player", "tui", "terminal"]
 exclude = ["/assets", "/docs"]
+homepage = "https://github.com/LeoRiether/tori"
 version = "0.1.2"
 edition = "2021"
+
+[package.metadata]
+depends = ["mpv"]
+optdepends = ["yt-dlp", "cava"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
