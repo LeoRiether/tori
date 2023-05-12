@@ -66,10 +66,7 @@ impl Visualizer {
             .stdin(Stdio::null())
             .spawn()
             .map_err(|e| {
-                format!(
-                    "Failed to spawn the visualizer process. Is `cava` installed? The received error was: {}",
-                    e
-                )
+                format!("Failed to spawn the visualizer process. Is `cava` installed? The received error was: {}", e)
             })?;
 
         let data = Arc::new(Mutex::new(vec![0; opts.bars]));

@@ -20,7 +20,12 @@ For code-related documentation, there's also a [docs.rs entry](https://docs.rs/t
 
 ## Installing
 - Make sure you have the dependencies installed
+- Install [the Rust toolchain](https://www.rust-lang.org/tools/install)
 - Run `cargo install tori`
+
+Alternatively, if you use an Arch-based Linux distro, you can install tori from the AUR: `yay -S tori-bin`
+
+Prebuild binaries for Windows, Mac and other Linux distros will be available soon.
 
 ### Dependencies
 - [mpv](https://mpv.io/)
