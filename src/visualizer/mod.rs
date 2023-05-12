@@ -64,7 +64,13 @@ impl Visualizer {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .stdin(Stdio::null())
-            .spawn()?;
+            .spawn()
+            .map_err(|e| {
+                format!(
+                    "Failed to spawn the visualizer process. Is `cava` installed? The received error was: {}",
+                    e
+                )
+            })?;
 
         let data = Arc::new(Mutex::new(vec![0; opts.bars]));
         let stop_flag = Arc::new(AtomicBool::new(false));
