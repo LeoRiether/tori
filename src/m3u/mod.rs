@@ -40,7 +40,8 @@ impl Song {
             .arg("--dump-single-json")
             .arg("--flat-playlist")
             .arg(url)
-            .output()?;
+            .output()
+            .map_err(|e| format!("Could not execute yt-dlp. Error: {}", e))?;
 
         if !output.status.success() {
             return Err(format!(
