@@ -79,6 +79,15 @@ impl<'a> AppScreen<'a> {
                 app.mpv.command("cycle", &["pause"])?;
                 self.now_playing.update(&app.mpv);
             }
+            ToggleLoop => {
+                let status = app.mpv.get_property::<String>("loop-file");
+                let next_status = match status.as_deref() {
+                    Ok("no") => "inf",
+                    _ => "no",
+                };
+                app.mpv.set_property("loop-file", next_status)?;
+                self.now_playing.update(&app.mpv);
+            }
             VolumeUp => {
                 app.mpv.add_property("volume", 5)?;
                 self.now_playing.update(&app.mpv);

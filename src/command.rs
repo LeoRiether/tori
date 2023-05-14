@@ -8,6 +8,7 @@ pub enum Command {
     NextSong,
     PrevSong,
     TogglePause,
+    ToggleLoop,
     SeekForward,
     SeekBackward,
     OpenInBrowser,

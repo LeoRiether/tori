@@ -33,6 +33,7 @@ pub struct NowPlaying {
     pub time_pos: i64,
     pub time_rem: i64,
     pub paused: bool,
+    pub loop_file: bool,
     pub volume: i64,
 }
 
@@ -43,6 +44,10 @@ impl NowPlaying {
         self.time_pos = mpv.get_property("time-pos").unwrap_or_default();
         self.time_rem = mpv.get_property("time-remaining").unwrap_or_default();
         self.paused = mpv.get_property("pause").unwrap_or_default();
+
+        let loop_file = mpv.get_property::<String>("loop-file");
+        self.loop_file = matches!(loop_file.as_deref(), Ok("inf"));
+
         self.volume = if mpv.get_property("mute").unwrap_or(false) {
             0
         } else {
@@ -128,6 +133,13 @@ impl Component for NowPlaying {
             if self.paused {
                 parts.push(Span::styled(
                     "[paused] ",
+                    Style::default().fg(Color::DarkGray),
+                ));
+            }
+
+            if self.loop_file {
+                parts.push(Span::styled(
+                    "[looping] ",
                     Style::default().fg(Color::DarkGray),
                 ));
             }
