@@ -9,6 +9,7 @@ use crate::{
 
 use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};
 
+use std::rc::Rc;
 use std::borrow::Cow;
 use tui::layout::Rect;
 use tui::style::Color;
@@ -358,7 +359,7 @@ impl<'a> BrowseScreen<'a> {
         }
     }
 
-    fn subcomponent_chunks(&self, chunk: Rect) -> Vec<Rect> {
+    fn subcomponent_chunks(&self, chunk: Rect) -> Rc<[Rect]> {
         Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
