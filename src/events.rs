@@ -1,5 +1,6 @@
+use crossterm::event::Event as CrosstermEvent;
 use std::sync::{mpsc, Arc, Mutex};
-use std::time::{self};
+use std::time;
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread,
@@ -13,7 +14,7 @@ pub enum Event {
     SongAdded { playlist: String, song: String },
     ChangedPlaylist,
     Command(Command),
-    Terminal(crossterm::event::Event),
+    Terminal(CrosstermEvent),
 }
 
 pub struct Channel {

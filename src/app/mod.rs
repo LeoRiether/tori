@@ -1,5 +1,8 @@
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, KeyEvent, KeyModifiers},
+    event::{
+        DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyEvent, KeyEventKind,
+        KeyModifiers,
+    },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -25,8 +28,8 @@ pub mod app_screen;
 pub mod browse_screen;
 pub mod component;
 pub mod filtered_list;
-pub mod playlist_screen;
 pub mod modal;
+pub mod playlist_screen;
 
 use crate::events::Event;
 
@@ -131,6 +134,11 @@ impl<'a> App<'a> {
         // immediately after the last event, which triggers a fast render.
         let timeout = Duration::from_millis(self.next_poll_timeout as u64);
         match self.channel.receiver.recv_timeout(timeout) {
+            Ok(Event::Terminal(CrosstermEvent::Key(key))) if key.kind == KeyEventKind::Release => {
+                // WARN: we ignore every key release event for now because of a crossterm 0.26
+                // quirk: https://github.com/crossterm-rs/crossterm/pull/745
+                self.next_poll_timeout = FRAME_DELAY_MS;
+            }
             Ok(event) => {
                 let event = self.transform_event(event);
                 self.handle_event(event)?;
@@ -157,7 +165,7 @@ impl<'a> App<'a> {
     fn transform_event(&self, event: Event) -> Event {
         use Event::*;
         match event {
-            Terminal(crossterm::event::Event::Key(key_event)) => {
+            Terminal(CrosstermEvent::Key(key_event)) => {
                 let has_mods = key_event.modifiers & (KeyModifiers::CONTROL | KeyModifiers::ALT)
                     != KeyModifiers::NONE;
                 match self.screen.borrow().mode() {
