@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{command, error::Result, events, util::RectContains};
 
 mod now_playing;
@@ -94,7 +96,7 @@ impl<'a> AppScreen<'a> {
         Ok(())
     }
 
-    fn subcomponent_chunks(&self, frame: Rect) -> Vec<Rect> {
+    fn subcomponent_chunks(&self, frame: Rect) -> Rc<[Rect]> {
         Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())

@@ -30,8 +30,8 @@ default = ["clip"]
 clip = ["clipboard"]
 
 [dependencies]
-tui = "0.19"
-crossterm = "0.25"
+tui = { version = "0.20", package = "ratatui" }
+crossterm = "0.26"
 
 # libmpv isn't working for mpv v0.35 :(
 # So I'm using a fork :)
