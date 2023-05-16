@@ -2,21 +2,6 @@
 
 use std::time::{Duration, Instant};
 
-use tui::layout::Rect;
-
-////////////////////////////////
-//        RectContains        //
-////////////////////////////////
-pub trait RectContains {
-    fn contains(&self, x: u16, y: u16) -> bool;
-}
-
-impl RectContains for Rect {
-    fn contains(&self, x: u16, y: u16) -> bool {
-        x >= self.left() && x <= self.right() && y >= self.top() && y <= self.bottom()
-    }
-}
-
 /////////////////////////////
 //        ClickInfo        //
 /////////////////////////////

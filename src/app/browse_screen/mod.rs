@@ -4,7 +4,7 @@ use crate::{
     error::Result,
     events::Event,
     m3u::playlist_management,
-    util::RectContains,
+    rect_ops::RectOps,
 };
 
 use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};

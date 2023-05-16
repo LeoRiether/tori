@@ -9,5 +9,6 @@ pub mod visualizer;
 
 mod dbglog;
 mod events;
+mod rect_ops;
 mod util;
 mod widgets;

@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
-use crate::{command, error::Result, events, util::RectContains};
+use crate::{command, error::Result, events, rect_ops::RectOps};
 
 mod now_playing;
 use now_playing::NowPlaying;
-use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::layout::Rect;
 
 use super::{
     browse_screen::BrowseScreen,
@@ -105,11 +103,9 @@ impl<'a> AppScreen<'a> {
         Ok(())
     }
 
-    fn subcomponent_chunks(&self, frame: Rect) -> Rc<[Rect]> {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(20), Constraint::Length(2)].as_ref())
-            .split(frame)
+    /// Returns (app chunk, now_playing chunk)
+    fn subcomponent_chunks(frame: Rect) -> (Rect, Rect) {
+        frame.split_bottom(2)
     }
 }
 
@@ -124,14 +120,14 @@ impl<'a> Component for AppScreen<'a> {
     }
 
     fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect, (): ()) {
-        let vchunks = self.subcomponent_chunks(chunk);
+        let vchunks = Self::subcomponent_chunks(chunk);
 
         match self.selected {
-            Selected::Browse => self.browse.render(frame, vchunks[0], ()),
-            Selected::Playlist => self.playlist.render(frame, vchunks[0], ()),
+            Selected::Browse => self.browse.render(frame, vchunks.0, ()),
+            Selected::Playlist => self.playlist.render(frame, vchunks.0, ()),
         }
 
-        self.now_playing.render(frame, vchunks[1], ());
+        self.now_playing.render(frame, vchunks.1, ());
     }
 
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<()> {
@@ -166,17 +162,47 @@ impl<'a> MouseHandler for AppScreen<'a> {
         chunk: Rect,
         event: crossterm::event::MouseEvent,
     ) -> Result<()> {
-        let vchunks = self.subcomponent_chunks(chunk);
-        if vchunks[0].contains(event.column, event.row) {
+        let vchunks = Self::subcomponent_chunks(chunk);
+        if vchunks.0.contains(event.column, event.row) {
             return match self.selected {
-                Selected::Browse => self.browse.handle_mouse(app, vchunks[0], event),
-                Selected::Playlist => self.playlist.handle_mouse(app, vchunks[0], event),
+                Selected::Browse => self.browse.handle_mouse(app, vchunks.0, event),
+                Selected::Playlist => self.playlist.handle_mouse(app, vchunks.0, event),
             };
         }
-        if vchunks[1].contains(event.column, event.row) {
-            return self.now_playing.handle_mouse(app, vchunks[1], event);
+        if vchunks.1.contains(event.column, event.row) {
+            return self.now_playing.handle_mouse(app, vchunks.1, event);
         }
 
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_big_frame_size() {
+        let frame = Rect { x: 0, y: 0, width: 128, height: 64 };
+        let app = Rect { x: 0, y: 0, width: 128, height: 62 };
+        let now_playing = Rect { x: 0, y: 62, width: 128, height: 2 };
+        assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
+    }
+
+    #[test]
+    fn test_small_frame_size() {
+        let frame = Rect { x: 0, y: 0, width: 16, height: 10 };
+        let app = Rect { x: 0, y: 0, width: 16, height: 8 };
+        let now_playing = Rect { x: 0, y: 8, width: 16, height: 2 };
+        assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
+    }
+
+    #[test]
+    fn test_unusably_small_frame_size() {
+        let frame = Rect { x: 0, y: 0, width: 16, height: 1 };
+        let app = Rect { x: 0, y: 0, width: 16, height: 0 };
+        let now_playing = Rect { x: 0, y: 0, width: 16, height: 1 };
+        assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
+    }
+}
+

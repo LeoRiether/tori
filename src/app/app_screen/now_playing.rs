@@ -14,7 +14,7 @@ use crate::{
     },
     error::Result,
     events,
-    util::RectContains,
+    rect_ops::RectOps,
 };
 
 #[derive(Debug)]
