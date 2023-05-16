@@ -46,6 +46,7 @@ keybindings:
   ">": NextSong
   "<": PrevSong
   " ": TogglePause
+  L: ToggleLoop
   S-right: SeekForward
   S-left: SeekBackward
   o: OpenInBrowser
