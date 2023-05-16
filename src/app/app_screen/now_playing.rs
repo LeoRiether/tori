@@ -205,12 +205,12 @@ impl Component for NowPlaying {
         /////////////////////////////////////
         //        Render everything        //
         /////////////////////////////////////
-        frame.render_widget(media_title, chunks.top_line);
         frame.render_widget(volume_title, chunks.top_line);
+        frame.render_widget(media_title, chunks.top_line);
         frame.render_widget(volume_paragraph, chunks.volume);
         frame.render_widget(playback_left, chunks.playback_left);
-        frame.render_widget(playback_bar, chunks.playback_bar);
         frame.render_widget(playback_right, chunks.playback_right);
+        frame.render_widget(playback_bar, chunks.playback_bar);
     }
 
     fn mode(&self) -> Mode {
