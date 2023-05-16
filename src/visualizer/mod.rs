@@ -69,14 +69,28 @@ impl Visualizer {
                 format!("Failed to spawn the visualizer process. Is `cava` installed? The received error was: {}", e)
             })?;
 
-        let data = Arc::new(Mutex::new(vec![0; opts.bars]));
+        // Read first chunk to make sure we can read `buf.len` bytes
+        let mut buf = vec![0_u8; 2 * opts.bars];
+        {
+            let stdout = process.stdout.as_mut().unwrap();
+            match stdout.read_exact(&mut buf) {
+                Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
+                    let buf_str = String::from_utf8_lossy(&buf);
+                    return Err(
+                        format!("Failed to spawn the visualizer process correctly. The first received chunk was: {}", buf_str).into()
+                    );
+                }
+                _ => {}
+            }
+        }
+
+        let data = Arc::new(Mutex::new(vec![0_u16; opts.bars]));
         let stop_flag = Arc::new(AtomicBool::new(false));
 
         {
             let data = data.clone();
             let stop_flag = stop_flag.clone();
             thread::spawn(move || {
-                let mut buf = vec![0_u8; 2 * opts.bars];
                 while !stop_flag.load(atomic::Ordering::Relaxed) {
                     let stdout = process.stdout.as_mut().unwrap();
                     stdout.read_exact(&mut buf).unwrap();
