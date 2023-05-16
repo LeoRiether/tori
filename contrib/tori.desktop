@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=tori
+GenericName=Music player
+Comment=The frictionless music player for the terminal
+Icon=tori
+TryExec=tori
+Exec=tori
+Terminal=true
+Categories=AudioVideo;Audio;Player;ConsoleOnly;
