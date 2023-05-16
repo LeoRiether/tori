@@ -61,8 +61,12 @@ impl<'a> App<'a> {
         let terminal = Terminal::new(backend)?;
 
         let mpv = Mpv::with_initializer(|mpv| {
-            mpv.set_property("video", false)
-                .and_then(|_| mpv.set_property("volume", 100))
+            mpv.set_property("video", false)?;
+            mpv.set_property("volume", 100)?;
+            if let Some(ao) = &Config::global().mpv_ao {
+                mpv.set_property("ao", ao.as_str())?;
+            }
+            Ok(())
         })?;
 
         let screen = Rc::new(RefCell::new(AppScreen::new()?));

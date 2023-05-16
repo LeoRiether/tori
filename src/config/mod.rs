@@ -11,6 +11,7 @@ pub struct Config {
     pub playlists_dir: String,
     pub visualizer_gradient: [(u8, u8, u8); 2],
     pub keybindings: Shortcuts,
+    pub mpv_ao: Option<String>,
 }
 
 static INSTANCE: OnceCell<Config> = OnceCell::new();
@@ -43,6 +44,8 @@ impl Config {
             self.visualizer_gradient = visualizer_gradient;
         }
 
+        self.mpv_ao = other.mpv_ao;
+
         self
     }
 }
@@ -66,6 +69,7 @@ pub struct OptionalConfig {
     pub playlists_dir: Option<String>,
     pub visualizer_gradient: Option<[(u8, u8, u8); 2]>,
     pub keybindings: Option<Shortcuts>,
+    pub mpv_ao: Option<String>,
 }
 
 impl OptionalConfig {
