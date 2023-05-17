@@ -62,7 +62,7 @@ impl Visualizer {
             .arg("-p")
             .arg(&tmp_path)
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .stdin(Stdio::null())
             .spawn()
             .map_err(|e| {
@@ -82,8 +82,10 @@ impl Visualizer {
                     let read_res = stdout.read_exact(&mut buf);
 
                     if let Err(e) = read_res {
-                        let buf_str = String::from_utf8_lossy(&buf);
-                        panic!("Failed to read from the visualizer process. The received error was: {}. Process output: {}", e, buf_str);
+                        let mut stderr_contents = String::new();
+                        let stderr = process.stderr.as_mut().unwrap();
+                        stderr.read_to_string(&mut stderr_contents).unwrap();
+                        panic!("Failed to read from the visualizer process because '{}'. Process stderr: {}", e, stderr_contents);
                     }
 
                     let mut data = data.lock().unwrap();
