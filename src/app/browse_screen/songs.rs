@@ -512,7 +512,7 @@ impl<'t> Component for SongsPane<'t> {
         if self.shown.items.len() > chunk.height as usize - 2 {
             // Render scrollbar
             let scrollbar = Scrollbar::new(
-                self.selected_index().unwrap_or(0) as u16,
+                self.shown.state.selected().unwrap_or(0) as u16,
                 songlist_len as u16,
             )
             .with_style(border_style);
