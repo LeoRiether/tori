@@ -4,6 +4,7 @@ use crate::{
         filtered_list::FilteredList,
         App, Mode, MyBackend,
     },
+    command::Command,
     config::Config,
     error::Result,
     events::Event,
@@ -16,7 +17,7 @@ use std::result::Result as StdResult;
 use tui::{
     layout::{self, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState},
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame,
 };
 
@@ -186,17 +187,38 @@ impl Component for PlaylistsPane {
             block = block.border_style(Style::default().fg(Color::LightBlue));
         }
 
-        let playlists: Vec<_> = self
-            .shown
-            .items
-            .iter()
-            .map(|&i| ListItem::new(self.playlists[i].as_str()))
-            .collect();
+        if !self.playlists.is_empty() {
+            // Render playlists list
+            let playlists: Vec<_> = self
+                .shown
+                .items
+                .iter()
+                .map(|&i| ListItem::new(self.playlists[i].as_str()))
+                .collect();
 
-        let widget = List::new(playlists)
+            let widget = List::new(playlists)
+                .block(block)
+                .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
+            frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+        } else {
+            // Help message
+            let key = Config::global()
+                .keybindings
+                .0
+                .iter()
+                .find(|&(_key, &cmd)| cmd == Command::Add)
+                .map(|(key, _)| key.0.as_str())
+                .unwrap_or("a");
+
+            let widget = Paragraph::new(format!(
+                "You don't have any playlists yet! Press '{}' to add one.",
+                key
+            ))
+            .wrap(Wrap { trim: true })
             .block(block)
-            .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
-        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+            .style(Style::default().fg(Color::DarkGray));
+            frame.render_widget(widget, chunk);
+        }
     }
 
     #[allow(clippy::collapsible_match)]

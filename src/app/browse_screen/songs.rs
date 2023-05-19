@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use crate::app::component::MouseHandler;
+use crate::command::Command;
 use crate::error::Result;
 use crate::events::Event;
 use crate::util::ClickInfo;
@@ -15,6 +16,7 @@ use crate::{m3u, util};
 
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use tui::layout::Rect;
+use tui::widgets::{Paragraph, Wrap};
 use tui::{
     layout::{self, Constraint},
     style::{Color, Style},
@@ -482,47 +484,68 @@ impl<'t> Component for SongsPane<'t> {
             .border_type(BorderType::Plain)
             .border_style(border_style);
 
-        let songlist: Vec<_> = self
-            .shown
-            .items
-            .iter()
-            .map(|&i| &self.songs[i])
-            .map(|song| {
-                Row::new(vec![
-                    format!(" {}", song.title),
-                    format!(
-                        "{}:{:02}",
-                        song.duration.as_secs() / 60,
-                        song.duration.as_secs() % 60
-                    ),
-                ])
-            })
-            .collect();
-        let songlist_len = songlist.len();
+        if !self.songs.is_empty() {
+            // Render songlist
+            let songlist: Vec<_> = self
+                .shown
+                .items
+                .iter()
+                .map(|&i| &self.songs[i])
+                .map(|song| {
+                    Row::new(vec![
+                        format!(" {}", song.title),
+                        format!(
+                            "{}:{:02}",
+                            song.duration.as_secs() / 60,
+                            song.duration.as_secs() % 60
+                        ),
+                    ])
+                })
+                .collect();
+            let songlist_len = songlist.len();
 
-        // Render table
-        let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
-        let widget = Table::new(songlist)
+            // Render table
+            let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
+            let widget = Table::new(songlist)
+                .block(block)
+                .widths(widths)
+                .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
+                .highlight_symbol(" ◇");
+            frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
+
+            if self.shown.items.len() > chunk.height as usize - 2 {
+                // Render scrollbar
+                let scrollbar = Scrollbar::new(
+                    self.shown.state.selected().unwrap_or(0) as u16,
+                    songlist_len as u16,
+                )
+                .with_style(border_style);
+                frame.render_widget(
+                    scrollbar,
+                    chunk.inner(&tui::layout::Margin {
+                        vertical: 1,
+                        horizontal: 0,
+                    }),
+                );
+            }
+        } else {
+            // Help message
+            let key = Config::global()
+                .keybindings
+                .0
+                .iter()
+                .find(|&(_key, &cmd)| cmd == Command::Add)
+                .map(|(key, _)| key.0.as_str())
+                .unwrap_or("a");
+
+            let widget = Paragraph::new(format!(
+                "You don't have any songs in this playlist yet! Press '{}' to add one.",
+                key
+            ))
+            .wrap(Wrap { trim: true })
             .block(block)
-            .widths(widths)
-            .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
-            .highlight_symbol(" ◇");
-        frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
-
-        if self.shown.items.len() > chunk.height as usize - 2 {
-            // Render scrollbar
-            let scrollbar = Scrollbar::new(
-                self.shown.state.selected().unwrap_or(0) as u16,
-                songlist_len as u16,
-            )
-            .with_style(border_style);
-            frame.render_widget(
-                scrollbar,
-                chunk.inner(&tui::layout::Margin {
-                    vertical: 1,
-                    horizontal: 0,
-                }),
-            );
+            .style(Style::default().fg(Color::DarkGray));
+            frame.render_widget(widget, chunk);
         }
     }
 
