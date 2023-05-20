@@ -49,7 +49,7 @@ impl PlaylistScreen {
         let sender = app.channel.sender.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_millis(16));
-            sender.send(events::Event::SecondTick).unwrap();
+            sender.send(events::Event::SecondTick).ok();
         });
     }
 

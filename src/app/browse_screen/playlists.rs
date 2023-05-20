@@ -53,16 +53,20 @@ impl PlaylistsPane {
 
         use std::fs::DirEntry;
         let extract_playlist_name = |entry: StdResult<DirEntry, io::Error>| {
-            entry
+            Ok(entry
                 .unwrap()
                 .file_name()
                 .into_string()
-                .unwrap()
+                .map_err(|filename| format!("File '{:?}' has invalid UTF-8", filename))?
                 .trim_end_matches(".m3u8")
-                .to_string()
+                .to_string())
         };
 
-        self.playlists = dir.into_iter().map(extract_playlist_name).collect();
+        self.playlists = dir
+            .into_iter()
+            .map(extract_playlist_name)
+            .collect::<Result<_>>()?;
+
         self.playlists.sort();
         self.refresh_shown();
         Ok(())
