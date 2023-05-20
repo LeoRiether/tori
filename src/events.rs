@@ -64,7 +64,15 @@ impl Channel {
         let sender = self.sender.clone();
         thread::spawn(move || loop {
             thread::sleep(time::Duration::from_secs(1));
-            sender.send(Event::SecondTick).unwrap();
+            let sent = sender.send(Event::SecondTick);
+
+            // Stop spawning ticks if the receiver has been dropped. This prevents a
+            // 'called `Result::unwrap()` on an `Err` value: SendError { .. }' panic when Ctrl+C is
+            // pressed and the receiver is dropped right before the sender tries to send the
+            // tick
+            if sent.is_err() {
+                return;
+            }
         })
     }
 
