@@ -2,3 +2,5 @@
 playlists/*
 del.txt
 site/
+contrib/venv
+contrib/aur
