@@ -20,7 +20,7 @@ class Packer:
         if not os.path.exists(AUR):
             print(f":: Cloning AUR package")
             subprocess.run(
-                ["git", "clone", "https://aur.archlinux.org/tori-bin.git", AUR]
+                ["git", "clone", "ssh://aur@aur.archlinux.org/tori-bin.git", AUR]
             )
 
     def build_binary(self):
