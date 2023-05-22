@@ -1,15 +1,15 @@
 pub mod confirmation_modal;
 pub mod help_modal;
-pub mod input_modal;
 pub mod hotkey_modal;
+pub mod input_modal;
 
 pub use confirmation_modal::ConfirmationModal;
 pub use help_modal::HelpModal;
-pub use input_modal::InputModal;
 pub use hotkey_modal::HotkeyModal;
+pub use input_modal::InputModal;
 
 use tui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::Style,
     Frame,
 };
@@ -53,23 +53,16 @@ impl Default for Box<dyn Modal> {
     }
 }
 
-pub fn get_modal_chunk(size: tui::layout::Rect) -> tui::layout::Rect {
-    let chunk = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(48),
-            Constraint::Length(5),
-            Constraint::Percentage(48),
-        ])
-        .split(size)[1];
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(2, 4),
-            Constraint::Ratio(1, 4),
-        ])
-        .split(chunk)[1]
+pub fn get_modal_chunk(frame: Rect) -> Rect {
+    let width = (frame.width / 2).max(70).min(frame.width);
+    let height = 5;
+
+    Rect {
+        x: frame.width.saturating_sub(width) / 2,
+        width,
+        y: frame.height.saturating_sub(height) / 2,
+        height,
+    }
 }
 
 #[cfg(test)]

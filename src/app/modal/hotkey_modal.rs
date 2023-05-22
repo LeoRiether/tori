@@ -1,10 +1,15 @@
 use crate::{
     app::component::{Mode, MyBackend},
+    config::shortcuts::InputStr,
     error::Result,
-    events::Event, config::shortcuts::InputStr,
+    events::Event,
 };
-use tui::{layout::Alignment, widgets::{Block, Borders, BorderType, Paragraph, Clear}, style::{Color, Style}};
 use crossterm::event::Event as CrosstermEvent;
+use tui::{
+    layout::Alignment,
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+};
 
 use super::Modal;
 
@@ -18,7 +23,7 @@ pub struct HotkeyModal {
 }
 
 impl Modal for HotkeyModal {
-    fn apply_style(&mut self, _style: Style) { }
+    fn apply_style(&mut self, _style: Style) {}
 
     fn handle_event(&mut self, event: Event) -> Result<super::Message> {
         if let Event::Terminal(CrosstermEvent::Key(key)) = event {
@@ -31,7 +36,9 @@ impl Modal for HotkeyModal {
     }
 
     fn render(&mut self, frame: &mut tui::Frame<'_, MyBackend>) {
-        let chunk = super::get_modal_chunk(frame.size());
+        let mut chunk = super::get_modal_chunk(frame.size());
+        chunk.width = chunk.width.min(30);
+        chunk.x = frame.size().width.saturating_sub(chunk.width) / 2;
 
         let block = Block::default()
             .title(" Hotkey ")

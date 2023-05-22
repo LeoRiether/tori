@@ -74,7 +74,7 @@ impl Modal for HelpModal {
         let size = frame.size();
         let mut chunk = get_modal_chunk(size);
         chunk.y = 3;
-        chunk.height = frame.size().height - 6;
+        chunk.height = frame.size().height.saturating_sub(6);
 
         let block = Block::default()
             .title(" Help ")
