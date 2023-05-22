@@ -20,7 +20,7 @@ use crate::{
     config::Config,
     error::Result,
     events::{self, Channel},
-    visualizer::Visualizer,
+    visualizer::{self, Visualizer},
     widgets::notification::Notification,
 };
 
@@ -120,8 +120,22 @@ impl<'a> App<'a> {
                 self.notification.render(frame, frame.size(), ());
             })?;
 
-            if let Some(ref visualizer) = self.visualizer {
-                visualizer.render(self.terminal.current_buffer_mut());
+            let mut err = None; // kind of ugly, but simplifies &mut self borrows
+            if let Some(ref mut visualizer) = self.visualizer {
+                match visualizer.thread_handle() {
+                    visualizer::ThreadHandle::Stopped(Ok(())) => {
+                        self.visualizer = None;
+                    }
+                    visualizer::ThreadHandle::Stopped(Err(e)) => {
+                        err = Some(format!("The visualizer process exited with error: {}", e));
+                        self.visualizer = None;
+                    }
+                    _ => visualizer.render(self.terminal.current_buffer_mut()),
+                }
+            }
+
+            if let Some(err) = err {
+                self.notify_err(err);
             }
 
             self.next_render = time::Instant::now()

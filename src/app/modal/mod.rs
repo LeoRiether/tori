@@ -9,7 +9,7 @@ pub use hotkey_modal::HotkeyModal;
 pub use input_modal::InputModal;
 
 use tui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     style::Style,
     Frame,
 };

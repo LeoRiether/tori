@@ -1,6 +1,8 @@
 use std::{
+    error::Error as StdError,
     fs::File,
     io::{self, Read, Write},
+    mem,
     path::PathBuf,
     process::Stdio,
     result::Result as StdResult,
@@ -48,10 +50,25 @@ pub struct CavaOptions {
     pub bars: usize,
 }
 
+type ThreadResult = StdResult<(), Box<dyn StdError + Send + Sync>>;
+
+#[derive(Debug)]
+pub enum ThreadHandle {
+    Stopped(ThreadResult),
+    Running(thread::JoinHandle<ThreadResult>),
+}
+
+impl Default for ThreadHandle {
+    fn default() -> Self {
+        Self::Stopped(Ok(()))
+    }
+}
+
 pub struct Visualizer {
     tmp_path: PathBuf,
     data: Arc<Mutex<Vec<u16>>>,
     stop_flag: Arc<AtomicBool>,
+    handle: ThreadHandle,
 }
 
 impl Visualizer {
@@ -71,11 +88,12 @@ impl Visualizer {
 
         let data = Arc::new(Mutex::new(vec![0_u16; opts.bars]));
         let stop_flag = Arc::new(AtomicBool::new(false));
+        let handle: thread::JoinHandle<ThreadResult>;
 
         {
             let data = data.clone();
             let stop_flag = stop_flag.clone();
-            thread::spawn(move || {
+            handle = thread::spawn(move || {
                 let mut buf = vec![0_u8; 2 * opts.bars];
                 while !stop_flag.load(atomic::Ordering::Relaxed) {
                     let stdout = process.stdout.as_mut().unwrap();
@@ -85,7 +103,7 @@ impl Visualizer {
                         let mut stderr_contents = String::new();
                         let stderr = process.stderr.as_mut().unwrap();
                         stderr.read_to_string(&mut stderr_contents).unwrap();
-                        panic!("Failed to read from the visualizer process because '{}'. Process stderr: {}", e, stderr_contents);
+                        return Err(format!("'{}'. Process stderr: {}", e, stderr_contents).into());
                     }
 
                     let mut data = data.lock().unwrap();
@@ -93,7 +111,8 @@ impl Visualizer {
                         data[i] = u16::from_le_bytes([buf[2 * i], buf[2 * i + 1]]);
                     }
                 }
-                process.kill().ok();
+                process.kill()?;
+                Ok(())
             });
         }
 
@@ -101,6 +120,7 @@ impl Visualizer {
             tmp_path,
             data,
             stop_flag,
+            handle: ThreadHandle::Running(handle),
         })
     }
 
@@ -134,6 +154,19 @@ impl Visualizer {
             };
             buffer.set_style(area, style);
         }
+    }
+
+    pub fn thread_handle(&mut self) -> &ThreadHandle {
+        match mem::take(&mut self.handle) {
+            ThreadHandle::Running(handle) if handle.is_finished() => {
+                self.handle = ThreadHandle::Stopped(handle.join().unwrap());
+            }
+            other => {
+                self.handle = other;
+            }
+        }
+
+        &self.handle
     }
 }
 
