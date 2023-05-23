@@ -64,13 +64,13 @@ package() {{
     install -dm755 "$pkgdir/usr/bin"
     install -dm755 "$pkgdir/usr/share/licenses/$pkgname"
     install -dm755 "$pkgdir/usr/share/applications"
-    install -dm755 "$pkgdir/usr/share/pixmaps"
+    install -dm755 "$pkgdir/usr/share/icons/hicolor/scalable/apps"
 
     install -Dm755 tori -t "$pkgdir/usr/bin"
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 
     install -Dm644 tori.desktop "$pkgdir/usr/share/applications/tori.desktop"
-    install -Dm644 tori.svg "$pkgdir/usr/share/pixmaps/"
+    install -Dm644 tori.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/"
 }}
 """
 
