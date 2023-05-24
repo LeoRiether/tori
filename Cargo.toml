@@ -8,7 +8,7 @@ repository = "https://github.com/LeoRiether/tori"
 keywords = ["music", "player", "tui", "terminal"]
 exclude = ["/assets", "/docs"]
 homepage = "https://github.com/LeoRiether/tori"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 build = "build.rs"
 
