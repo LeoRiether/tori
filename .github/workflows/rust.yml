@@ -31,10 +31,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: choco install mpvio
-      uses: crazy-max/ghaction-chocolatey@v2
-      with:
-        args: install mpvio
+    - run: choco install mpvio
+    - name: Build mpv.lib
+      run: CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+    - run: lib /def:mpv.def /name:mpv-1.dll /out:mpv.lib /MACHINE:X64
     - name: Build
       run: cargo build --verbose
     - name: Run tests
