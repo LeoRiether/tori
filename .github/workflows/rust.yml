@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v3
     - run: choco install mpvio
     - name: Build mpv.lib
-      run: "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+      run: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x64
     - run: lib /def:mpv.def /name:mpv-1.dll /out:mpv.lib /MACHINE:X64
     - name: Build
       run: cargo build --verbose
