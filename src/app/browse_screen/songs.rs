@@ -299,6 +299,7 @@ impl<'t> SongsPane<'t> {
                 self.next_sorting_method();
                 self.refresh_shown();
             }
+            Search => self.filter = "/".into(),
             _ => {}
         }
         Ok(())

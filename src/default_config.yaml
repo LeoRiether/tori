@@ -37,3 +37,4 @@ keybindings:
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  C-f: Search

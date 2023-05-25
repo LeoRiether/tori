@@ -236,6 +236,7 @@ impl Component for PlaylistsPane {
             Command(cmd) => match cmd {
                 SelectNext => self.select_next(app),
                 SelectPrev => self.select_prev(app),
+                Search => self.filter = "/".into(),
                 _ => {}
             },
             Terminal(event) => match event {

@@ -63,6 +63,10 @@ pub enum Command {
 
     /// Open the playlist file in the configured by the environment variable `EDITOR`.
     OpenInEditor,
+
+    /// Filter/search the selected pane (playlists or songs).
+    /// The same as pressing '/'
+    Search,
 }
 
 #[cfg(test)]
