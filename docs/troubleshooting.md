@@ -10,6 +10,27 @@ You can fix this either by installing PipeWire or by setting
 `mpv_ao: pulse` and `mpv_ao: alsa` are popular choices. The available
 outputs can be listed by running `mpv --ao=help` in the terminal.
 
+## Linking error with xcb (ld returned 1 exit status)
+```
+/usr/bin/ld: cannot find -lxcb: No such file or directory         
+/usr/bin/ld: cannot find -lxcb-render: No such file or directory
+/usr/bin/ld: cannot find -lxcb-shape: No such file or directory 
+/usr/bin/ld: cannot find -lxcb-xfixes: No such file or directory
+collect2: error: ld returned 1 exit status          
+```
+
+If you're running a Debian-based distribution like Ubuntu, you can fix this by running
+```bash
+sudo apt install -y libxcb-shape0-dev libxcb-xfixes0-dev
+```
+
+## VersionMismatch
+```
+Error: VersionMismatch { linked: 131072, loaded: 65645 }
+```
+
+Your version of mpv is too old. You can fix this by installing a newer version of mpv, like v0.35.1
+
 ## The visualizer doesn't show up
 
 This may happen for a few reasons:
