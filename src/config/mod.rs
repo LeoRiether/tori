@@ -55,9 +55,15 @@ impl Default for Config {
         let mut me: Self = serde_yaml::from_str(std::include_str!("../default_config.yaml"))
             .expect("src/default_config.yaml is not valid yaml!");
 
-        me.playlists_dir = dirs::audio_dir()
+        let audio_dir = dirs::audio_dir().filter(|p| p.exists());
+        let music_dir = dirs::home_dir()
+            .map(|p| p.join("Music"))
+            .filter(|p| p.exists());
+
+        me.playlists_dir = audio_dir
+            .or(music_dir)
             .map(|p| p.join("tori"))
-            .and_then(|p| p.to_str().map(|s| s.to_string()))
+            .and_then(|p| p.to_str().map(str::to_string))
             .unwrap_or("playlists".into());
 
         me
