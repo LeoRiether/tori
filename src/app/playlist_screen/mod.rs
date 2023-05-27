@@ -3,8 +3,8 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{command, error::Result, events, widgets::Scrollbar};
-use std::{result::Result as StdResult, thread, time::Duration};
+use crate::{command, error::Result, events, player::Player, widgets::Scrollbar};
+use std::{thread, time::Duration};
 use tui::{
     layout::{Alignment, Rect},
     style::{Color, Style},
@@ -22,21 +22,14 @@ pub struct PlaylistScreen {
 
 impl PlaylistScreen {
     /// See <https://mpv.io/manual/master/#command-interface-playlist>
-    pub fn update(&mut self, mpv: &libmpv::Mpv) -> Result<&mut Self> {
-        let n = mpv.get_property("playlist/count")?;
+    pub fn update(&mut self, player: &impl Player) -> Result<&mut Self> {
+        let n = player.playlist_count()?;
 
         self.songs = (0..n)
-            .map(|i| {
-                mpv.get_property(&format!("playlist/{}/title", i))
-                    .or_else(|_| mpv.get_property(&format!("playlist/{}/filename", i)))
-            })
-            .collect::<StdResult<_, libmpv::Error>>()?;
+            .map(|i| player.playlist_track_title(i))
+            .collect::<Result<_>>()?;
 
-        self.playing
-            .select(match mpv.get_property::<i64>("playlist-playing-pos").ok() {
-                Some(i) if i >= 0 => Some(i as usize),
-                _ => None,
-            });
+        self.playing.select(player.playlist_position().ok());
 
         Ok(self)
     }
@@ -80,15 +73,15 @@ impl PlaylistScreen {
     }
 
     pub fn select_next(&self, app: &mut App) {
-        app.mpv
-            .playlist_next_weak()
+        app.player
+            .playlist_next()
             .unwrap_or_else(|_| app.notify_err("No next song"));
         self.update_after_delay(app);
     }
 
     pub fn select_prev(&self, app: &mut App) {
-        app.mpv
-            .playlist_previous_weak()
+        app.player
+            .playlist_previous()
             .unwrap_or_else(|_| app.notify_err("No previous song"));
         self.update_after_delay(app);
     }
@@ -137,7 +130,7 @@ impl Component for PlaylistScreen {
             Command(cmd) => self.handle_command(app, cmd)?,
             Terminal(event) => self.handle_terminal_event(app, event)?,
             SecondTick => {
-                self.update(&app.mpv)?;
+                self.update(&app.player)?;
             }
             _ => {}
         }

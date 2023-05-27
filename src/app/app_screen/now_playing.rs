@@ -1,4 +1,3 @@
-use libmpv::Mpv;
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
@@ -14,6 +13,7 @@ use crate::{
     },
     error::Result,
     events,
+    player::Player,
     rect_ops::RectOps,
 };
 
@@ -38,20 +38,18 @@ pub struct NowPlaying {
 }
 
 impl NowPlaying {
-    pub fn update(&mut self, mpv: &Mpv) {
-        self.media_title = mpv.get_property("media-title").unwrap_or_default();
-        self.percentage = mpv.get_property("percent-pos").unwrap_or_default();
-        self.time_pos = mpv.get_property("time-pos").unwrap_or_default();
-        self.time_rem = mpv.get_property("time-remaining").unwrap_or_default();
-        self.paused = mpv.get_property("pause").unwrap_or_default();
+    pub fn update(&mut self, player: &impl Player) {
+        self.media_title = player.media_title().unwrap_or_default();
+        self.percentage = player.percent_pos().unwrap_or_default();
+        self.time_pos = player.time_pos().unwrap_or_default();
+        self.time_rem = player.time_remaining().unwrap_or_default();
+        self.paused = player.paused().unwrap_or_default();
+        self.loop_file = player.looping_file().unwrap_or_default();
 
-        let loop_file = mpv.get_property::<String>("loop-file");
-        self.loop_file = matches!(loop_file.as_deref(), Ok("inf"));
-
-        self.volume = if mpv.get_property("mute").unwrap_or(false) {
+        self.volume = if player.muted().unwrap_or(false) {
             0
         } else {
-            mpv.get_property("volume").unwrap_or_default()
+            player.volume().unwrap_or_default()
         };
     }
 
@@ -69,8 +67,7 @@ impl NowPlaying {
             let dx = (x - chunks.volume.left()) as f64;
             let percentage = dx / chunks.volume.width as f64;
             // remember that the maximum volume is 130 :)
-            app.mpv
-                .set_property("volume", (130.0 * percentage).round())?;
+            app.player.set_volume((130.0 * percentage).round() as i64)?;
         }
 
         if chunks.playback_bar.contains(x, y) {
@@ -79,11 +76,10 @@ impl NowPlaying {
             let percentage = (percentage * 100.0).round() as usize;
             // this is bugged currently :/
             // app.mpv.seek_percent_absolute(percentage)?;
-            app.mpv
-                .command("seek", &[&format!("{}", percentage), "absolute-percent"])?;
+            app.player.seek_absolute(percentage)?;
         }
 
-        self.update(&app.mpv);
+        self.update(&app.player);
         Ok(())
     }
 

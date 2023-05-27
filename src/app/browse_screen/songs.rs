@@ -6,6 +6,7 @@ use crate::app::component::MouseHandler;
 use crate::command::Command;
 use crate::error::Result;
 use crate::events::Event;
+use crate::player::Player;
 use crate::util::ClickInfo;
 use crate::widgets::Scrollbar;
 use crate::{
@@ -231,30 +232,17 @@ impl<'t> SongsPane<'t> {
             SelectPrev => self.select_prev(),
             QueueSong => {
                 if let Some(song) = self.selected_item() {
-                    app.mpv.playlist_load_files(&[(
-                        &song.path,
-                        libmpv::FileState::AppendPlay,
-                        None,
-                    )])?;
+                    app.player.queue(&song.path)?;
                 }
             }
             QueueShown => {
-                let entries: Vec<_> = self
-                    .shown
-                    .items
-                    .iter()
-                    .map(|&i| {
-                        (
-                            self.songs[i].path.as_str(),
-                            libmpv::FileState::AppendPlay,
-                            None::<&str>,
-                        )
-                    })
-                    .collect();
-                app.mpv.playlist_load_files(&entries)?;
+                for &i in self.shown.items.iter() {
+                    let path = self.songs[i].path.as_str();
+                    app.player.queue(path)?;
+                }
             }
             Shuffle => {
-                app.mpv.command("playlist-shuffle", &[])?;
+                app.player.shuffle()?;
             }
             OpenInBrowser => {
                 if let Some(song) = self.selected_item() {
@@ -422,8 +410,7 @@ impl<'t> SongsPane<'t> {
 
     pub fn play_selected(&self, app: &mut App) -> Result<()> {
         if let Some(song) = self.selected_item() {
-            app.mpv
-                .playlist_load_files(&[(&song.path, libmpv::FileState::Replace, None)])?;
+            app.player.play(&song.path)?;
         }
         Ok(())
     }

@@ -45,8 +45,9 @@ installers = ["shell", "powershell"]
 targets = ["x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
 
 [features]
-default = ["clip"]
+default = ["clip", "mpv"]
 clip = ["clipboard"]
+mpv = ["libmpv-sirno"]
 
 [dependencies]
 tui = { version = "0.20", package = "ratatui" }
@@ -56,7 +57,7 @@ crossterm = "0.26"
 # So I'm using a fork :)
 # The changes have already been pulled though, so I should be able to switch back soon
 # https://github.com/ParadoxSpiral/libmpv-rs/pull/28
-libmpv-sirno = "2.0.2-fork.1"
+libmpv-sirno = { version = "2.0.2-fork.1", optional = true }
 
 # clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
 # also because I couldn't make any other clipboard crate work
