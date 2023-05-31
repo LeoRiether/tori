@@ -1,5 +1,7 @@
 /// Mostly copied from the [tui-rs List](tui::widgets::List), but this list has
 /// centered items!
+/// Still waiting for ratatui to support centered list items... Dunno why it doesn't, even when
+/// Line::alignment exists...
 use tui::{
     buffer::Buffer,
     layout::{Corner, Rect},
@@ -255,7 +257,7 @@ impl<'a> StatefulWidget for CenteredList<'a> {
                     (x + offset, list_area.width)
                 };
 
-                let (x_after, _) = buf.set_spans(elem_x, y + j as u16, line, max_element_width);
+                let (x_after, _) = buf.set_line(elem_x, y + j as u16, line, max_element_width);
 
                 if has_selection {
                     let symbol = if is_selected && (j == 0 || self.repeat_highlight_symbol) {
