@@ -34,6 +34,7 @@ Your version of mpv is too old. You can fix this by installing a newer version o
 ## The visualizer doesn't show up
 
 This may happen for a few reasons:
+
 1. [cava](https://github.com/karlstav/cava) is not installed
 2. [cava](https://github.com/karlstav/cava) is not on your `PATH`.
 3. [cava](https://github.com/karlstav/cava) is throwing an error. If tori does
