@@ -1,6 +1,8 @@
 use crate::config::Config;
 use crate::error::Result;
-use libmpv::{FileState, Mpv};
+
+mod select;
+use select::Mpv;
 
 #[repr(transparent)]
 pub struct MpvPlayer {
@@ -10,10 +12,10 @@ pub struct MpvPlayer {
 impl super::Player for MpvPlayer {
     fn new() -> Result<Self> {
         let mpv = Mpv::with_initializer(|mpv| {
-            mpv.set_property("video", false)?;
-            mpv.set_property("volume", 100)?;
+            mpv.set_bool("video", false)?;
+            mpv.set_i64("volume", 100)?;
             if let Some(ao) = &Config::global().mpv_ao {
-                mpv.set_property("ao", ao.as_str())?;
+                mpv.set_str("ao", ao.as_str())?;
             }
             Ok(())
         })?;
@@ -22,14 +24,12 @@ impl super::Player for MpvPlayer {
     }
 
     fn play(&mut self, path: &str) -> Result<()> {
-        self.mpv
-            .playlist_load_files(&[(path, FileState::Replace, None)])?;
+        self.mpv.play(path)?;
         Ok(())
     }
 
     fn queue(&mut self, path: &str) -> Result<()> {
-        self.mpv
-            .playlist_load_files(&[(path, FileState::AppendPlay, None)])?;
+        self.mpv.queue(path)?;
         Ok(())
     }
 
@@ -63,31 +63,31 @@ impl super::Player for MpvPlayer {
     }
 
     fn toggle_loop_file(&mut self) -> Result<()> {
-        let status = self.mpv.get_property::<String>("loop-file");
+        let status = self.mpv.get_str("loop-file");
         let next_status = match status.as_deref() {
             Ok("no") => "inf",
             _ => "no",
         };
-        self.mpv.set_property("loop-file", next_status)?;
+        self.mpv.set_str("loop-file", next_status)?;
         Ok(())
     }
 
     fn looping_file(&self) -> Result<bool> {
-        let status = self.mpv.get_property::<String>("loop-file")?;
+        let status = self.mpv.get_str("loop-file")?;
         Ok(status == "inf")
     }
 
     fn volume(&self) -> Result<i64> {
-        Ok(self.mpv.get_property("volume")?)
+        Ok(self.mpv.get_i64("volume")?)
     }
 
     fn add_volume(&mut self, x: isize) -> Result<()> {
-        self.mpv.add_property("volume", x)?;
+        self.mpv.add_isize("volume", x)?;
         Ok(())
     }
 
     fn set_volume(&mut self, x: i64) -> Result<()> {
-        self.mpv.set_property("volume", x)?;
+        self.mpv.set_i64("volume", x)?;
         Ok(())
     }
 
@@ -97,27 +97,27 @@ impl super::Player for MpvPlayer {
     }
 
     fn muted(&self) -> Result<bool> {
-        Ok(self.mpv.get_property("mute")?)
+        Ok(self.mpv.get_bool("mute")?)
     }
 
     fn media_title(&self) -> Result<String> {
-        Ok(self.mpv.get_property("media-title")?)
+        Ok(self.mpv.get_str("media-title")?)
     }
 
     fn percent_pos(&self) -> Result<i64> {
-        Ok(self.mpv.get_property("percent-pos")?)
+        Ok(self.mpv.get_i64("percent-pos")?)
     }
 
     fn time_pos(&self) -> Result<i64> {
-        Ok(self.mpv.get_property("time-pos")?)
+        Ok(self.mpv.get_i64("time-pos")?)
     }
 
     fn time_remaining(&self) -> Result<i64> {
-        Ok(self.mpv.get_property("time-remaining")?)
+        Ok(self.mpv.get_i64("time-remaining")?)
     }
 
     fn paused(&self) -> Result<bool> {
-        Ok(self.mpv.get_property("pause")?)
+        Ok(self.mpv.get_bool("pause")?)
     }
 
     fn shuffle(&mut self) -> Result<()> {
@@ -125,17 +125,17 @@ impl super::Player for MpvPlayer {
     }
 
     fn playlist_count(&self) -> Result<usize> {
-        Ok(self.mpv.get_property::<i64>("playlist/count")? as usize)
+        Ok(self.mpv.get_i64("playlist/count")? as usize)
     }
 
     fn playlist_track_title(&self, i: usize) -> Result<String> {
         Ok(self
             .mpv
-            .get_property(&format!("playlist/{}/title", i))
-            .or_else(|_| self.mpv.get_property(&format!("playlist/{}/filename", i)))?)
+            .get_str(&format!("playlist/{}/title", i))
+            .or_else(|_| self.mpv.get_str(&format!("playlist/{}/filename", i)))?)
     }
 
     fn playlist_position(&self) -> Result<usize> {
-        Ok(self.mpv.get_property::<i64>("playlist-playing-pos")? as usize)
+        Ok(self.mpv.get_i64("playlist-playing-pos")? as usize)
     }
 }
