@@ -6,7 +6,7 @@ use crossterm::event::KeyCode;
 use tui::{
     layout::Alignment,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
+    text::{Span, Line},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
@@ -123,8 +123,8 @@ impl<'t> Modal for InputModal<'t> {
             .unwrap_or((" ", ""));
 
         let paragraph = Paragraph::new(vec![
-            Spans::from(vec![]), // empty first line
-            Spans::from(vec![
+            Line::from(vec![]), // empty first line
+            Line::from(vec![
                 Span::raw(left),
                 Span::styled(in_cursor, Style::default().add_modifier(Modifier::REVERSED)),
                 Span::raw(right),

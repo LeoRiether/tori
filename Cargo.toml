@@ -50,7 +50,7 @@ clip = ["clipboard"]
 mpv = ["libmpv-sirno"]
 
 [dependencies]
-tui = { version = "0.20", package = "ratatui" }
+tui = { version = "0.21", package = "ratatui" }
 crossterm = "0.26"
 
 # libmpv isn't working for mpv v0.35 :(

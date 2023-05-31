@@ -3,7 +3,7 @@ use super::{get_modal_chunk, Message, Modal};
 use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Style},
-    text::{Span, Spans},
+    text::{Span, Line},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table},
     Frame,
 };
@@ -43,7 +43,7 @@ impl HelpModal {
             .chunks(3)
             .map(|chunk| {
                 let make_cell = |(k, v): &(&InputStr, &Command)| {
-                    Spans::from(vec![
+                    Line::from(vec![
                         Span::styled(pad(&k.0), Style::default().fg(Color::LightBlue)),
                         Span::raw(format!(" {:?}", v)),
                     ])

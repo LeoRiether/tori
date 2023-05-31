@@ -1,7 +1,7 @@
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::{Span, Spans},
+    text::{Span, Line},
     widgets::Paragraph,
     Frame,
 };
@@ -145,13 +145,13 @@ impl Component for NowPlaying {
                 Style::default().fg(Color::Yellow),
             ));
 
-            Paragraph::new(Spans::from(parts)).alignment(Alignment::Center)
+            Paragraph::new(Line::from(parts)).alignment(Alignment::Center)
         };
 
         //////////////////////////
         //        Volume        //
         //////////////////////////
-        let volume_title = Paragraph::new(Spans::from(vec![
+        let volume_title = Paragraph::new(Line::from(vec![
             Span::raw("volume "),
             Span::styled(
                 format!("{}%", self.volume),
@@ -169,7 +169,7 @@ impl Component for NowPlaying {
             let indicator = "■";
             let right = "─"
                 .repeat((chunks.volume.width as usize * 100 / 130).saturating_sub(left_width + 1));
-            Paragraph::new(Spans::from(vec![
+            Paragraph::new(Line::from(vec![
                 Span::styled(left, Style::default().fg(Color::White)),
                 Span::styled(indicator, Style::default().fg(Color::White)),
                 Span::styled(right, Style::default().fg(Color::DarkGray)),
