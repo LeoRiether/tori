@@ -5,6 +5,11 @@ mod mpv;
 #[cfg(feature = "mpv")]
 pub type DefaultPlayer = mpv::MpvPlayer;
 
+#[cfg(feature = "rodio")]
+mod rodio;
+#[cfg(feature = "rodio")]
+pub type DefaultPlayer = rodio::RodioPlayer;
+
 pub trait Player: Sized {
     fn new() -> Result<Self>;
     fn play(&mut self, path: &str) -> Result<()>;
