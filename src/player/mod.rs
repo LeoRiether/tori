@@ -10,6 +10,11 @@ mod rodio;
 #[cfg(feature = "rodio")]
 pub type DefaultPlayer = rodio::RodioPlayer;
 
+#[cfg(feature = "symphonia")]
+mod symphonia;
+#[cfg(feature = "symphonia")]
+pub type DefaultPlayer = symphonia::SymphoniaPlayer;
+
 pub trait Player: Sized {
     fn new() -> Result<Self>;
     fn play(&mut self, path: &str) -> Result<()>;

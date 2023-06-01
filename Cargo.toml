@@ -45,20 +45,27 @@ installers = ["shell", "powershell"]
 targets = ["x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
 
 [features]
-default = ["clip", "rodio"]
+default = ["clip", "symphonia"]
 clip = ["clipboard"]
 mpv = ["mpv034", "mpv035", "libmpv-sys"]
 rodio = ["dep:rodio"]
+symphonia = ["dep:symphonia", "dep:cpal"]
 
 [dependencies]
 tui = { version = "0.21", package = "ratatui" }
 crossterm = "0.26"
 
+# Player: mpv
 libmpv-sys = { version = "3.1.0", optional = true }
 mpv034 = { version = "2.0.1", package = "libmpv", optional = true } # Works with mpv <= v0.34
 mpv035 = { version = "2.0.2-fork.1", package = "libmpv-sirno", optional = true } # Works with mpv v0.35
 
+# Player: rodio
 rodio = { version = "0.17.1", optional = true }
+
+# Player: symphonia
+symphonia = { version = "0.5.3", optional = true, features = ["mpa"] }
+cpal = { version = "0.15.2", optional = true }
 
 # clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
 # also because I couldn't make any other clipboard crate work
