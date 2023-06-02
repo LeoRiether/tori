@@ -49,7 +49,7 @@ default = ["clip", "symphonia"]
 clip = ["clipboard"]
 mpv = ["mpv034", "mpv035", "libmpv-sys"]
 rodio = ["dep:rodio"]
-symphonia = ["dep:symphonia", "dep:cpal"]
+symphonia = ["dep:symphonia", "dep:cpal", "dep:rb", "dep:rubato", "dep:arrayvec"]
 
 [dependencies]
 tui = { version = "0.21", package = "ratatui" }
@@ -66,6 +66,9 @@ rodio = { version = "0.17.1", optional = true }
 # Player: symphonia
 symphonia = { version = "0.5.3", optional = true, features = ["mpa"] }
 cpal = { version = "0.15.2", optional = true }
+rb = { version = "0.4.1", optional = true }
+rubato = { version = "0.13.0", optional = true }
+arrayvec = { version = "0.7.2", optional = true }
 
 # clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
 # also because I couldn't make any other clipboard crate work
@@ -81,6 +84,9 @@ once_cell = "1.17.1"
 argh = "0.1.10"
 lofty = "0.13.0"
 rand = "0.8.5"
+
+log = "0.4.18"
+pretty_env_logger = "0.5.0"
 
 [build-dependencies]
 winres = "0.1"
