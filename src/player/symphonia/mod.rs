@@ -3,18 +3,7 @@ mod output;
 mod resampler;
 
 use crate::error::Result;
-use std::{io, thread};
-use symphonia::core::{
-    codecs::{DecoderOptions, CODEC_TYPE_NULL},
-    errors::Error as SymError,
-    formats::FormatOptions,
-    io::MediaSourceStream,
-    meta::MetadataOptions,
-    probe::Hint,
-};
-
 use controller::Controller;
-use output::CpalAudioOutput;
 
 macro_rules! my_todo {
     () => {

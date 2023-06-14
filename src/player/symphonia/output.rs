@@ -80,14 +80,7 @@ impl CpalAudioOutput {
             cpal::SampleFormat::U16 => {
                 CpalAudioOutputImpl::<u16>::try_open(spec, duration, &device)
             }
-            cpal::SampleFormat::I8 => todo!(),
-            cpal::SampleFormat::I32 => todo!(),
-            cpal::SampleFormat::I64 => todo!(),
-            cpal::SampleFormat::U8 => todo!(),
-            cpal::SampleFormat::U32 => todo!(),
-            cpal::SampleFormat::U64 => todo!(),
-            cpal::SampleFormat::F64 => todo!(),
-            _ => todo!(),
+            _ => unimplemented!(),
         }
     }
 }

@@ -4,7 +4,7 @@ use std::{
     fs::File,
     io,
     path::Path,
-    process::{ChildStdout, Command, Stdio},
+    process::{Command, Stdio},
     thread,
 };
 use symphonia::core::{
@@ -69,8 +69,12 @@ impl Controller {
                         // for chained OGG physical streams.
                         unimplemented!();
                     }
-                    Err(SymError::IoError(e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                        return;
+                    Err(SymError::IoError(e))
+                        if e.kind() == io::ErrorKind::UnexpectedEof
+                            && e.to_string() == "end of stream" =>
+                    {
+                        // File ended
+                        break;
                     }
                     Err(err) => {
                         // A unrecoverable error occurred, halt decoding.
