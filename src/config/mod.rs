@@ -41,7 +41,16 @@ impl Config {
         }
 
         if let Some(visualizer_gradient) = other.visualizer_gradient {
-            self.visualizer_gradient = visualizer_gradient;
+            let color_at = |i: usize| {
+                visualizer_gradient[i].to_rgb().unwrap_or_else(|| {
+                    eprintln!(
+                        "Your tori.yaml configuration file has an invalid color in visualizer_gradient: {:?}",
+                        visualizer_gradient[i]
+                    );
+                    std::process::exit(1);
+                })
+            };
+            self.visualizer_gradient = [color_at(0), color_at(1)];
         }
 
         self.mpv_ao = other.mpv_ao;
@@ -70,10 +79,35 @@ impl Default for Config {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Color {
+    Rgb(u8, u8, u8),
+    Str(String),
+}
+
+impl Color {
+    pub fn to_rgb(&self) -> Option<(u8, u8, u8)> {
+        match self {
+            Color::Rgb(r, g, b) => Some((*r, *g, *b)),
+            Color::Str(s) => {
+                let s = s.trim_start_matches('#');
+                if s.len() != 6 {
+                    return None;
+                }
+                let r = u8::from_str_radix(&s[0..2], 16).ok()?;
+                let g = u8::from_str_radix(&s[2..4], 16).ok()?;
+                let b = u8::from_str_radix(&s[4..6], 16).ok()?;
+                Some((r, g, b))
+            }
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct OptionalConfig {
     pub playlists_dir: Option<String>,
-    pub visualizer_gradient: Option<[(u8, u8, u8); 2]>,
+    pub visualizer_gradient: Option<[Color; 2]>,
     pub keybindings: Option<Shortcuts>,
     pub mpv_ao: Option<String>,
 }
@@ -83,7 +117,7 @@ impl OptionalConfig {
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
         match std::fs::File::open(path) {
             Ok(file) => serde_yaml::from_reader(file)
-                .map_err(|e| format!("Couldn't parse your config.yaml. Reason: {}", e).into()),
+                .map_err(|e| format!("Couldn't parse your tori.yaml config file. Reason: {}", e).into()),
             Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
             Err(e) => Err(e.into()),
         }
