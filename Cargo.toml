@@ -49,7 +49,7 @@ default = ["clip", "symphonia"]
 clip = ["clipboard"]
 mpv = ["mpv034", "mpv035", "libmpv-sys"]
 rodio = ["dep:rodio"]
-symphonia = ["dep:symphonia", "dep:cpal", "dep:rb", "dep:rubato", "dep:arrayvec"]
+symphonia = ["dep:symphonia", "dep:cpal", "dep:rb", "dep:rubato", "dep:arrayvec", "dep:ac-ffmpeg", "dep:crossbeam-channel"]
 
 [dependencies]
 tui = { version = "0.21", package = "ratatui" }
@@ -69,6 +69,8 @@ cpal = { version = "0.15.2", optional = true }
 rb = { version = "0.4.1", optional = true }
 rubato = { version = "0.13.0", optional = true }
 arrayvec = { version = "0.7.2", optional = true }
+ac-ffmpeg = { version = "0.18.1", optional = true }
+crossbeam-channel = { version = "0.5.8", optional = true }
 
 # clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
 # also because I couldn't make any other clipboard crate work
