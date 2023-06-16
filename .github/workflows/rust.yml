@@ -20,6 +20,8 @@ jobs:
       run: sudo apt-get update
     - name: Install libmpv
       run: sudo apt-get -y install libmpv-dev libxcb-shape0-dev libxcb-xfixes0-dev
+    - name: Install ac-ffmpeg dependencies
+      name: sudo apt-get -y install libavutil libavcodec libavformat libswresample libswscale
     - name: Build
       run: cargo build --verbose
     - name: Run tests
