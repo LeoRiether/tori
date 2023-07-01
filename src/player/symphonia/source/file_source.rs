@@ -1,7 +1,6 @@
 use std::{fs::File, io, path::Path, thread};
 
 use symphonia::core::{
-    audio::AudioBufferRef,
     codecs::{DecoderOptions, CODEC_TYPE_NULL},
     errors::Error as SymError,
     formats::FormatOptions,
@@ -13,7 +12,7 @@ use symphonia::core::{
 use crate::player::symphonia::output::CpalAudioOutput;
 
 // TODO: remove `expects` and `unwraps`
-pub(super) fn start_player_thread(path: &str) {
+pub fn start_player_thread(path: &str) {
     let mut hint = Hint::default();
     if let Some(ext) = Path::new(path).extension().and_then(|s| s.to_str()) {
         hint.with_extension(ext);

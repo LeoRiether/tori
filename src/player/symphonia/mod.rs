@@ -1,4 +1,5 @@
-mod controller;
+pub mod controller;
+pub mod source;
 mod output;
 mod resampler;
 
