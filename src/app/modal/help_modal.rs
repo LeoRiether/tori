@@ -3,7 +3,7 @@ use super::{get_modal_chunk, Message, Modal};
 use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Style},
-    text::{Span, Line},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table},
     Frame,
 };
@@ -12,7 +12,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     app::component::{Mode, MyBackend},
     command::Command,
-    config::{Config, shortcuts::InputStr},
+    config::{shortcuts::InputStr, Config},
     error::Result,
     events::Event,
 };

@@ -1,7 +1,7 @@
 pub mod controller;
-pub mod source;
 mod output;
 mod resampler;
+pub mod source;
 
 use crate::error::Result;
 use controller::Controller;

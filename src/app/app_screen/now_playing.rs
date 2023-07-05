@@ -1,7 +1,7 @@
 use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::{Span, Line},
+    text::{Line, Span},
     widgets::Paragraph,
     Frame,
 };

@@ -42,7 +42,6 @@ macro_rules! define_data {
     };
 }
 
-
 /// A wrapper around mpv v0.34 or mpv v0.35, depending on which is installed.
 /// Uses libmpv-rs or libmpv-sirno depending on the mpv version.
 pub enum Mpv {

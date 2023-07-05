@@ -43,4 +43,3 @@ pub trait Player: Sized {
     fn playlist_track_title(&self, i: usize) -> Result<String>;
     fn playlist_position(&self) -> Result<usize>;
 }
-

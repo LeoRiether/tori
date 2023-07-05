@@ -1,10 +1,17 @@
-use std::{fs::File, io, path::Path, thread};
+use crate::error::Result;
+use std::{
+    fs::File,
+    io,
+    path::Path,
+    process::{Command, Stdio},
+    thread,
+};
 
 use symphonia::core::{
     codecs::{DecoderOptions, CODEC_TYPE_NULL},
     errors::Error as SymError,
     formats::FormatOptions,
-    io::MediaSourceStream,
+    io::{MediaSource, MediaSourceStream, ReadOnlySource},
     meta::MetadataOptions,
     probe::Hint,
 };
@@ -13,13 +20,7 @@ use crate::player::symphonia::output::CpalAudioOutput;
 
 // TODO: remove `expects` and `unwraps`
 pub fn start_player_thread(path: &str) {
-    let mut hint = Hint::default();
-    if let Some(ext) = Path::new(path).extension().and_then(|s| s.to_str()) {
-        hint.with_extension(ext);
-    }
-
-    let src = Box::new(File::open(path).expect("failed to open media"));
-    let mss = MediaSourceStream::new(src, Default::default());
+    let (mss, hint) = mss_from_path(path).unwrap();
 
     // Use the default options for metadata and format readers.
     let meta_opts: MetadataOptions = Default::default();
@@ -135,4 +136,55 @@ pub fn start_player_thread(path: &str) {
             }
         }
     });
+}
+
+fn mss_from_path(mut path: &str) -> Result<(MediaSourceStream, Hint)> {
+    let mut force_ytdlp = false;
+    if let Some(url) = path.strip_prefix("ytdlp://") {
+        path = url;
+        force_ytdlp = true;
+    }
+
+    let mut hint = Hint::default();
+    let src: Box<dyn MediaSource> =
+        if force_ytdlp || path.starts_with("http://") || path.starts_with("https://") {
+            // Get urls from yt-dlp
+            let ytdlp_output = Command::new("yt-dlp")
+                .args(["-g", path])
+                .output()
+                .unwrap()
+                .stdout;
+            let ytdlp_output = String::from_utf8(ytdlp_output).unwrap();
+            let ytdlp_urls = ytdlp_output.lines();
+
+            eprintln!(
+                "ytdlp urls: \x1b[96m{:?}\x1b[0m",
+                ytdlp_urls.clone().collect::<Vec<_>>()
+            );
+
+            // Get ffmpeg mpegts stream.
+            let mut ffmpeg = Command::new("ffmpeg");
+            for url in ytdlp_urls {
+                ffmpeg.args(["-i", url]);
+            }
+            ffmpeg
+                .args(["-f", "mp3"]) // FIXME: don't do this. If you know how to do better please tell me how. Symphonia still doesn't support opus afaik.
+                .arg("-")
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .stdin(Stdio::null());
+            let mut ffmpeg = ffmpeg.spawn().unwrap();
+            let src = ffmpeg.stdout.take().unwrap();
+
+            hint.with_extension("mp3");
+            Box::new(ReadOnlySource::new(src))
+        } else {
+            if let Some(ext) = Path::new(path).extension().and_then(|s| s.to_str()) {
+                hint.with_extension(ext);
+            }
+            Box::new(File::open(path).expect("failed to open media"))
+        };
+
+    let mss = MediaSourceStream::new(src, Default::default());
+    Ok((mss, hint))
 }

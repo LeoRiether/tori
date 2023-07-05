@@ -116,8 +116,9 @@ impl OptionalConfig {
     /// Loads the shortcuts from some path
     pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
         match std::fs::File::open(path) {
-            Ok(file) => serde_yaml::from_reader(file)
-                .map_err(|e| format!("Couldn't parse your tori.yaml config file. Reason: {}", e).into()),
+            Ok(file) => serde_yaml::from_reader(file).map_err(|e| {
+                format!("Couldn't parse your tori.yaml config file. Reason: {}", e).into()
+            }),
             Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
             Err(e) => Err(e.into()),
         }

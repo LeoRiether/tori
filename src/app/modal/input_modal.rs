@@ -6,7 +6,7 @@ use crossterm::event::KeyCode;
 use tui::{
     layout::Alignment,
     style::{Color, Modifier, Style},
-    text::{Span, Line},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };

@@ -72,4 +72,3 @@ More information can be found in the docs: https://leoriether.github.io/tori/#co
         std::process::exit(1);
     }
 }
-

@@ -25,7 +25,7 @@ impl RectOps for Rect {
             x: self.x,
             y: self.y.saturating_add(n),
             width: self.width,
-            height: self.height.saturating_sub(n)
+            height: self.height.saturating_sub(n),
         };
         (top, bottom)
     }
@@ -78,4 +78,3 @@ impl RectOps for Rect {
         (left, right)
     }
 }
-

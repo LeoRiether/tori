@@ -8,11 +8,7 @@ pub use help_modal::HelpModal;
 pub use hotkey_modal::HotkeyModal;
 pub use input_modal::InputModal;
 
-use tui::{
-    layout::Rect,
-    style::Style,
-    Frame,
-};
+use tui::{layout::Rect, style::Style, Frame};
 
 use crate::{
     app::component::{Mode, MyBackend},
