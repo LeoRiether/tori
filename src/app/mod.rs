@@ -6,7 +6,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use libmpv::Mpv;
 use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::mpsc};
 use std::{
     io,
@@ -20,6 +19,7 @@ use crate::{
     config::Config,
     error::Result,
     events::{self, Channel},
+    player::{DefaultPlayer, Player},
     visualizer::{self, Visualizer},
     widgets::notification::Notification,
 };
@@ -45,7 +45,7 @@ const LOW_EVENT_TIMEOUT: u16 = 17;
 pub struct App<'a> {
     pub channel: Channel,
     terminal: Terminal<MyBackend>,
-    mpv: Mpv,
+    player: DefaultPlayer,
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification<'a>,
@@ -55,19 +55,12 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<App<'a>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
 
-        let mpv = Mpv::with_initializer(|mpv| {
-            mpv.set_property("video", false)?;
-            mpv.set_property("volume", 100)?;
-            if let Some(ao) = &Config::global().mpv_ao {
-                mpv.set_property("ao", ao.as_str())?;
-            }
-            Ok(())
-        })?;
+        let player = DefaultPlayer::new()?;
 
         let screen = Rc::new(RefCell::new(AppScreen::new()?));
 
@@ -81,7 +74,7 @@ impl<'a> App<'a> {
         Ok(App {
             channel,
             terminal,
-            mpv,
+            player,
             next_render,
             next_poll_timeout,
             notification,

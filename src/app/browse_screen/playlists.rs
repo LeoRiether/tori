@@ -274,4 +274,3 @@ impl MouseHandler for PlaylistsPane {
         Ok(())
     }
 }
-

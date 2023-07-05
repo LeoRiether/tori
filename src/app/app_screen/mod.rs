@@ -1,4 +1,4 @@
-use crate::{command, error::Result, events, rect_ops::RectOps};
+use crate::{command, error::Result, events, player::Player, rect_ops::RectOps};
 
 mod now_playing;
 use now_playing::NowPlaying;
@@ -54,49 +54,44 @@ impl<'a> AppScreen<'a> {
                 app.quit();
             }
             SeekForward => {
-                app.mpv.seek_forward(10.).ok();
-                self.now_playing.update(&app.mpv);
+                app.player.seek(10.)?;
+                self.now_playing.update(&app.player);
             }
             SeekBackward => {
-                app.mpv.seek_backward(10.).ok();
-                self.now_playing.update(&app.mpv);
+                app.player.seek(-10.)?;
+                self.now_playing.update(&app.player);
             }
             NextSong => {
-                app.mpv
-                    .playlist_next_weak()
+                app.player
+                    .playlist_next()
                     .unwrap_or_else(|_| app.notify_err("No next song"));
-                self.now_playing.update(&app.mpv);
+                self.now_playing.update(&app.player);
             }
             PrevSong => {
-                app.mpv
-                    .playlist_previous_weak()
+                app.player
+                    .playlist_previous()
                     .unwrap_or_else(|_| app.notify_err("No previous song"));
-                self.now_playing.update(&app.mpv);
+                self.now_playing.update(&app.player);
             }
             TogglePause => {
-                app.mpv.command("cycle", &["pause"])?;
-                self.now_playing.update(&app.mpv);
+                app.player.toggle_pause()?;
+                self.now_playing.update(&app.player);
             }
             ToggleLoop => {
-                let status = app.mpv.get_property::<String>("loop-file");
-                let next_status = match status.as_deref() {
-                    Ok("no") => "inf",
-                    _ => "no",
-                };
-                app.mpv.set_property("loop-file", next_status)?;
-                self.now_playing.update(&app.mpv);
+                app.player.toggle_loop_file()?;
+                self.now_playing.update(&app.player);
             }
             VolumeUp => {
-                app.mpv.add_property("volume", 5)?;
-                self.now_playing.update(&app.mpv);
+                app.player.add_volume(5)?;
+                self.now_playing.update(&app.player);
             }
             VolumeDown => {
-                app.mpv.add_property("volume", -5)?;
-                self.now_playing.update(&app.mpv);
+                app.player.add_volume(-5)?;
+                self.now_playing.update(&app.player);
             }
             Mute => {
-                app.mpv.cycle_property("mute", true)?;
-                self.now_playing.update(&app.mpv);
+                app.player.toggle_mute()?;
+                self.now_playing.update(&app.player);
             }
             _ => self.pass_event_down(app, events::Event::Command(cmd))?,
         }
@@ -140,13 +135,13 @@ impl<'a> Component for AppScreen<'a> {
                     self.select(Selected::Browse);
                 }
                 KeyCode::Char('2') if self.mode() == Mode::Normal => {
-                    self.playlist.update(&app.mpv)?;
+                    self.playlist.update(&app.player)?;
                     self.select(Selected::Playlist);
                 }
                 _ => self.pass_event_down(app, event)?,
             },
             SecondTick => {
-                self.now_playing.update(&app.mpv);
+                self.now_playing.update(&app.player);
                 self.pass_event_down(app, event)?;
             }
             _ => self.pass_event_down(app, event)?,
@@ -183,26 +178,70 @@ mod tests {
 
     #[test]
     fn test_big_frame_size() {
-        let frame = Rect { x: 0, y: 0, width: 128, height: 64 };
-        let app = Rect { x: 0, y: 0, width: 128, height: 62 };
-        let now_playing = Rect { x: 0, y: 62, width: 128, height: 2 };
+        let frame = Rect {
+            x: 0,
+            y: 0,
+            width: 128,
+            height: 64,
+        };
+        let app = Rect {
+            x: 0,
+            y: 0,
+            width: 128,
+            height: 62,
+        };
+        let now_playing = Rect {
+            x: 0,
+            y: 62,
+            width: 128,
+            height: 2,
+        };
         assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
     }
 
     #[test]
     fn test_small_frame_size() {
-        let frame = Rect { x: 0, y: 0, width: 16, height: 10 };
-        let app = Rect { x: 0, y: 0, width: 16, height: 8 };
-        let now_playing = Rect { x: 0, y: 8, width: 16, height: 2 };
+        let frame = Rect {
+            x: 0,
+            y: 0,
+            width: 16,
+            height: 10,
+        };
+        let app = Rect {
+            x: 0,
+            y: 0,
+            width: 16,
+            height: 8,
+        };
+        let now_playing = Rect {
+            x: 0,
+            y: 8,
+            width: 16,
+            height: 2,
+        };
         assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
     }
 
     #[test]
     fn test_unusably_small_frame_size() {
-        let frame = Rect { x: 0, y: 0, width: 16, height: 1 };
-        let app = Rect { x: 0, y: 0, width: 16, height: 0 };
-        let now_playing = Rect { x: 0, y: 0, width: 16, height: 1 };
+        let frame = Rect {
+            x: 0,
+            y: 0,
+            width: 16,
+            height: 1,
+        };
+        let app = Rect {
+            x: 0,
+            y: 0,
+            width: 16,
+            height: 0,
+        };
+        let now_playing = Rect {
+            x: 0,
+            y: 0,
+            width: 16,
+            height: 1,
+        };
         assert_eq!(AppScreen::subcomponent_chunks(frame), (app, now_playing));
     }
 }
-

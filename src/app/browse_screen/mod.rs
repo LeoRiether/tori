@@ -4,13 +4,14 @@ use crate::{
     error::Result,
     events::Event,
     m3u::playlist_management,
+    player::Player,
     rect_ops::RectOps,
 };
 
 use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};
 
-use std::rc::Rc;
 use std::borrow::Cow;
+use std::rc::Rc;
 use tui::layout::Rect;
 use tui::style::Color;
 use tui::style::Style;
@@ -25,8 +26,8 @@ use playlists::PlaylistsPane;
 mod songs;
 use songs::SongsPane;
 
-use super::{component::MouseHandler, modal::HotkeyModal};
 use super::Mode;
+use super::{component::MouseHandler, modal::HotkeyModal};
 use crate::app::modal::{self, ConfirmationModal, HelpModal, InputModal, Modal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -160,8 +161,7 @@ impl<'a> BrowseScreen<'a> {
                     self.selected_pane = BrowsePane::Songs;
                 }
                 (Play, Commit(path)) => {
-                    app.mpv
-                        .playlist_load_files(&[(&path, libmpv::FileState::Replace, None)])?;
+                    app.player.play(&path)?;
                     self.selected_pane = BrowsePane::Songs;
                 }
 

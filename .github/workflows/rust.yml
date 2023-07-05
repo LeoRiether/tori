@@ -1,4 +1,4 @@
-name: Rust
+name: Check & Test
 
 on:
   push:
@@ -22,6 +22,8 @@ jobs:
       run: sudo apt-get -y install libmpv-dev libxcb-shape0-dev libxcb-xfixes0-dev
     - name: Install ac-ffmpeg dependencies
       name: sudo apt-get -y install libavutil libavcodec libavformat libswresample libswscale
+    - name: Install ALSA dev files
+      run: sudo apt-get -y install libasound2-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
