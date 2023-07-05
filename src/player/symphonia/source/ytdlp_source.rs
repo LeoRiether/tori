@@ -21,7 +21,8 @@ pub fn start_player_thread(url: &str) {
     // Get ffmpeg mpegts stream.
     let mut ffmpeg = Command::new("ffmpeg");
     ffmpeg
-        .args(["-f", "mpegts"])
+        .args(["-f", "mp3"]) // FIXME: don't do this. If you know how to do better please please
+                             // PLEASE tell me how. Symphonia still doesn't support opus afaik.
         .arg("-")
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
