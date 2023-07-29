@@ -1,8 +1,14 @@
 [workspace]
 
 members = [
-    "tori"
+    "tori",
+    "tori-player"
 ]
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]

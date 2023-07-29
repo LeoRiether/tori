@@ -5,15 +5,10 @@ mod mpv;
 #[cfg(feature = "mpv")]
 pub type DefaultPlayer = mpv::MpvPlayer;
 
-#[cfg(feature = "rodio")]
-mod rodio;
-#[cfg(feature = "rodio")]
-pub type DefaultPlayer = rodio::RodioPlayer;
-
-#[cfg(feature = "symphonia")]
-mod symphonia;
-#[cfg(feature = "symphonia")]
-pub type DefaultPlayer = symphonia::SymphoniaPlayer;
+#[cfg(feature = "tori-player")]
+mod tori_player_glue;
+#[cfg(feature = "tori-player")]
+pub type DefaultPlayer = tori_player::Player;
 
 pub trait Player: Sized {
     fn new() -> Result<Self>;

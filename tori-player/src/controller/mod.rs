@@ -1,6 +1,5 @@
 use super::source;
-
-use crate::error::Result;
+use crate::Result;
 
 #[derive(Debug, Default)]
 pub struct Controller {}

@@ -1,10 +1,4 @@
-pub mod controller;
-mod output;
-mod resampler;
-pub mod source;
-
-use crate::error::Result;
-use controller::Controller;
+use tori_player::{Result, controller::Controller};
 
 macro_rules! my_todo {
     () => {
@@ -12,13 +6,8 @@ macro_rules! my_todo {
     };
 }
 
-pub struct SymphoniaPlayer {
-    controller: Controller,
-}
-
-impl super::Player for SymphoniaPlayer {
+impl super::Player for tori_player::Player {
     fn new() -> Result<Self> {
-        pretty_env_logger::init();
         let controller = Controller::default();
         Ok(Self { controller })
     }

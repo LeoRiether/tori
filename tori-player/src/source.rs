@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::Result;
 use std::{
     fs::File,
     io,
@@ -16,7 +16,7 @@ use symphonia::core::{
     probe::Hint,
 };
 
-use crate::player::symphonia::output::CpalAudioOutput;
+use crate::output::CpalAudioOutput;
 
 // TODO: remove `expects` and `unwraps`
 pub fn start_player_thread(path: &str) {

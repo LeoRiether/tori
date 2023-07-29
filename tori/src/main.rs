@@ -17,6 +17,8 @@ struct Args {
 }
 
 fn main() -> Result<()> {
+    pretty_env_logger::init();
+
     let args: Args = argh::from_env();
     Config::set_global({
         let opt_conf = OptionalConfig::from_path(
