@@ -22,7 +22,7 @@ optdepends = ["yt-dlp", "cava"]
 no-default-features = true # do not build with `clipboard` because that breaks the docs.rs build...
 
 [features]
-default = ["clip", "tori-player"]
+default = ["clip", "mpv"]
 clip = ["clipboard"]
 mpv = ["mpv034", "mpv035", "libmpv-sys"]
 tori-player = ["dep:tori-player"]
