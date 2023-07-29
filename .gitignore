@@ -1,4 +1,6 @@
-/target
+target/
+tori/target/
+tori-player/target/
 playlists/*
 del.txt
 site/

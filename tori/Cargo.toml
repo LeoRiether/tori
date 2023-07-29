@@ -1,0 +1,77 @@
+[package]
+name = "tori"
+description = "The frictionless music player for the terminal"
+authors = ["Leonardo Riether <riether.leonardo@gmail.com>"]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/LeoRiether/tori"
+keywords = ["music", "player", "tui", "terminal"]
+exclude = ["/assets", "/docs"]
+homepage = "https://github.com/LeoRiether/tori"
+version = "0.2.2"
+edition = "2021"
+build = "build.rs"
+
+[package.metadata]
+depends = ["mpv", "pipewire"]
+optdepends = ["yt-dlp", "cava"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.docs.rs]
+no-default-features = true # do not build with `clipboard` because that breaks the docs.rs build...
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+[features]
+default = ["clip", "symphonia"]
+clip = ["clipboard"]
+mpv = ["mpv034", "mpv035", "libmpv-sys"]
+rodio = ["dep:rodio"]
+symphonia = ["dep:symphonia", "dep:cpal", "dep:rb", "dep:rubato", "dep:arrayvec", "dep:ac-ffmpeg", "dep:crossbeam-channel"]
+
+[dependencies]
+tui = { version = "0.21", package = "ratatui" }
+crossterm = "0.26"
+
+# Player: mpv
+libmpv-sys = { version = "3.1.0", optional = true }
+mpv034 = { version = "2.0.1", package = "libmpv", optional = true } # Works with mpv <= v0.34
+mpv035 = { version = "2.0.2-fork.1", package = "libmpv-sirno", optional = true } # Works with mpv v0.35
+
+# Player: rodio
+rodio = { version = "0.17.1", optional = true }
+
+# Player: symphonia
+symphonia = { version = "0.5.3", optional = true, features = ["all-codecs"] }
+cpal = { version = "0.15.2", optional = true }
+rb = { version = "0.4.1", optional = true }
+rubato = { version = "0.13.0", optional = true }
+arrayvec = { version = "0.7.2", optional = true }
+ac-ffmpeg = { version = "0.18.1", optional = true }
+crossbeam-channel = { version = "0.5.8", optional = true }
+
+# clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
+# also because I couldn't make any other clipboard crate work
+clipboard = { version = "0.5.0", optional = true }
+
+serde_json = "1.0.94"
+unicode-width = "0.1.10"
+dirs = "5.0.0"
+serde_yaml = "0.9.19"
+webbrowser = "0.8.8"
+serde = { version = "1.0.159", features = ["derive"] }
+once_cell = "1.17.1"
+argh = "0.1.10"
+lofty = "0.13.0"
+rand = "0.8.5"
+
+log = "0.4.18"
+pretty_env_logger = "0.5.0"
+
+[build-dependencies]
+winres = "0.1"
+

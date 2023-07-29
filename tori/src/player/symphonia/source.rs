@@ -89,6 +89,7 @@ pub fn start_player_thread(path: &str) {
                 format.metadata().pop();
 
                 // Consume the new metadata at the head of the metadata queue.
+                eprintln!("Got new metadata! {:?}", format.metadata().current());
             }
 
             // If the packet does not belong to the selected track, skip over it.
@@ -156,11 +157,6 @@ fn mss_from_path(mut path: &str) -> Result<(MediaSourceStream, Hint)> {
                 .stdout;
             let ytdlp_output = String::from_utf8(ytdlp_output).unwrap();
             let ytdlp_urls = ytdlp_output.lines();
-
-            eprintln!(
-                "ytdlp urls: \x1b[96m{:?}\x1b[0m",
-                ytdlp_urls.clone().collect::<Vec<_>>()
-            );
 
             // Get ffmpeg mpegts stream.
             let mut ffmpeg = Command::new("ffmpeg");
