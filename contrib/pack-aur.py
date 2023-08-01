@@ -10,11 +10,11 @@ AUR = "contrib/aur"
 
 class Packer:
     def __init__(self):
-        if not os.path.exists("Cargo.toml"):
+        if not os.path.exists("tori/Cargo.toml"):
             print("pack-aur should be called at the root of the Rust project")
             exit(1)
 
-        self.config = toml.load("Cargo.toml")
+        self.config = toml.load("tori/Cargo.toml")
 
     def clone_aur(self):
         if not os.path.exists(AUR):
