@@ -22,6 +22,7 @@ use crate::{
 pub struct InputModal<'t> {
     title: Cow<'t, str>,
     cursor: usize,
+    scroll: u16,
     input: String,
     style: Style,
 }
@@ -31,6 +32,7 @@ impl<'t> InputModal<'t> {
         Self {
             title: title.into(),
             cursor: 0,
+            scroll: 0,
             input: String::default(),
             style: Style::default().fg(Color::LightBlue),
         }
@@ -106,6 +108,8 @@ impl<'t> Modal for InputModal<'t> {
     fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
         let size = frame.size();
         let chunk = get_modal_chunk(size);
+        let prefix = " ❯ ";
+        let scroll = self.calculate_scroll(chunk.width - prefix.len() as u16);
 
         let block = Block::default()
             .title(self.title.as_ref())
@@ -125,13 +129,15 @@ impl<'t> Modal for InputModal<'t> {
         let paragraph = Paragraph::new(vec![
             Line::from(vec![]), // empty first line
             Line::from(vec![
+                Span::styled(prefix, self.style),
                 Span::raw(left),
                 Span::styled(in_cursor, Style::default().add_modifier(Modifier::REVERSED)),
                 Span::raw(right),
             ]),
         ])
         .block(block)
-        .alignment(Alignment::Center);
+        .scroll((0, scroll))
+        .alignment(Alignment::Left);
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
@@ -139,6 +145,21 @@ impl<'t> Modal for InputModal<'t> {
 
     fn mode(&self) -> Mode {
         Mode::Insert
+    }
+}
+
+impl<'t> InputModal<'t> {
+    /// Updates and calculates the Paragraph's scroll based on the current cursor and input
+    fn calculate_scroll(&mut self, chunk_width: u16) -> u16 {
+        if self.cursor as u16 > self.scroll + chunk_width - 1 {
+            self.scroll = self.cursor as u16 + 1 - chunk_width;
+        }
+
+        if (self.cursor as u16) <= self.scroll {
+            self.scroll = (self.cursor as u16).saturating_sub(1);
+        }
+
+        self.scroll
     }
 }
 

@@ -50,7 +50,7 @@ impl Default for Box<dyn Modal> {
 }
 
 pub fn get_modal_chunk(frame: Rect) -> Rect {
-    let width = (frame.width / 2).max(70).min(frame.width);
+    let width = (frame.width / 3).max(70).min(frame.width);
     let height = 5;
 
     Rect {
