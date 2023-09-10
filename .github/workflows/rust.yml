@@ -2,7 +2,7 @@ name: Check & Test
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "fix/ci" ]
   pull_request:
     branches: [ "master" ]
 
@@ -21,7 +21,7 @@ jobs:
     - name: Install libmpv
       run: sudo apt-get -y install libmpv-dev libxcb-shape0-dev libxcb-xfixes0-dev
     - name: Install ac-ffmpeg dependencies
-      name: sudo apt-get -y install libavutil libavcodec libavformat libswresample libswscale
+      run: sudo apt-get -y install libavutil-dev libavcodec-dev libavformat-dev libswresample-dev libswscale-dev
     - name: Install ALSA dev files
       run: sudo apt-get -y install libasound2-dev
     - name: Build
