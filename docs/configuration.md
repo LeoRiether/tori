@@ -43,6 +43,7 @@ keybindings:
   '?': OpenHelpModal
   C-c: Quit
   C-d: Quit
+  q: Quit
   ">": NextSong
   "<": PrevSong
   " ": TogglePause
@@ -69,11 +70,12 @@ keybindings:
   k: SelectPrev
   l: SelectRight
   a: Add
-  q: QueueSong
+  u: QueueSong
   C-q: QueueShown
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  C-f: Search
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:
