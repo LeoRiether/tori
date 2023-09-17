@@ -5,11 +5,6 @@ mod mpv;
 #[cfg(feature = "mpv")]
 pub type DefaultPlayer = mpv::MpvPlayer;
 
-#[cfg(feature = "tori-player")]
-mod tori_player_glue;
-#[cfg(feature = "tori-player")]
-pub type DefaultPlayer = tori_player::Player;
-
 pub trait Player: Sized {
     fn new() -> Result<Self>;
     fn play(&mut self, path: &str) -> Result<()>;
