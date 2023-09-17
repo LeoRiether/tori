@@ -1,0 +1,22 @@
+[package]
+name = "tori-player"
+description = "Audio player for tori"
+authors = ["Leonardo Riether <riether.leonardo@gmail.com>"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/LeoRiether/tori"
+homepage = "https://github.com/LeoRiether/tori"
+keywords = ["music", "player", "audio"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+symphonia = { version = "0.5.3", features = ["all-codecs"] }
+cpal = { version = "0.15.2" }
+rb = { version = "0.4.1" }
+rubato = { version = "0.13.0" }
+arrayvec = { version = "0.7.2" }
+ac-ffmpeg = { version = "0.18.1" }
+crossbeam-channel = { version = "0.5.8" }
+log = "0.4.19"
