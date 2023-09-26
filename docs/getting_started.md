@@ -48,7 +48,7 @@ all of the songs inside it.
 ![getting started 04](./assets/getting_started_04.jpg)
 
 By default, pressing `enter` will play the currently selected song (but it will replace anything
-that's currently playing, to append a song to the queue, press `q` instead). I also recommend
+that's currently playing, to append a song to the queue, press `u` instead). I also recommend
 pressing `v` to enable the visualizer (requires [cava](https://github.com/karlstav/cava/) to be
 installed).
 
