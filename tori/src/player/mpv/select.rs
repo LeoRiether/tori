@@ -101,7 +101,6 @@ impl Mpv {
 
     define_method! { fn seek_forward(s: f64) -> () }
     define_method! { fn seek_backward(s: f64) -> () }
-    define_method! { fn seek_percent_absolute(p: usize) -> () }
     define_method! { fn playlist_next_weak() -> () }
     define_method! { fn playlist_previous_weak() -> () }
     define_method! { fn command(name: &str, args: &[&str]) -> () }

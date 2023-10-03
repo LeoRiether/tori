@@ -43,7 +43,10 @@ impl super::Player for MpvPlayer {
     }
 
     fn seek_absolute(&mut self, percent: usize) -> Result<()> {
-        self.mpv.seek_percent_absolute(percent)?;
+        // this is bugged currently :/
+        // self.mpv.seek_percent_absolute(percent)?;
+        self.mpv
+            .command("seek", &[&format!("{}", percent), "absolute-percent"])?;
         Ok(())
     }
 
