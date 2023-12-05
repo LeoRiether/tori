@@ -12,8 +12,8 @@ use crate::{
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
-use std::io;
 use std::result::Result as StdResult;
+use std::io;
 use tui::{
     layout::{self, Rect},
     style::{Color, Style},
