@@ -92,12 +92,15 @@ impl Modal for HelpModal {
             Constraint::Percentage(33),
             Constraint::Percentage(33),
         ];
-        let table = Table::new(self.rows.clone(), widths);
+        let table = Table::default()
+            .rows(self.rows.clone())
+            .widths(widths)
+            .column_spacing(1);
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
 
-        chunk.x += 2;
+        chunk.x += 1;
         chunk.y += 3;
         chunk.width -= 2;
         chunk.height -= 3;
