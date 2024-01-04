@@ -11,7 +11,7 @@ pub use input_modal::InputModal;
 use tui::{layout::Rect, style::Style, Frame};
 
 use crate::{
-    app::component::{Mode, MyBackend},
+    app::component::Mode,
     error::Result,
     events::Event,
 };
@@ -39,7 +39,7 @@ pub enum Message {
 pub trait Modal {
     fn apply_style(&mut self, style: Style);
     fn handle_event(&mut self, event: Event) -> Result<Message>;
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>);
+    fn render(&mut self, frame: &mut Frame);
     fn mode(&self) -> Mode;
 }
 

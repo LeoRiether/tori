@@ -1,5 +1,5 @@
 use crate::{
-    app::component::{Mode, MyBackend},
+    app::component::Mode,
     config::shortcuts::InputStr,
     error::Result,
     events::Event,
@@ -35,7 +35,7 @@ impl Modal for HotkeyModal {
         Ok(super::Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut tui::Frame<'_, MyBackend>) {
+    fn render(&mut self, frame: &mut tui::Frame) {
         let mut chunk = super::get_modal_chunk(frame.size());
         chunk.width = chunk.width.min(30);
         chunk.x = frame.size().width.saturating_sub(chunk.width) / 2;

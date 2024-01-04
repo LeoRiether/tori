@@ -2,7 +2,7 @@ use crate::{
     app::{
         component::{Component, MouseHandler},
         filtered_list::FilteredList,
-        App, Mode, MyBackend,
+        App, Mode
     },
     command::Command,
     config::Config,
@@ -163,7 +163,7 @@ impl Component for PlaylistsPane {
         }
     }
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: layout::Rect, is_focused: bool) {
+    fn render(&mut self, frame: &mut Frame, chunk: layout::Rect, is_focused: bool) {
         let title = if !self.filter.is_empty() {
             format!(" {} ", self.filter)
         } else {

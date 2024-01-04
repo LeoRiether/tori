@@ -1,5 +1,5 @@
 use crate::{
-    app::{component::Component, App, MyBackend},
+    app::{component::Component, App},
     command,
     error::Result,
     events::Event,
@@ -370,7 +370,7 @@ impl<'a> BrowseScreen<'a> {
 impl<'t> Component for BrowseScreen<'t> {
     type RenderState = ();
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {
+    fn render(&mut self, frame: &mut Frame, chunk: Rect, (): ()) {
         let hchunks = self.subcomponent_chunks(chunk);
 
         self.playlists.render(

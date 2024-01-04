@@ -9,7 +9,7 @@ use tui::{
 use crate::{
     app::{
         component::{Component, Mode, MouseHandler},
-        App, MyBackend,
+        App,
     },
     error::Result,
     events,
@@ -116,7 +116,7 @@ impl NowPlaying {
 impl Component for NowPlaying {
     type RenderState = ();
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: Rect, (): ()) {
+    fn render(&mut self, frame: &mut Frame, chunk: Rect, (): ()) {
         let chunks = self.subcomponent_chunks(chunk);
         let (playback_left_str, playback_right_str) = self.playback_strs();
 
