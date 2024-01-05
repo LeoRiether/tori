@@ -87,11 +87,7 @@ impl Modal for HelpModal {
             .block(block)
             .alignment(Alignment::Center);
 
-        let widths = [
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-        ];
+        let widths = [Constraint::Ratio(1, 3); 3];
         let table = Table::default()
             .rows(self.rows.clone())
             .widths(widths)
