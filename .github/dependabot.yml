@@ -9,7 +9,7 @@ updates:
     directory: "/tori/"
     schedule:
       interval: "weekly"
-- package-ecosystem: "cargo" 
+  - package-ecosystem: "cargo" 
     directory: "/tori-player/"
     schedule:
       interval: "weekly"
