@@ -1,6 +1,6 @@
 use crate::{
     app::{
-        component::{Component, Mode, MyBackend},
+        component::{Component, Mode},
         App,
     },
     error::Result,
@@ -71,7 +71,7 @@ impl<'t> Component for Notification<'t> {
         Mode::Normal
     }
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, size: Rect, (): ()) {
+    fn render(&mut self, frame: &mut Frame, size: Rect, (): ()) {
         if self.is_expired() {
             return;
         }

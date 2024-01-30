@@ -12,7 +12,7 @@ use tui::{
 };
 
 use crate::{
-    app::component::{Mode, MyBackend},
+    app::component::Mode,
     error::Result,
     events::Event,
 };
@@ -105,7 +105,7 @@ impl<'t> Modal for InputModal<'t> {
         Ok(Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
+    fn render(&mut self, frame: &mut Frame) {
         let size = frame.size();
         let chunk = get_modal_chunk(size);
         let prefix = " ❯ ";

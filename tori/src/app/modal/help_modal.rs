@@ -10,7 +10,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::component::{Mode, MyBackend},
+    app::component::Mode,
     command::Command,
     config::{shortcuts::InputStr, Config},
     error::Result,
@@ -70,7 +70,7 @@ impl Modal for HelpModal {
         Ok(Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>) {
+    fn render(&mut self, frame: &mut Frame) {
         let size = frame.size();
         let mut chunk = get_modal_chunk(size);
         chunk.y = 3;
@@ -87,16 +87,16 @@ impl Modal for HelpModal {
             .block(block)
             .alignment(Alignment::Center);
 
-        let table = Table::new(self.rows.clone()).widths(&[
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-        ]);
+        let widths = [Constraint::Ratio(1, 3); 3];
+        let table = Table::default()
+            .rows(self.rows.clone())
+            .widths(widths)
+            .column_spacing(1);
 
         frame.render_widget(Clear, chunk);
         frame.render_widget(paragraph, chunk);
 
-        chunk.x += 2;
+        chunk.x += 1;
         chunk.y += 3;
         chunk.width -= 2;
         chunk.height -= 3;

@@ -10,7 +10,7 @@ use crate::player::Player;
 use crate::util::ClickInfo;
 use crate::widgets::Scrollbar;
 use crate::{
-    app::{component::Component, filtered_list::FilteredList, App, Mode, MyBackend},
+    app::{component::Component, filtered_list::FilteredList, App, Mode},
     config::Config,
 };
 use crate::{m3u, util};
@@ -437,7 +437,7 @@ impl<'t> Component for SongsPane<'t> {
         }
     }
 
-    fn render(&mut self, frame: &mut Frame<'_, MyBackend>, chunk: layout::Rect, is_focused: bool) {
+    fn render(&mut self, frame: &mut Frame, chunk: layout::Rect, is_focused: bool) {
         let sorting = match self.sorting_method {
             SortingMethod::Index => "",
             SortingMethod::Title => " [↑ Title]",
@@ -483,10 +483,9 @@ impl<'t> Component for SongsPane<'t> {
             let songlist_len = songlist.len();
 
             // Render table
-            let widths = &[Constraint::Length(chunk.width - 11), Constraint::Length(10)];
-            let widget = Table::new(songlist)
+            let widths = [Constraint::Length(chunk.width - 11), Constraint::Length(10)];
+            let widget = Table::new(songlist, widths)
                 .block(block)
-                .widths(widths)
                 .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
                 .highlight_symbol(" ◇");
             frame.render_stateful_widget(widget, chunk, &mut self.shown.state);

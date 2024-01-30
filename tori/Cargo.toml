@@ -28,8 +28,8 @@ mpv = ["mpv034", "mpv035", "libmpv-sys"]
 tori-player = ["dep:tori-player"]
 
 [dependencies]
-tui = { version = "0.21", package = "ratatui" }
-crossterm = "0.26"
+tui = { version = "0.25", package = "ratatui" }
+crossterm = "0.27"
 
 # clipboard is optional because docs.rs doesn't build the xcb="0.8" dependency
 # also because I couldn't make any other clipboard crate work

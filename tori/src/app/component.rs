@@ -19,7 +19,7 @@ pub trait Component {
     fn mode(&self) -> Mode;
     fn render(
         &mut self,
-        frame: &mut Frame<'_, MyBackend>,
+        frame: &mut Frame,
         chunk: Rect,
         render_state: Self::RenderState,
     );

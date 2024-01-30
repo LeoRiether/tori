@@ -94,7 +94,7 @@ impl Component for PlaylistScreen {
         Mode::Normal
     }
 
-    fn render(&mut self, frame: &mut tui::Frame<'_, super::MyBackend>, chunk: Rect, (): ()) {
+    fn render(&mut self, frame: &mut tui::Frame, chunk: Rect, (): ()) {
         let block = Block::default()
             .title(" Playlist ")
             .title_alignment(Alignment::Center)
