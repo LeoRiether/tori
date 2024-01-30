@@ -1,6 +1,7 @@
 use std::{
     fs,
     io::{self, Write},
+    path,
     result::Result as StdResult,
     thread,
 };
@@ -84,6 +85,14 @@ pub enum CreatePlaylistError {
     IOError(io::Error),
 }
 
+#[derive(Debug)]
+pub enum RenamePlaylistError {
+    PlaylistAlreadyExists,
+    EmptyPlaylistName,
+    InvalidChar(char),
+    IOError(io::Error),
+}
+
 impl From<io::Error> for CreatePlaylistError {
     fn from(value: io::Error) -> Self {
         Self::IOError(value)
@@ -150,7 +159,6 @@ pub fn rename_song(playlist_name: &str, index: usize, new_name: &str) -> Result<
 
     if let Some(mut song) = song {
         song.title = new_name.to_string();
-
         let mut file = fs::OpenOptions::new()
             .write(true)
             .truncate(true)
@@ -191,6 +199,34 @@ pub fn swap_song(playlist_name: &str, index: usize) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn rename_playlist(playlist_name: &str, new_name: &str) -> StdResult<(), RenamePlaylistError> {
+    if new_name.is_empty() {
+        return Err(RenamePlaylistError::EmptyPlaylistName);
+    }
+
+    if new_name.contains('/') {
+        return Err(RenamePlaylistError::InvalidChar('/'));
+    }
+
+    if new_name.contains('\\') {
+        return Err(RenamePlaylistError::InvalidChar('\\'));
+    }
+
+    let old_path: path::PathBuf = Config::playlist_path(playlist_name);
+    let new_path: path::PathBuf = Config::playlist_path(new_name);
+
+    if let Ok(metadata) = fs::metadata(new_path.clone()) {
+        if metadata.is_file() || metadata.is_dir() {
+            return Err(RenamePlaylistError::PlaylistAlreadyExists);
+        }
+    }
+
+    match fs::rename(&old_path, &new_path) {
+        Err(e) => Err(RenamePlaylistError::IOError(e)),
+        Ok(_) => Ok(()),
+    }
 }
 
 pub fn delete_playlist(playlist_name: &str) -> Result<()> {
