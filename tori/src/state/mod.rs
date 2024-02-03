@@ -4,11 +4,11 @@ use std::{borrow::Cow, time::Instant};
 
 use tui::style::Color;
 
-use crate::error::Result;
 use crate::{
     app::modal::Modal,
+    error::Result,
     player::{DefaultPlayer, Player},
-    visualizer::Visualizer,
+    visualizer::Visualizer, component::NowPlaying,
 };
 
 use self::browse_screen::BrowseScreen;
@@ -25,17 +25,6 @@ pub struct State<'n> {
 
 pub enum Screen {
     BrowseScreen(BrowseScreen),
-}
-
-#[derive(Default)]
-pub struct NowPlaying {
-    pub media_title: String,
-    pub percentage: i64,
-    pub time_pos: i64,
-    pub time_rem: i64,
-    pub paused: bool,
-    pub loop_file: bool,
-    pub volume: i64,
 }
 
 pub struct Notification<'t> {
