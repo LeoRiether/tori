@@ -96,17 +96,17 @@ impl PlaylistsPane {
 
     pub fn select_next(&mut self, app: &mut App) {
         self.shown.select_next();
-        app.channel.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn select_prev(&mut self, app: &mut App) {
         self.shown.select_prev();
-        app.channel.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn select_index(&mut self, app: &mut App, i: Option<usize>) {
         self.shown.state.select(i);
-        app.channel.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
     }
 
     pub fn selected_item(&self) -> Option<&str> {
@@ -231,7 +231,7 @@ impl Component for PlaylistsPane {
                 crossterm::event::Event::Key(event) => {
                     if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
                         self.refresh_shown();
-                        app.channel.send(Event::ChangedPlaylist).unwrap();
+                        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
                         return Ok(());
                     }
 
@@ -242,7 +242,7 @@ impl Component for PlaylistsPane {
                         Esc => {
                             self.filter.clear();
                             self.refresh_shown();
-                            app.channel.send(Event::ChangedPlaylist).unwrap();
+                            app.channel.tx.send(Event::ChangedPlaylist).unwrap();
                         }
                         _ => {}
                     }

@@ -6,11 +6,12 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::mpsc};
+use std::{borrow::Cow, cell::RefCell, rc::Rc};
 use std::{
     io,
     time::{self, Duration},
 };
+use tokio::select;
 use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
 
 use crate::{
@@ -18,7 +19,7 @@ use crate::{
     command,
     config::Config,
     error::Result,
-    events::{self, Channel},
+    events::Channel,
     player::{DefaultPlayer, Player},
     visualizer::{self, Visualizer},
     widgets::notification::Notification,
@@ -35,8 +36,10 @@ use crate::events::Event;
 
 use self::{
     app_screen::AppScreen,
-    component::{Component, MouseHandler, MyBackend},
+    component::{Component, MouseHandler},
 };
+
+type MyBackend = CrosstermBackend<io::Stdout>;
 
 const FRAME_DELAY_MS: u16 = 16;
 const HIGH_EVENT_TIMEOUT: u16 = 1000;
@@ -64,7 +67,7 @@ impl<'a> App<'a> {
 
         let screen = Rc::new(RefCell::new(AppScreen::new()?));
 
-        let channel = Channel::default();
+        let channel = Channel::new();
 
         let next_render = time::Instant::now();
         let next_poll_timeout = LOW_EVENT_TIMEOUT;
@@ -84,18 +87,16 @@ impl<'a> App<'a> {
         })
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         self.chain_hook();
         setup_terminal()?;
-
-        self.channel.spawn_terminal_event_getter();
-        self.channel.spawn_ticks();
 
         while !self.quit {
             self.render()
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
             self.recv_event()
+                .await
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
         }
@@ -138,27 +139,23 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    #[inline]
-    fn recv_event(&mut self) -> Result<()> {
+    async fn recv_event(&mut self) -> Result<()> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
         // immediately after the last event, which triggers a fast render.
         let timeout = Duration::from_millis(self.next_poll_timeout as u64);
-        match self.channel.receiver.recv_timeout(timeout) {
-            Ok(Event::Terminal(CrosstermEvent::Key(key))) if key.kind == KeyEventKind::Release => {
-                // WARN: we ignore every key release event for now because of a crossterm 0.26
-                // quirk: https://github.com/crossterm-rs/crossterm/pull/745
+
+        select! {
+            e = self.channel.rx.recv() => {
+                if let Some(e) = e {
+                    let e = self.transform_event(e);
+                    self.handle_event(e)?;
+                }
                 self.next_poll_timeout = FRAME_DELAY_MS;
             }
-            Ok(event) => {
-                let event = self.transform_event(event);
-                self.handle_event(event)?;
-                self.next_poll_timeout = FRAME_DELAY_MS;
-            }
-            Err(mpsc::RecvTimeoutError::Timeout) => {
+            _ = tokio::time::sleep(timeout) => {
                 self.next_poll_timeout = self.suitable_event_timeout();
             }
-            Err(e) => return Err(e.into()),
         }
 
         Ok(())
@@ -192,17 +189,19 @@ impl<'a> App<'a> {
         }
     }
 
-    fn handle_event(&mut self, event: events::Event) -> Result<()> {
+    fn handle_event(&mut self, event: Event) -> Result<()> {
         match &event {
+            Event::Terminal(CrosstermEvent::Key(key)) if key.kind == KeyEventKind::Release => {
+                // WARN: we ignore every key release event for now because of a crossterm 0.26
+                // quirk: https://github.com/crossterm-rs/crossterm/pull/745
+            }
             Event::Command(command::Command::ToggleVisualizer) => {
                 self.toggle_visualizer()?;
             }
             Event::Terminal(crossterm::event::Event::Mouse(mouse_event)) => {
                 let screen = self.screen.clone();
                 let chunk = self.frame_size();
-                screen
-                    .borrow_mut()
-                    .handle_mouse(self, chunk, *mouse_event)?;
+                screen.borrow_mut().handle_mouse(self, chunk, *mouse_event)?;
             }
             _otherwise => {
                 let screen = self.screen.clone();

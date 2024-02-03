@@ -17,7 +17,7 @@ pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
         return;
     }
 
-    let sender = app.channel.sender.clone();
+    let sender = app.channel.tx.clone();
     let playlist = playlist.to_string();
     thread::spawn(move || {
         add_song_recursively(&song_path, &playlist);

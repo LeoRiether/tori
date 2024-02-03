@@ -39,7 +39,7 @@ impl PlaylistScreen {
     /// [select_prev](PlaylistScreen::select_prev) because mpv takes a while to update the playlist
     /// properties after changing the selection.
     pub fn update_after_delay(&self, app: &App) {
-        let sender = app.channel.sender.clone();
+        let sender = app.channel.tx.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_millis(16));
             sender.send(events::Event::SecondTick).ok();

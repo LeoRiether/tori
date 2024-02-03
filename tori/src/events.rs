@@ -1,9 +1,11 @@
 use crossterm::event::Event as CrosstermEvent;
-use std::sync::{mpsc, Arc, Mutex};
-use std::time;
 use std::{
-    sync::mpsc::{channel, Receiver, Sender},
-    thread,
+    sync::{Arc, Mutex},
+    thread, time,
+};
+use tokio::{
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    task::JoinHandle,
 };
 
 use super::command::Command;
@@ -18,8 +20,8 @@ pub enum Event {
 }
 
 pub struct Channel {
-    pub sender: Sender<Event>,
-    pub receiver: Receiver<Event>,
+    pub tx: UnboundedSender<Event>,
+    pub rx: UnboundedReceiver<Event>,
 
     /// Whoever owns this mutex can receive events from crossterm::event::read().
     ///
@@ -32,39 +34,49 @@ pub struct Channel {
 
 impl Default for Channel {
     fn default() -> Self {
-        let (sender, receiver) = channel();
+        Self::new()
+    }
+}
+
+impl Channel {
+    pub fn new() -> Self {
+        let (tx, rx) = unbounded_channel();
         let receiving_crossterm = Arc::new(Mutex::new(()));
+
+        spawn_terminal_event_getter(tx.clone(), receiving_crossterm.clone());
+        spawn_ticks(tx.clone());
+
         Self {
-            sender,
-            receiver,
+            tx,
+            rx,
             receiving_crossterm,
         }
     }
 }
 
-impl Channel {
-    pub fn spawn_terminal_event_getter(&self) -> thread::JoinHandle<()> {
-        let sender = self.sender.clone();
-        let receiving_crossterm = self.receiving_crossterm.clone();
-        thread::spawn(move || loop {
-            {
-                // WARNING: very short-lived lock.
-                // Otherwise this mutex keeps relocking and starving the other thread.
-                // I'm sure this will work in all cases (spoiler: no it doesn't (but maybe it does))
-                let _lock = receiving_crossterm.lock().unwrap();
-            };
+fn spawn_terminal_event_getter(
+    tx: UnboundedSender<Event>,
+    receiving_crossterm: Arc<Mutex<()>>,
+) -> thread::JoinHandle<()> {
+    thread::spawn(move || loop {
+        {
+            // WARNING: very short-lived lock.
+            // Otherwise this mutex keeps relocking and starving the other thread.
+            // I'm sure this will work in all cases (spoiler: no it doesn't (but maybe it does))
+            let _lock = receiving_crossterm.lock().unwrap();
+        };
 
-            if let Ok(event) = crossterm::event::read() {
-                sender.send(Event::Terminal(event)).unwrap();
-            }
-        })
-    }
+        if let Ok(event) = crossterm::event::read() {
+            tx.send(Event::Terminal(event)).unwrap();
+        }
+    })
+}
 
-    pub fn spawn_ticks(&self) -> thread::JoinHandle<()> {
-        let sender = self.sender.clone();
-        thread::spawn(move || loop {
-            thread::sleep(time::Duration::from_secs(1));
-            let sent = sender.send(Event::SecondTick);
+fn spawn_ticks(tx: UnboundedSender<Event>) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(time::Duration::from_secs(1)).await;
+            let sent = tx.send(Event::SecondTick);
 
             // Stop spawning ticks if the receiver has been dropped. This prevents a
             // 'called `Result::unwrap()` on an `Err` value: SendError { .. }' panic when Ctrl+C is
@@ -73,10 +85,6 @@ impl Channel {
             if sent.is_err() {
                 return;
             }
-        })
-    }
-
-    pub fn send(&mut self, event: Event) -> Result<(), mpsc::SendError<Event>> {
-        self.sender.send(event)
-    }
+        }
+    })
 }
