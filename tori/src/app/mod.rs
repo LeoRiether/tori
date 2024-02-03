@@ -1,6 +1,6 @@
 use crossterm::{
     event::{
-        DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyEvent, KeyEventKind,
+        DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyEventKind,
         KeyModifiers,
     },
     execute,
@@ -15,14 +15,11 @@ use tokio::select;
 use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
 
 use crate::{
-    app::component::Mode,
-    command,
-    config::Config,
+    component::Visualizer,
     error::Result,
-    events::Channel,
+    events::{transform_normal_mode_key, Channel},
     player::{DefaultPlayer, Player},
-    visualizer::{self, Visualizer},
-    widgets::notification::Notification,
+    widgets::notification::Notification, app::component::Mode,
 };
 
 pub mod app_screen;
@@ -34,10 +31,7 @@ pub mod playlist_screen;
 
 use crate::events::Event;
 
-use self::{
-    app_screen::AppScreen,
-    component::{Component, MouseHandler},
-};
+use self::{app_screen::AppScreen, component::Component};
 
 type MyBackend = CrosstermBackend<io::Stdout>;
 
@@ -52,7 +46,7 @@ pub struct App<'a> {
     next_render: time::Instant,
     next_poll_timeout: u16,
     notification: Notification<'a>,
-    visualizer: Option<Visualizer>,
+    visualizer: Visualizer,
     screen: Rc<RefCell<AppScreen<'a>>>,
     quit: bool,
 }
@@ -72,6 +66,8 @@ impl<'a> App<'a> {
         let next_render = time::Instant::now();
         let next_poll_timeout = LOW_EVENT_TIMEOUT;
 
+        let visualizer = Visualizer::default();
+
         let notification = Notification::default();
 
         Ok(App {
@@ -81,24 +77,29 @@ impl<'a> App<'a> {
             next_render,
             next_poll_timeout,
             notification,
-            visualizer: None,
+            visualizer,
             screen,
             quit: false,
         })
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        self.chain_hook();
+        chain_hook();
         setup_terminal()?;
 
         while !self.quit {
             self.render()
                 .map_err(|e| self.notify_err(e.to_string()))
                 .ok();
-            self.recv_event()
-                .await
-                .map_err(|e| self.notify_err(e.to_string()))
-                .ok();
+
+            if let Some(event) = self.recv_event().await {
+                let screen = self.screen.clone();
+                screen
+                    .borrow_mut()
+                    .handle_event(self, event)
+                    .map_err(|e| self.notify_err(e.to_string()))
+                    .ok();
+            }
         }
 
         reset_terminal()?;
@@ -108,29 +109,16 @@ impl<'a> App<'a> {
     #[inline]
     fn render(&mut self) -> Result<()> {
         if time::Instant::now() >= self.next_render {
+            if let Err(err) = self.visualizer.update() {
+                self.notify_err(err.to_string());
+            }
+
             self.terminal.draw(|frame| {
                 let chunk = frame.size();
                 self.screen.borrow_mut().render(frame, chunk, ());
-                self.notification.render(frame, frame.size(), ());
+                self.notification.render(frame, chunk, ());
+                self.visualizer.render(chunk, frame.buffer_mut());
             })?;
-
-            let mut err = None; // kind of ugly, but simplifies &mut self borrows
-            if let Some(ref mut visualizer) = self.visualizer {
-                match visualizer.thread_handle() {
-                    visualizer::ThreadHandle::Stopped(Ok(())) => {
-                        self.visualizer = None;
-                    }
-                    visualizer::ThreadHandle::Stopped(Err(e)) => {
-                        err = Some(format!("The visualizer process exited with error: {}", e));
-                        self.visualizer = None;
-                    }
-                    _ => visualizer.render(self.terminal.current_buffer_mut()),
-                }
-            }
-
-            if let Some(err) = err {
-                self.notify_err(err);
-            }
 
             self.next_render = time::Instant::now()
                 .checked_add(Duration::from_millis(FRAME_DELAY_MS as u64))
@@ -139,7 +127,7 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    async fn recv_event(&mut self) -> Result<()> {
+    async fn recv_event(&mut self) -> Option<Event> {
         // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
         // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
         // immediately after the last event, which triggers a fast render.
@@ -147,23 +135,24 @@ impl<'a> App<'a> {
 
         select! {
             e = self.channel.rx.recv() => {
+                self.next_poll_timeout = FRAME_DELAY_MS;
                 if let Some(e) = e {
                     let e = self.transform_event(e);
-                    self.handle_event(e)?;
+                    if should_handle_event(&e) {
+                        return Some(e);
+                    }
                 }
-                self.next_poll_timeout = FRAME_DELAY_MS;
             }
             _ = tokio::time::sleep(timeout) => {
                 self.next_poll_timeout = self.suitable_event_timeout();
             }
         }
-
-        Ok(())
+        None
     }
 
     #[inline]
     fn suitable_event_timeout(&self) -> u16 {
-        match self.visualizer {
+        match self.visualizer.0 {
             Some(_) => LOW_EVENT_TIMEOUT,
             None => HIGH_EVENT_TIMEOUT,
         }
@@ -182,65 +171,11 @@ impl<'a> App<'a> {
                     Mode::Insert if !has_mods => event,
 
                     // Otherwise, events may be transformed into commands
-                    _ => self.transform_normal_mode_key(key_event),
+                    _ => transform_normal_mode_key(key_event),
                 }
             }
             _ => event,
         }
-    }
-
-    fn handle_event(&mut self, event: Event) -> Result<()> {
-        match &event {
-            Event::Terminal(CrosstermEvent::Key(key)) if key.kind == KeyEventKind::Release => {
-                // WARN: we ignore every key release event for now because of a crossterm 0.26
-                // quirk: https://github.com/crossterm-rs/crossterm/pull/745
-            }
-            Event::Command(command::Command::ToggleVisualizer) => {
-                self.toggle_visualizer()?;
-            }
-            Event::Terminal(crossterm::event::Event::Mouse(mouse_event)) => {
-                let screen = self.screen.clone();
-                let chunk = self.frame_size();
-                screen.borrow_mut().handle_mouse(self, chunk, *mouse_event)?;
-            }
-            _otherwise => {
-                let screen = self.screen.clone();
-                screen.borrow_mut().handle_event(self, event)?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Transforms a key event into the corresponding command, if there is one.
-    /// Assumes state is in normal mode
-    fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
-        use crate::command::Command::Nop;
-        use crossterm::event::Event::Key;
-        use Event::*;
-        match Config::global().keybindings.get_from_event(key_event) {
-            Some(cmd) if cmd != Nop => Command(cmd),
-            _ => Terminal(Key(key_event)),
-        }
-    }
-
-    fn toggle_visualizer(&mut self) -> Result<()> {
-        if self.visualizer.take().is_none() {
-            let opts = crate::visualizer::CavaOptions {
-                bars: self.terminal.get_frame().size().width as usize / 2,
-            };
-            self.visualizer = Some(Visualizer::new(opts)?);
-        }
-        Ok(())
-    }
-
-    fn chain_hook(&mut self) {
-        let original_hook = std::panic::take_hook();
-
-        std::panic::set_hook(Box::new(move |panic| {
-            reset_terminal().unwrap();
-            original_hook(panic);
-            std::process::exit(1);
-        }));
     }
 
     pub fn select_screen(&mut self, screen: app_screen::Selected) {
@@ -276,6 +211,16 @@ impl<'a> App<'a> {
     }
 }
 
+fn chain_hook() {
+    let original_hook = std::panic::take_hook();
+
+    std::panic::set_hook(Box::new(move |panic| {
+        reset_terminal().unwrap();
+        original_hook(panic);
+        std::process::exit(1);
+    }));
+}
+
 pub fn setup_terminal() -> Result<()> {
     execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
     enable_raw_mode()?;
@@ -286,4 +231,15 @@ pub fn reset_terminal() -> Result<()> {
     disable_raw_mode()?;
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
+}
+
+fn should_handle_event(event: &Event) -> bool {
+    match event {
+        Event::Terminal(CrosstermEvent::Key(key)) if key.kind == KeyEventKind::Release => {
+            // WARN: we ignore every key release event for now because of a crossterm 0.26
+            // quirk: https://github.com/crossterm-rs/crossterm/pull/745
+            false
+        }
+        _ => true,
+    }
 }

@@ -8,7 +8,7 @@ use crate::{
     app::modal::Modal,
     error::Result,
     player::{DefaultPlayer, Player},
-    visualizer::Visualizer, component::NowPlaying,
+ component::{NowPlaying, Visualizer},
 };
 
 use self::browse_screen::BrowseScreen;
@@ -20,7 +20,7 @@ pub struct State<'n> {
     pub now_playing: NowPlaying,
     pub notification: Option<Notification<'n>>,
     pub modal: Option<Box<dyn Modal>>,
-    pub visualizer: Option<Visualizer>,
+    pub visualizer: Visualizer,
 }
 
 pub enum Screen {
@@ -42,7 +42,7 @@ impl<'n> State<'n> {
             now_playing: NowPlaying::default(),
             notification: None,
             modal: None,
-            visualizer: None,
+            visualizer: Visualizer::default(),
         })
     }
 }

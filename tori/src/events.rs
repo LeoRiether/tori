@@ -1,4 +1,4 @@
-use crossterm::event::Event as CrosstermEvent;
+use crossterm::event::{Event as CrosstermEvent, KeyEvent};
 use std::{
     sync::{Arc, Mutex},
     thread, time,
@@ -7,6 +7,8 @@ use tokio::{
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
 };
+
+use crate::config::Config;
 
 use super::command::Command;
 
@@ -17,6 +19,18 @@ pub enum Event {
     ChangedPlaylist,
     Command(Command),
     Terminal(CrosstermEvent),
+}
+
+/// Transforms a key event into the corresponding command, if there is one.
+/// Assumes state is in normal mode
+pub fn transform_normal_mode_key(key_event: KeyEvent) -> Event {
+    use crate::command::Command::Nop;
+    use crossterm::event::Event::Key;
+    use Event::*;
+    match Config::global().keybindings.get_from_event(key_event) {
+        Some(cmd) if cmd != Nop => Command(cmd),
+        _ => Terminal(Key(key_event)),
+    }
 }
 
 pub struct Channel {

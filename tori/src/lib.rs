@@ -6,7 +6,6 @@ pub mod config;
 pub mod error;
 pub mod m3u;
 pub mod player;
-pub mod visualizer;
 pub mod state;
 pub mod component;
 
