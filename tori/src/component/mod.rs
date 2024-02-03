@@ -6,3 +6,6 @@ pub use now_playing::*;
 
 pub mod visualizer;
 pub use visualizer::*;
+
+pub mod notification;
+pub use notification::*;

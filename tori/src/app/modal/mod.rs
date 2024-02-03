@@ -8,7 +8,7 @@ pub use help_modal::HelpModal;
 pub use hotkey_modal::HotkeyModal;
 pub use input_modal::InputModal;
 
-use tui::{layout::Rect, style::Style, Frame};
+use tui::{layout::Rect, style::Style, prelude::*};
 
 use crate::{
     app::component::Mode,
@@ -39,7 +39,7 @@ pub enum Message {
 pub trait Modal {
     fn apply_style(&mut self, style: Style);
     fn handle_event(&mut self, event: Event) -> Result<Message>;
-    fn render(&mut self, frame: &mut Frame);
+    fn render(&self, area: Rect, buf: &mut Buffer);
     fn mode(&self) -> Mode;
 }
 

@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crossterm::event::{KeyCode, KeyModifiers};
 use serde::{Deserialize, Serialize};
 
+use crate::events;
+
 /// Encapsulates a string representing some key event.
 ///
 /// For example:
@@ -74,17 +76,17 @@ impl From<crossterm::event::KeyEvent> for InputStr {
 
 /// Stores a table of [Command](crate::command::Command) shortcuts.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Shortcuts(pub HashMap<InputStr, crate::command::Command>);
+pub struct Shortcuts(pub HashMap<InputStr, events::Command>);
 
 impl Shortcuts {
-    pub fn new(map: HashMap<InputStr, crate::command::Command>) -> Self {
+    pub fn new(map: HashMap<InputStr, events::Command>) -> Self {
         Self(map)
     }
 
     pub fn get_from_event(
         &self,
         event: crossterm::event::KeyEvent,
-    ) -> Option<crate::command::Command> {
+    ) -> Option<events::Command> {
         self.0.get(&event.into()).cloned()
     }
 }

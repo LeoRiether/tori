@@ -1,8 +1,7 @@
 use crate::{
     app::{component::Component, App},
-    command,
     error::Result,
-    events::Event,
+    events::{ self, Event },
     m3u::playlist_management,
     player::Player,
     rect_ops::RectOps,
@@ -136,10 +135,10 @@ impl<'a> BrowseScreen<'a> {
                             self.reload_songs()?;
                         }
                         Err(CreatePlaylistError::PlaylistAlreadyExists) => {
-                            app.notify_err(format!("Playlist '{}' already exists!", playlist));
+                            app.state.notify_err(format!("Playlist '{}' already exists!", playlist));
                         }
                         Err(CreatePlaylistError::InvalidChar(c)) => {
-                            app.notify_err(format!("Playlist names cannot contain '{}'", c));
+                            app.state.notify_err(format!("Playlist names cannot contain '{}'", c));
                         }
                         Err(CreatePlaylistError::IOError(e)) => return Err(e.into()),
                     }
@@ -154,13 +153,13 @@ impl<'a> BrowseScreen<'a> {
                     use playlist_management::RenamePlaylistError;
                     match playlist_management::rename_playlist(playlist, &new_name) {
                         Err(RenamePlaylistError::PlaylistAlreadyExists) => {
-                            app.notify_err(format!("Playlist '{}' already exists!", new_name));
+                            app.state.notify_err(format!("Playlist '{}' already exists!", new_name));
                         }
                         Err(RenamePlaylistError::EmptyPlaylistName) => {
-                            app.notify_err("Playlist name cannot be empty !");
+                            app.state.notify_err("Playlist name cannot be empty !");
                         }
                         Err(RenamePlaylistError::InvalidChar(c)) => {
-                            app.notify_err(format!("Playlist name cannot contain '{}' !", c));
+                            app.state.notify_err(format!("Playlist name cannot contain '{}' !", c));
                         }
                         Err(RenamePlaylistError::IOError(e)) => return Err(e.into()),
                         Ok(_) => self.playlists.reload_from_dir()?,
@@ -184,7 +183,7 @@ impl<'a> BrowseScreen<'a> {
                     self.selected_pane = BrowsePane::Songs;
                 }
                 (Play, Commit(path)) => {
-                    app.player.play(&path)?;
+                    app.state.player.play(&path)?;
                     self.selected_pane = BrowsePane::Songs;
                 }
 
@@ -227,8 +226,8 @@ impl<'a> BrowseScreen<'a> {
     }
 
     /// Handles an Event::Command(cmd)
-    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
-        use command::Command::*;
+    fn handle_command(&mut self, app: &mut App, cmd: events::Command) -> Result<()> {
+        use events::Command::*;
         match cmd {
             PlayFromModal => {
                 self.open_modal(" Play ", ModalType::Play);
@@ -254,7 +253,7 @@ impl<'a> BrowseScreen<'a> {
                             },
                         );
                     } else {
-                        app.notify_err("Please select a playlist before adding a song");
+                        app.state.notify_err("Please select a playlist before adding a song");
                     }
                 }
                 BrowsePane::Modal(_) => {}
@@ -418,24 +417,21 @@ impl<'t> Component for BrowseScreen<'t> {
         );
         self.songs
             .render(frame, hchunks[1], self.selected_pane == BrowsePane::Songs);
-
-        if let BrowsePane::Modal(_) = self.selected_pane {
-            self.modal.render(frame);
-        }
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
         use Event::*;
+        use events::Action;
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
-            SongAdded { playlist, song } => {
+            Action(Action::SongAdded { playlist, song }) => {
                 if self.playlists.selected_item() == Some(playlist.as_str()) {
                     self.reload_songs()?;
                 }
-                app.notify_ok(format!("\"{}\" was added to {}", song, playlist));
+                app.state.notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
-            SecondTick => {}
-            ChangedPlaylist => {
+            Tick => {}
+            Action(Action::ChangedPlaylist) => {
                 self.reload_songs()?;
             }
             Terminal(event) => self.handle_terminal_event(app, event)?,

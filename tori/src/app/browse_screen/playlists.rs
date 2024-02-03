@@ -4,10 +4,9 @@ use crate::{
         filtered_list::FilteredList,
         App, Mode
     },
-    command::Command,
     config::Config,
     error::Result,
-    events::Event,
+    events::{Event, Action, Command},
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
@@ -96,17 +95,17 @@ impl PlaylistsPane {
 
     pub fn select_next(&mut self, app: &mut App) {
         self.shown.select_next();
-        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::Action(Action::ChangedPlaylist)).unwrap();
     }
 
     pub fn select_prev(&mut self, app: &mut App) {
         self.shown.select_prev();
-        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::Action(Action::ChangedPlaylist)).unwrap();
     }
 
     pub fn select_index(&mut self, app: &mut App, i: Option<usize>) {
         self.shown.state.select(i);
-        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
+        app.channel.tx.send(Event::Action(Action::ChangedPlaylist)).unwrap();
     }
 
     pub fn selected_item(&self) -> Option<&str> {
@@ -216,7 +215,8 @@ impl Component for PlaylistsPane {
     #[allow(clippy::collapsible_match)]
     #[allow(clippy::single_match)]
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
-        use crate::command::Command::*;
+        use crate::events::Command::*;
+        use crate::events::Action;
         use Event::*;
         use KeyCode::*;
 
@@ -231,7 +231,7 @@ impl Component for PlaylistsPane {
                 crossterm::event::Event::Key(event) => {
                     if self.mode() == Mode::Insert && self.handle_filter_key_event(event)? {
                         self.refresh_shown();
-                        app.channel.tx.send(Event::ChangedPlaylist).unwrap();
+                        app.channel.tx.send(Event::Action(Action::ChangedPlaylist)).unwrap();
                         return Ok(());
                     }
 
@@ -242,7 +242,7 @@ impl Component for PlaylistsPane {
                         Esc => {
                             self.filter.clear();
                             self.refresh_shown();
-                            app.channel.tx.send(Event::ChangedPlaylist).unwrap();
+                            app.channel.tx.send(Event::Action(Action::ChangedPlaylist)).unwrap();
                         }
                         _ => {}
                     }

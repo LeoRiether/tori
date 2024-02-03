@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use crate::app::component::MouseHandler;
-use crate::command::Command;
+use crate::events::{Command, self};
 use crate::error::Result;
 use crate::events::Event;
 use crate::player::Player;
@@ -213,25 +213,25 @@ impl<'t> SongsPane<'t> {
         Ok(())
     }
 
-    fn handle_command(&mut self, app: &mut App, cmd: crate::command::Command) -> Result<()> {
-        use crate::command::Command::*;
+    fn handle_command(&mut self, app: &mut App, cmd: events::Command) -> Result<()> {
+        use events::Command::*;
 
         match cmd {
             SelectNext => self.select_next(),
             SelectPrev => self.select_prev(),
             QueueSong => {
                 if let Some(song) = self.selected_item() {
-                    app.player.queue(&song.path)?;
+                    app.state.player.queue(&song.path)?;
                 }
             }
             QueueShown => {
                 for &i in self.shown.items.iter() {
                     let path = self.songs[i].path.as_str();
-                    app.player.queue(path)?;
+                    app.state.player.queue(path)?;
                 }
             }
             Shuffle => {
-                app.player.shuffle()?;
+                app.state.player.shuffle()?;
             }
             OpenInBrowser => {
                 if let Some(song) = self.selected_item() {
@@ -243,7 +243,7 @@ impl<'t> SongsPane<'t> {
                 if let Some(song) = self.selected_item() {
                     util::copy_to_clipboard(song.path.clone());
                     #[cfg(feature = "clip")]
-                    app.notify_info(format!("Copied {} to the clipboard", song.path));
+                    app.state.notify_info(format!("Copied {} to the clipboard", song.path));
                     #[cfg(not(feature = "clip"))]
                     app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
@@ -252,7 +252,7 @@ impl<'t> SongsPane<'t> {
                 if let Some(song) = self.selected_item() {
                     util::copy_to_clipboard(song.title.clone());
                     #[cfg(feature = "clip")]
-                    app.notify_info(format!("Copied {} to the clipboard", song.title));
+                    app.state.notify_info(format!("Copied {} to the clipboard", song.title));
                     #[cfg(not(feature = "clip"))]
                     app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
@@ -400,7 +400,7 @@ impl<'t> SongsPane<'t> {
 
     pub fn play_selected(&self, app: &mut App) -> Result<()> {
         if let Some(song) = self.selected_item() {
-            app.player.play(&song.path)?;
+            app.state.player.play(&song.path)?;
         }
         Ok(())
     }
@@ -528,14 +528,15 @@ impl<'t> Component for SongsPane<'t> {
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
         use Event::*;
+        use events::Action::*;
 
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
             Terminal(event) => self.handle_terminal_event(app, event)?,
-            SongAdded {
+            Action(SongAdded {
                 playlist: _,
                 song: _,
-            } => {
+            }) => {
                 // scroll to the bottom
                 if !self.shown.items.is_empty() {
                     self.shown.state.select(Some(self.shown.items.len() - 1));

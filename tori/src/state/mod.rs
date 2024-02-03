@@ -1,20 +1,21 @@
 pub mod browse_screen;
 
-use std::{borrow::Cow, time::Instant};
+use std::{borrow::Cow, time::Duration};
 
 use tui::style::Color;
 
 use crate::{
     app::modal::Modal,
+    component::{Notification, NowPlaying, Visualizer},
     error::Result,
     player::{DefaultPlayer, Player},
- component::{NowPlaying, Visualizer},
 };
 
 use self::browse_screen::BrowseScreen;
 
 /// Holds most of the state of the application, like a kind of database
 pub struct State<'n> {
+    pub quit: bool,
     pub player: DefaultPlayer,
     pub screen: Screen,
     pub now_playing: NowPlaying,
@@ -27,16 +28,10 @@ pub enum Screen {
     BrowseScreen(BrowseScreen),
 }
 
-pub struct Notification<'t> {
-    pub text: Cow<'t, str>,
-    pub show_until: Instant,
-    pub color: Color,
-    pub height: u16,
-}
-
 impl<'n> State<'n> {
     pub fn new() -> Result<Self> {
         Ok(Self {
+            quit: false,
             player: DefaultPlayer::new()?,
             screen: Screen::BrowseScreen(BrowseScreen::new()?),
             now_playing: NowPlaying::default(),
@@ -44,5 +39,27 @@ impl<'n> State<'n> {
             modal: None,
             visualizer: Visualizer::default(),
         })
+    }
+
+    pub fn quit(&mut self) {
+        self.quit = true;
+    }
+
+    ////////////////////////////////
+    //        Notification        //
+    ////////////////////////////////
+    pub fn notify_err(&mut self, err: impl Into<Cow<'n, str>>) {
+        self.notification =
+            Some(Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed));
+    }
+
+    pub fn notify_info(&mut self, info: impl Into<Cow<'n, str>>) {
+        self.notification =
+            Some(Notification::new(info, Duration::from_secs(4)).colored(Color::LightCyan));
+    }
+
+    pub fn notify_ok(&mut self, text: impl Into<Cow<'n, str>>) {
+        self.notification =
+            Some(Notification::new(text, Duration::from_secs(4)).colored(Color::LightGreen));
     }
 }

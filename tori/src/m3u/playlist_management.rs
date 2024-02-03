@@ -6,14 +6,14 @@ use std::{
     thread,
 };
 
-use crate::{app::App, config::Config, error::Result, events::Event, m3u};
+use crate::{app::App, config::Config, error::Result, events::{Event, Action}, m3u};
 
 /// Adds a song to an existing playlist
 pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
-    app.notify_info(format!("Adding {}...", song_path));
+    app.state.notify_info(format!("Adding {}...", song_path));
 
     if surely_invalid_path(&song_path) {
-        app.notify_err(format!("Failed to add song path '{}'. Doesn't look like a URL and is not a valid path in your filesystem.", song_path));
+        app.state.notify_err(format!("Failed to add song path '{}'. Doesn't look like a URL and is not a valid path in your filesystem.", song_path));
         return;
     }
 
@@ -26,7 +26,7 @@ pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
         let mut rsplit = song_path.trim_end_matches('/').rsplit('/');
         let song = rsplit.next().unwrap_or(&song_path).to_string();
 
-        let event = Event::SongAdded { playlist, song };
+        let event = Event::Action(Action::SongAdded { playlist, song });
         sender.send(event).expect("Failed to send internal event");
     });
 }
