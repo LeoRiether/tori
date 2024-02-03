@@ -7,6 +7,7 @@ pub mod error;
 pub mod m3u;
 pub mod player;
 pub mod visualizer;
+pub mod state;
 
 mod dbglog;
 mod events;

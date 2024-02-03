@@ -46,13 +46,7 @@ impl<St: Selectable> FilteredList<St> {
     {
         let previous_selection = self.selected_item();
 
-        self.items = (0..items.len())
-            .filter(|&i| {
-                // SAFETY: `i` is in (0..items.len()), so no bound checking needed
-                pred(unsafe { items.get_unchecked(i) })
-            })
-            .collect();
-
+        self.items = (0..items.len()).filter(|&i| pred(&items[i])).collect();
         self.items.sort_by(|&i, &j| sorting(i, j));
 
         let new_selection = self

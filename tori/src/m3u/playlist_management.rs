@@ -223,7 +223,7 @@ pub fn rename_playlist(playlist_name: &str, new_name: &str) -> StdResult<(), Ren
         }
     }
 
-    match fs::rename(&old_path, &new_path) {
+    match fs::rename(old_path, &new_path) {
         Err(e) => Err(RenamePlaylistError::IOError(e)),
         Ok(_) => Ok(()),
     }
