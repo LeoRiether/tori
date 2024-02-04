@@ -8,7 +8,7 @@ use crate::error::Result;
 use crate::events::Event;
 use crate::player::Player;
 use crate::util::ClickInfo;
-use crate::widgets::Scrollbar;
+use crate::ui::Scrollbar;
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode},
     config::Config,

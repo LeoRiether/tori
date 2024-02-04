@@ -1,7 +1,7 @@
 use crate::{
     app::{component::Component, App},
     error::Result,
-    events::{ self, Event },
+    events::{self, Event},
     m3u::playlist_management,
     player::Player,
     rect_ops::RectOps,
@@ -135,10 +135,12 @@ impl<'a> BrowseScreen<'a> {
                             self.reload_songs()?;
                         }
                         Err(CreatePlaylistError::PlaylistAlreadyExists) => {
-                            app.state.notify_err(format!("Playlist '{}' already exists!", playlist));
+                            app.state
+                                .notify_err(format!("Playlist '{}' already exists!", playlist));
                         }
                         Err(CreatePlaylistError::InvalidChar(c)) => {
-                            app.state.notify_err(format!("Playlist names cannot contain '{}'", c));
+                            app.state
+                                .notify_err(format!("Playlist names cannot contain '{}'", c));
                         }
                         Err(CreatePlaylistError::IOError(e)) => return Err(e.into()),
                     }
@@ -153,13 +155,15 @@ impl<'a> BrowseScreen<'a> {
                     use playlist_management::RenamePlaylistError;
                     match playlist_management::rename_playlist(playlist, &new_name) {
                         Err(RenamePlaylistError::PlaylistAlreadyExists) => {
-                            app.state.notify_err(format!("Playlist '{}' already exists!", new_name));
+                            app.state
+                                .notify_err(format!("Playlist '{}' already exists!", new_name));
                         }
                         Err(RenamePlaylistError::EmptyPlaylistName) => {
                             app.state.notify_err("Playlist name cannot be empty !");
                         }
                         Err(RenamePlaylistError::InvalidChar(c)) => {
-                            app.state.notify_err(format!("Playlist name cannot contain '{}' !", c));
+                            app.state
+                                .notify_err(format!("Playlist name cannot contain '{}' !", c));
                         }
                         Err(RenamePlaylistError::IOError(e)) => return Err(e.into()),
                         Ok(_) => self.playlists.reload_from_dir()?,
@@ -253,7 +257,8 @@ impl<'a> BrowseScreen<'a> {
                             },
                         );
                     } else {
-                        app.state.notify_err("Please select a playlist before adding a song");
+                        app.state
+                            .notify_err("Please select a playlist before adding a song");
                     }
                 }
                 BrowsePane::Modal(_) => {}
@@ -420,21 +425,24 @@ impl<'t> Component for BrowseScreen<'t> {
     }
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
-        use Event::*;
         use events::Action;
+        use Event::*;
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
             Action(Action::SongAdded { playlist, song }) => {
                 if self.playlists.selected_item() == Some(playlist.as_str()) {
                     self.reload_songs()?;
                 }
-                app.state.notify_ok(format!("\"{}\" was added to {}", song, playlist));
+                app.state
+                    .notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             Tick => {}
             Action(Action::ChangedPlaylist) => {
                 self.reload_songs()?;
             }
             Terminal(event) => self.handle_terminal_event(app, event)?,
+            Action(Action::SelectSong(_i)) => todo!(),
+            Action(Action::SelectPlaylist(_i)) => todo!(),
         }
         Ok(())
     }

@@ -4,7 +4,7 @@ use crate::{
     player::Player,
     state::State,
 };
-use crossterm::event::Event as TermEvent;
+use crossterm::event::{Event as TermEvent, KeyCode};
 
 pub fn update(state: &mut State<'_>, tx: Tx, ev: Event) -> Result<Option<Event>> {
     use events::Event::*;
@@ -18,7 +18,11 @@ pub fn update(state: &mut State<'_>, tx: Tx, ev: Event) -> Result<Option<Event>>
             }
         }
 
-        Terminal(TermEvent::Key(_key)) => {},
+        Terminal(TermEvent::Key(key)) => {
+            if key.code == KeyCode::Char('q') {
+                state.quit();
+            }
+        },
         Terminal(TermEvent::Mouse(_mouse)) => {}
         Terminal(_) => {}
 

@@ -17,6 +17,8 @@ pub enum Event {
 pub enum Action {
     SongAdded { playlist: String, song: String },
     ChangedPlaylist,
+    SelectSong(usize),
+    SelectPlaylist(usize),
 }
 
 /// Transforms a key event into the corresponding command, if there is one.

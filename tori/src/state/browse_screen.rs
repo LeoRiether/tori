@@ -1,13 +1,12 @@
-use tui::widgets::{ListState, TableState};
-
 use crate::{app::filtered_list::FilteredList, config::Config, error::Result, m3u};
 use std::{io, result::Result as StdResult};
+use tui::widgets::TableState;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct BrowseScreen {
     pub focus: Focus,
     pub playlists: Vec<String>,
-    pub shown_playlists: FilteredList<ListState>,
+    pub shown_playlists: FilteredList<TableState>,
 
     pub songs: Vec<m3u::Song>,
     pub shown_songs: FilteredList<TableState>,
@@ -54,6 +53,7 @@ impl BrowseScreen {
         self.sorting_method = self.sorting_method.next();
     }
 
+    // TODO: definitely rethink this
     pub fn reload_playlists(&mut self) -> Result<()> {
         let dir = std::fs::read_dir(&Config::global().playlists_dir)
             .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
@@ -73,8 +73,19 @@ impl BrowseScreen {
             .into_iter()
             .map(extract_playlist_name)
             .collect::<Result<_>>()?;
-
         self.playlists.sort();
+        self.refresh_shown();
+
+        // Try to reuse previous state
+        let state = self.shown_playlists.state.clone();
+        if matches!(state.selected(), Some(i) if i < self.playlists.len()) {
+            self.shown_playlists.state = state;
+        } else if self.shown_playlists.items.is_empty() {
+            self.shown_playlists.state.select(None);
+        } else {
+            self.shown_playlists.state.select(Some(0));
+        }
+
         self.pull_songs()?;
         self.refresh_shown();
         Ok(())

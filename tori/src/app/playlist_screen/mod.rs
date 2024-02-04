@@ -3,7 +3,7 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{events, error::Result, player::Player, widgets::Scrollbar};
+use crate::{events, error::Result, player::Player, ui::Scrollbar};
 use std::{thread, time::Duration};
 use tui::{
     layout::{Alignment, Rect},

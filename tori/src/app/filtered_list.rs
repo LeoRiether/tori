@@ -79,6 +79,10 @@ impl<St: Selectable> FilteredList<St> {
     pub fn selected_item(&self) -> Option<usize> {
         self.state.selected().map(|i| self.items[i])
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &usize> {
+        self.items.iter()
+    }
 }
 
 fn wrap_inc(x: usize, modulo: usize) -> usize {
