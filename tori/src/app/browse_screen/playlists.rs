@@ -6,7 +6,7 @@ use crate::{
     },
     config::Config,
     error::Result,
-    events::{Event, Action, Command},
+    events::{Event, Action},
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
@@ -15,8 +15,7 @@ use std::result::Result as StdResult;
 use std::io;
 use tui::{
     layout::{self, Rect},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{ListState},
     Frame,
 };
 
@@ -162,55 +161,7 @@ impl Component for PlaylistsPane {
         }
     }
 
-    fn render(&mut self, frame: &mut Frame, chunk: layout::Rect, is_focused: bool) {
-        let title = if !self.filter.is_empty() {
-            format!(" {} ", self.filter)
-        } else {
-            " playlists ".into()
-        };
-
-        let mut block = Block::default()
-            .title(title)
-            .borders(Borders::LEFT | Borders::BOTTOM | Borders::TOP)
-            .border_type(BorderType::Plain);
-
-        if is_focused {
-            block = block.border_style(Style::default().fg(Color::LightBlue));
-        }
-
-        if !self.playlists.is_empty() {
-            // Render playlists list
-            let playlists: Vec<_> = self
-                .shown
-                .items
-                .iter()
-                .map(|&i| ListItem::new(self.playlists[i].as_str()))
-                .collect();
-
-            let widget = List::new(playlists)
-                .block(block)
-                .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black));
-            frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
-        } else {
-            // Help message
-            let key = Config::global()
-                .keybindings
-                .0
-                .iter()
-                .find(|&(_key, &cmd)| cmd == Command::Add)
-                .map(|(key, _)| key.0.as_str())
-                .unwrap_or("a");
-
-            let widget = Paragraph::new(format!(
-                "You don't have any playlists yet! Press '{}' to add one.",
-                key
-            ))
-            .wrap(Wrap { trim: true })
-            .block(block)
-            .style(Style::default().fg(Color::DarkGray));
-            frame.render_widget(widget, chunk);
-        }
-    }
+    fn render(&mut self, _frame: &mut Frame, _chunk: layout::Rect, _is_focused: bool) { }
 
     #[allow(clippy::collapsible_match)]
     #[allow(clippy::single_match)]

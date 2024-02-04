@@ -17,8 +17,6 @@ pub fn on<M>(event: UIEvent, emitter: impl Fn(TermEvent) -> M + 'static) -> List
 /// An event a widget can receive
 pub enum UIEvent {
     Click(Rect),
-    _Drag,
-    _MouseUp,
 }
 
 /// A widget that registers event listeners

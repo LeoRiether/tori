@@ -3,12 +3,12 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use crate::app::component::MouseHandler;
-use crate::events::{Command, self};
 use crate::error::Result;
 use crate::events::Event;
+use crate::events::{self};
 use crate::player::Player;
+
 use crate::util::ClickInfo;
-use crate::ui::Scrollbar;
 use crate::{
     app::{component::Component, filtered_list::FilteredList, App, Mode},
     config::Config,
@@ -17,11 +17,10 @@ use crate::{m3u, util};
 
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEventKind};
 use tui::layout::Rect;
-use tui::widgets::{Paragraph, Wrap};
+
 use tui::{
-    layout::{self, Constraint},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Row, Table, TableState},
+    layout::{self},
+    widgets::{TableState},
     Frame,
 };
 
@@ -243,7 +242,8 @@ impl<'t> SongsPane<'t> {
                 if let Some(song) = self.selected_item() {
                     util::copy_to_clipboard(song.path.clone());
                     #[cfg(feature = "clip")]
-                    app.state.notify_info(format!("Copied {} to the clipboard", song.path));
+                    app.state
+                        .notify_info(format!("Copied {} to the clipboard", song.path));
                     #[cfg(not(feature = "clip"))]
                     app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
@@ -252,7 +252,8 @@ impl<'t> SongsPane<'t> {
                 if let Some(song) = self.selected_item() {
                     util::copy_to_clipboard(song.title.clone());
                     #[cfg(feature = "clip")]
-                    app.state.notify_info(format!("Copied {} to the clipboard", song.title));
+                    app.state
+                        .notify_info(format!("Copied {} to the clipboard", song.title));
                     #[cfg(not(feature = "clip"))]
                     app.notify_info("Clipboard support is disabled for this build. You can enable it by building with '--features clip'");
                 }
@@ -437,98 +438,11 @@ impl<'t> Component for SongsPane<'t> {
         }
     }
 
-    fn render(&mut self, frame: &mut Frame, chunk: layout::Rect, is_focused: bool) {
-        let sorting = match self.sorting_method {
-            SortingMethod::Index => "",
-            SortingMethod::Title => " [↑ Title]",
-            SortingMethod::Duration => " [↑ Duration]",
-        };
-
-        let title = if !self.filter.is_empty() {
-            format!(" {}{} ", self.filter, sorting)
-        } else {
-            format!(" {}{} ", self.title, sorting)
-        };
-
-        let border_style = if is_focused {
-            Style::default().fg(Color::LightBlue)
-        } else {
-            Style::default()
-        };
-
-        let block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Plain)
-            .border_style(border_style);
-
-        if !self.songs.is_empty() {
-            // Render songlist
-            let songlist: Vec<_> = self
-                .shown
-                .items
-                .iter()
-                .map(|&i| &self.songs[i])
-                .map(|song| {
-                    Row::new(vec![
-                        format!(" {}", song.title),
-                        format!(
-                            "{}:{:02}",
-                            song.duration.as_secs() / 60,
-                            song.duration.as_secs() % 60
-                        ),
-                    ])
-                })
-                .collect();
-            let songlist_len = songlist.len();
-
-            // Render table
-            let widths = [Constraint::Length(chunk.width - 11), Constraint::Length(10)];
-            let widget = Table::new(songlist, widths)
-                .block(block)
-                .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
-                .highlight_symbol(" ◇");
-            frame.render_stateful_widget(widget, chunk, &mut self.shown.state);
-
-            if self.shown.items.len() > chunk.height as usize - 2 {
-                // Render scrollbar
-                let scrollbar = Scrollbar::new(
-                    self.shown.state.selected().unwrap_or(0) as u16,
-                    songlist_len as u16,
-                )
-                .with_style(border_style);
-                frame.render_widget(
-                    scrollbar,
-                    chunk.inner(&tui::layout::Margin {
-                        vertical: 1,
-                        horizontal: 0,
-                    }),
-                );
-            }
-        } else {
-            // Help message
-            let key = Config::global()
-                .keybindings
-                .0
-                .iter()
-                .find(|&(_key, &cmd)| cmd == Command::Add)
-                .map(|(key, _)| key.0.as_str())
-                .unwrap_or("a");
-
-            let widget = Paragraph::new(format!(
-                "You don't have any songs in this playlist yet! Press '{}' to add one.",
-                key
-            ))
-            .wrap(Wrap { trim: true })
-            .block(block)
-            .style(Style::default().fg(Color::DarkGray));
-            frame.render_widget(widget, chunk);
-        }
-    }
+    fn render(&mut self, _frame: &mut Frame, _chunk: layout::Rect, _is_focused: bool) {}
 
     fn handle_event(&mut self, app: &mut App, event: Event) -> Result<()> {
-        use Event::*;
         use events::Action::*;
+        use Event::*;
 
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
