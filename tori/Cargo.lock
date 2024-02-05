@@ -1326,9 +1326,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.95"
+version = "1.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d721eca97ac802aa7777b701877c8004d950fc142651367300d21c1cc0194744"
+checksum = "69801b70b1c3dac963ecb03a364ba0ceda9cf60c71cfe475e99864759c8b8a79"
 dependencies = [
  "itoa",
  "ryu",
@@ -1691,7 +1691,7 @@ dependencies = [
 
 [[package]]
 name = "tori"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "argh",
  "clipboard",
