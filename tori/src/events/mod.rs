@@ -16,7 +16,7 @@ pub enum Event {
 #[derive(Debug, Clone)]
 pub enum Action {
     SongAdded { playlist: String, song: String },
-    ChangedPlaylist,
+    RefreshSongs,
     SelectSong(usize),
     SelectPlaylist(usize),
 }

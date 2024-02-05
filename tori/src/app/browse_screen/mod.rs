@@ -437,7 +437,7 @@ impl<'t> Component for BrowseScreen<'t> {
                     .notify_ok(format!("\"{}\" was added to {}", song, playlist));
             }
             Tick => {}
-            Action(Action::ChangedPlaylist) => {
+            Action(Action::RefreshSongs) => {
                 self.reload_songs()?;
             }
             Terminal(event) => self.handle_terminal_event(app, event)?,

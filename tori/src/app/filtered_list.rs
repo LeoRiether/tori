@@ -76,6 +76,10 @@ impl<St: Selectable> FilteredList<St> {
         });
     }
 
+    pub fn select(&mut self, i: Option<usize>) {
+        self.state.select(i);
+    }
+
     pub fn selected_item(&self) -> Option<usize> {
         self.state.selected().map(|i| self.items[i])
     }
