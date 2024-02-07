@@ -156,7 +156,7 @@ fn songs_pane(
         .borders(Borders::ALL)
         .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
         .highlight_symbol(" ◇")
-        .click_event(|i| Action::SelectSong(i));
+        .click_event(Action::SelectSong);
     list.render(area, buf, l);
     screen.shown_songs.state = list.get_state();
 }

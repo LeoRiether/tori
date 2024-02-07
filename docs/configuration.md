@@ -69,6 +69,10 @@ keybindings:
   j: SelectNext
   k: SelectPrev
   l: SelectRight
+  left: SelectLeft
+  down: SelectNext
+  up: SelectPrev
+  right: SelectRight
   a: Add
   u: QueueSong
   C-q: QueueShown
@@ -76,6 +80,8 @@ keybindings:
   E: OpenInEditor
   '!': OpenHotkeyModal 
   C-f: Search
+  g: GotoStart
+  G: GotoEnd
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:
