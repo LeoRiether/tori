@@ -85,6 +85,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         Quit => {
             state.quit();
         }
+        
         SeekForward => {
             state.player.seek(10.)?;
             return Ok(Some(Action::Tick));
@@ -93,6 +94,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.seek(-10.)?;
             return Ok(Some(Action::Tick));
         }
+
         NextSong => {
             state
                 .player
@@ -107,6 +109,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
                 .unwrap_or_else(|_| state.notify_err("No previous song"));
             return Ok(Some(Action::Tick));
         }
+
         TogglePause => {
             state.player.toggle_pause()?;
             return Ok(Some(Action::Tick));
@@ -115,6 +118,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.toggle_loop_file()?;
             return Ok(Some(Action::Tick));
         }
+
         VolumeUp => {
             state.player.add_volume(5)?;
             return Ok(Some(Action::Tick));
@@ -127,6 +131,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.toggle_mute()?;
             return Ok(Some(Action::Tick));
         }
+
         OpenInBrowser => todo!(),
         CopyUrl => todo!(),
         CopyTitle => todo!(),
@@ -139,6 +144,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         SwapSongDown => todo!(),
         SwapSongUp => todo!(),
         Shuffle => todo!(),
+
         SelectNext => match &mut state.screen {
             Screen::BrowseScreen(screen) => screen.select_next()?,
         },
@@ -151,6 +157,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         SelectRight => match &mut state.screen {
             Screen::BrowseScreen(screen) => screen.focus = Focus::Songs,
         },
+
         Add => todo!(),
         QueueSong => todo!(),
         QueueShown => todo!(),
