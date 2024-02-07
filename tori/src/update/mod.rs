@@ -1,52 +1,37 @@
-use std::mem;
-
 use crate::{
     error::Result,
-    events::{self, channel::Tx, transform_normal_mode_key, Action, Command, Event},
+    events::{channel::Tx, Action, Command},
     player::Player,
-    state::{browse_screen::Focus, Screen, State},
+    state::{browse_screen::Focus, Screen, State}, config::Config,
 };
-use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
-pub fn update(state: &mut State<'_>, tx: Tx, ev: Event) -> Result<Option<Event>> {
-    use events::Event::*;
-
-    // TODO: return an action instead
-    let inner_event = match ev {
-        Terminal(TermEvent::Key(key)) => match &mut state.screen {
-            Screen::BrowseScreen(screen) => {
-                let focus = mem::take(&mut screen.focus);
-                match focus {
-                    Focus::Playlists | Focus::Songs => {
-                        let event = transform_normal_mode_key(key);
-                        screen.focus = focus;
-                        event
-                    }
-                    Focus::PlaylistsFilter(mut f) => {
-                        push_key_to_filter(&mut f, key);
-                        screen.focus = Focus::PlaylistsFilter(f);
-                        return Ok(None);
-                    }
-                    Focus::SongsFilter(mut f) => {
-                        push_key_to_filter(&mut f, key);
-                        screen.focus = Focus::SongsFilter(f);
-                        return Ok(None);
-                    }
-                }
-            }
+pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Action>> {
+    Ok(match ev {
+        TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &state.screen {
+            Screen::BrowseScreen(screen) => match &screen.focus {
+                Focus::Playlists | Focus::Songs => Some(transform_normal_mode_key(key)),
+                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => Some(Action::Input(key)),
+            },
         },
-
-        otherwise => otherwise,
-    };
-
-    update_inner(state, tx, inner_event)
+        _ => None,
+    })
 }
 
-// TODO: separate events from actions
-pub fn update_inner(state: &mut State<'_>, tx: Tx, ev: Event) -> Result<Option<Event>> {
-    use events::Event::*;
+/// Transforms a key event into the corresponding action, if there is one.
+/// Assumes state is in normal mode
+fn transform_normal_mode_key(key_event: KeyEvent) -> Action {
+    match Config::global().keybindings.get_from_event(key_event) {
+        Some(cmd) if cmd != Command::Nop => Action::Command(cmd),
+        _ => Action::Input(key_event),
+    }
+}
 
-    match ev {
+pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Action>> {
+    use Action::*;
+    match act {
+        Input(_) => {}
+
         Tick => {
             state.now_playing.update(&state.player);
             state.visualizer.update()?;
@@ -60,20 +45,6 @@ pub fn update_inner(state: &mut State<'_>, tx: Tx, ev: Event) -> Result<Option<E
             }
         }
 
-        Terminal(TermEvent::Key(_key)) => {}
-        Terminal(TermEvent::Mouse(_mouse)) => {}
-        Terminal(_) => {}
-
-        Action(act) => return handle_action(state, tx, act),
-        Command(cmd) => return handle_command(state, tx, cmd),
-    }
-
-    Ok(None)
-}
-
-fn handle_action(state: &mut State<'_>, _tx: Tx, act: Action) -> Result<Option<Event>> {
-    use Action::*;
-    match act {
         SongAdded {
             playlist,
             song: _song,
@@ -99,11 +70,14 @@ fn handle_action(state: &mut State<'_>, _tx: Tx, act: Action) -> Result<Option<E
             screen.shown_playlists.select(Some(i));
             screen.refresh_songs()?;
         }
+
+        Command(cmd) => return handle_command(state, tx, cmd),
     }
+
     Ok(None)
 }
 
-fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option<Event>> {
+fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option<Action>> {
     use Command::*;
     match cmd {
         Nop => {}
@@ -112,45 +86,45 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         }
         SeekForward => {
             state.player.seek(10.)?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         SeekBackward => {
             state.player.seek(-10.)?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         NextSong => {
             state
                 .player
                 .playlist_next()
                 .unwrap_or_else(|_| state.notify_err("No next song"));
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         PrevSong => {
             state
                 .player
                 .playlist_previous()
                 .unwrap_or_else(|_| state.notify_err("No previous song"));
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         TogglePause => {
             state.player.toggle_pause()?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         ToggleLoop => {
             state.player.toggle_loop_file()?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         VolumeUp => {
             state.player.add_volume(5)?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         VolumeDown => {
             state.player.add_volume(-5)?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         Mute => {
             state.player.toggle_mute()?;
-            return Ok(Some(Event::Tick));
+            return Ok(Some(Action::Tick));
         }
         OpenInBrowser => todo!(),
         CopyUrl => todo!(),

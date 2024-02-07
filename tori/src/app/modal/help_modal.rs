@@ -1,5 +1,6 @@
 use super::{get_modal_chunk, Message, Modal};
 
+use crossterm::event::Event;
 use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Style},
@@ -10,10 +11,9 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::component::Mode,
     config::{shortcuts::InputStr, Config},
     error::Result,
-    events::{Command, Event},
+    events::Command,
 };
 
 /// A modal box that asks for user input
@@ -63,7 +63,7 @@ impl Modal for HelpModal {
     fn apply_style(&mut self, _style: Style) {}
 
     fn handle_event(&mut self, event: Event) -> Result<Message> {
-        if let Event::Terminal(crossterm::event::Event::Key(_)) = event {
+        if let Event::Key(_) = event {
             return Ok(Message::Quit);
         }
         Ok(Message::Nothing)
@@ -101,7 +101,7 @@ impl Modal for HelpModal {
         table.render(chunk, buf);
     }
 
-    fn mode(&self) -> Mode {
-        Mode::Insert
+    fn mode(&self) -> ! {
+        todo!()
     }
 }

@@ -1,18 +1,14 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use crossterm::event::KeyCode;
+use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
+    prelude::*,
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
-    prelude::*,
 };
 
-use crate::{
-    app::component::Mode,
-    error::Result,
-    events::Event,
-};
+use crate::error::Result;
 
 /// A confirmation modal box that asks for user yes/no input
 #[derive(Debug, Default)]
@@ -36,9 +32,8 @@ impl Modal for ConfirmationModal {
     }
 
     fn handle_event(&mut self, event: Event) -> Result<Message> {
-        use Event::*;
         use KeyCode::*;
-        if let Terminal(crossterm::event::Event::Key(event)) = event {
+        if let Event::Key(event) = event {
             return match event.code {
                 Backspace | Esc | Char('q') | Char('n') | Char('N') => Ok(Message::Quit),
                 Enter | Char('y') | Char('Y') => Ok(Message::Commit("y".into())),
@@ -66,7 +61,7 @@ impl Modal for ConfirmationModal {
         paragraph.render(chunk, buf);
     }
 
-    fn mode(&self) -> Mode {
-        Mode::Insert
+    fn mode(&self) -> ! {
+        todo!()
     }
 }

@@ -1,4 +1,4 @@
-use crate::{events::Event, ui::Scrollbar};
+use crate::{ui::Scrollbar, events::Action};
 
 use super::{on, EventfulWidget, Listener, UIEvent};
 use std::mem;
@@ -19,11 +19,11 @@ pub struct List<'a, const C: usize> {
     state: TableState,
     items: Vec<[String; C]>,
     help_message: String,
-    click_event: Option<Box<dyn Fn(usize) -> Event>>,
+    click_event: Option<Box<dyn Fn(usize) -> Action>>,
 }
 
-impl<'a, const C: usize> EventfulWidget<Event> for List<'a, C> {
-    fn render(&mut self, area: Rect, buf: &mut Buffer, l: &mut Vec<Listener<Event>>) {
+impl<'a, const C: usize> EventfulWidget<Action> for List<'a, C> {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, l: &mut Vec<Listener<Action>>) {
         let block = Block::default()
             .title(mem::take(&mut self.title))
             .borders(self.borders)
@@ -133,8 +133,8 @@ impl<'a, const C: usize> List<'a, C> {
         self
     }
 
-    pub fn click_event(mut self, event: impl Fn(usize) -> Event + 'static) -> Self {
-        self.click_event = Some(Box::new(event));
+    pub fn click_event(mut self, action: impl Fn(usize) -> Action + 'static) -> Self {
+        self.click_event = Some(Box::new(action));
         self
     }
 }

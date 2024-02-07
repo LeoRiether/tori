@@ -1,8 +1,9 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::{borrow::Cow, cell::Cell, mem};
+use std::{borrow::Cow, mem};
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, Event};
+use std::sync::Mutex;
 use tui::{
     layout::Alignment,
     prelude::*,
@@ -11,14 +12,14 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
-use crate::{app::component::Mode, error::Result, events::Event};
+use crate::error::Result;
 
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
 pub struct InputModal<'t> {
     title: Cow<'t, str>,
     cursor: usize,
-    scroll: Cell<u16>,
+    scroll: Mutex<u16>,
     input: String,
     style: Style,
 }
@@ -28,7 +29,7 @@ impl<'t> InputModal<'t> {
         Self {
             title: title.into(),
             cursor: 0,
-            scroll: Cell::new(0),
+            scroll: Mutex::new(0),
             input: String::default(),
             style: Style::default().fg(Color::LightBlue),
         }
@@ -56,9 +57,8 @@ impl<'t> Modal for InputModal<'t> {
     }
 
     fn handle_event(&mut self, event: Event) -> Result<Message> {
-        use Event::*;
         use KeyCode::*;
-        if let Terminal(crossterm::event::Event::Key(event)) = event {
+        if let Event::Key(event) = event {
             match event.code {
                 Char(c) => {
                     self.input.insert(self.cursor, c);
@@ -138,25 +138,24 @@ impl<'t> Modal for InputModal<'t> {
         paragraph.render(chunk, buf);
     }
 
-    fn mode(&self) -> Mode {
-        Mode::Insert
+    fn mode(&self) -> ! {
+        todo!()
     }
 }
 
 impl<'t> InputModal<'t> {
     /// Updates and calculates the Paragraph's scroll based on the current cursor and input
     fn calculate_scroll(&self, chunk_width: u16) -> u16 {
-        let mut scroll = self.scroll.get();
-        if self.cursor as u16 > scroll + chunk_width - 1 {
-            scroll = self.cursor as u16 + 1 - chunk_width;
+        let mut scroll = self.scroll.lock().unwrap();
+        if self.cursor as u16 > *scroll + chunk_width - 1 {
+            *scroll = self.cursor as u16 + 1 - chunk_width;
         }
 
-        if (self.cursor as u16) <= scroll {
-            scroll = (self.cursor as u16).saturating_sub(1);
+        if (self.cursor as u16) <= *scroll {
+            *scroll = (self.cursor as u16).saturating_sub(1);
         }
 
-        self.scroll.set(scroll);
-        scroll
+        *scroll
     }
 }
 
