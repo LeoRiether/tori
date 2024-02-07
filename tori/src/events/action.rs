@@ -1,5 +1,4 @@
 use super::Command;
-use crate::config::Config;
 use crossterm::event::KeyEvent;
 
 #[derive(Debug, Clone)]
