@@ -66,6 +66,7 @@ impl Default for ThreadHandle {
     }
 }
 
+// TODO: use tokio::process
 pub struct Visualizer {
     pub state: Option<VisualizerState>,
     pub width: usize,

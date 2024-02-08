@@ -6,6 +6,8 @@ pub enum Action {
     Rerender,
     Tick,
     Input(KeyEvent),
+    ScrollDown,
+    ScrollUp,
     Command(Command),
     SongAdded { playlist: String, song: String },
     RefreshSongs,

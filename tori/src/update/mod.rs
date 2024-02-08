@@ -9,7 +9,7 @@ use crate::{
     state::{browse_screen::Focus, Screen, State},
     util::copy_to_clipboard,
 };
-use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind, MouseEventKind};
 
 pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Action>> {
     Ok(match ev {
@@ -18,6 +18,16 @@ pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Actio
                 Focus::Playlists | Focus::Songs => Some(transform_normal_mode_key(key)),
                 Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => Some(Action::Input(key)),
             },
+        },
+        TermEvent::Mouse(mouse) => match mouse.kind {
+            MouseEventKind::Down(_) => todo!("Clicks are yet to be implemented!"),
+            MouseEventKind::Up(_) => todo!("Clickups are yet to be implemented!"),
+            MouseEventKind::Drag(_) => todo!("Dragging is yet to be implemented!"),
+            MouseEventKind::ScrollDown => Some(Action::ScrollDown),
+            MouseEventKind::ScrollUp => Some(Action::ScrollUp),
+            MouseEventKind::Moved | MouseEventKind::ScrollLeft | MouseEventKind::ScrollRight => {
+                None
+            }
         },
         _ => None,
     })
@@ -56,6 +66,21 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                     screen.refresh_playlists()?;
                 }
                 _ => {}
+            },
+        },
+
+        ScrollDown => match &mut state.screen {
+            Screen::BrowseScreen(screen) => match &screen.focus {
+                Focus::Playlists => screen.shown_playlists.select_next(),
+                Focus::Songs => screen.shown_songs.select_next(),
+                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            },
+        },
+        ScrollUp => match &mut state.screen {
+            Screen::BrowseScreen(screen) => match &screen.focus {
+                Focus::Playlists => screen.shown_playlists.select_prev(),
+                Focus::Songs => screen.shown_songs.select_prev(),
+                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
             },
         },
 
