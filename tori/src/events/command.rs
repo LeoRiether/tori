@@ -73,6 +73,9 @@ pub enum Command {
 
     /// Jump to the last item of the selected pane
     GotoEnd,
+
+    /// Play selected song
+    Play,
 }
 
 #[cfg(test)]

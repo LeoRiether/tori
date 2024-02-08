@@ -34,11 +34,15 @@ impl<'a> App<'a> {
     pub fn new() -> Result<App<'a>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
+        let channel = Channel::new();
+        let tx = channel.tx.clone();
+        let terminal = Terminal::new(backend)?;
+        let frame_width = terminal.size()?.width as usize;
 
         Ok(App {
-            state: Arc::new(Mutex::new(State::new()?)),
-            channel: Channel::new(),
-            terminal: Terminal::new(backend)?,
+            state: Arc::new(Mutex::new(State::new(tx, frame_width)?)),
+            channel,
+            terminal,
         })
     }
 

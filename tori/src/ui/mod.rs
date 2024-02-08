@@ -57,6 +57,11 @@ fn playlists_pane(
     buf: &mut Buffer,
     l: &mut Vec<Listener<Action>>,
 ) {
+    let title = match &screen.focus {
+        Focus::PlaylistsFilter(f) => format!(" /{} ", f.value),
+        _ => " playlists ".to_string(),
+    };
+
     let border_style = if matches!(screen.focus, Focus::PlaylistsFilter(_) | Focus::Playlists) {
         Style::default().fg(Color::LightBlue)
     } else {
@@ -83,14 +88,14 @@ fn playlists_pane(
         .collect();
 
     let mut list = List::default()
-        .title(" playlists ".to_string())
+        .title(title)
         .items(playlists)
         .state(screen.shown_playlists.state.clone())
         .help_message(help)
         .border_style(border_style)
         .borders(Borders::ALL & !Borders::RIGHT)
         .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black))
-        .click_event(|i| Action::SelectPlaylist(i));
+        .click_event(Action::SelectPlaylist);
     list.render(area, buf, l);
     screen.shown_playlists.state = list.get_state();
 }
@@ -108,7 +113,7 @@ fn songs_pane(
     };
 
     let title = match &screen.focus {
-        Focus::SongsFilter(filter) => format!(" /{}{} ", filter, sorting),
+        Focus::SongsFilter(filter) => format!(" /{}{} ", filter.value, sorting),
         _ => screen
             .selected_playlist()
             .map(|p| format!(" {} ", p))

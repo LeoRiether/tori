@@ -42,6 +42,8 @@ keybindings:
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  '/': Search
   C-f: Search
   g: GotoStart
   G: GotoEnd
+  enter: Play

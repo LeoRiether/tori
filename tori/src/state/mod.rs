@@ -8,7 +8,7 @@ use crate::{
     app::modal::Modal,
     component::{Notification, NowPlaying, Visualizer},
     error::Result,
-    player::{DefaultPlayer, Player},
+    player::{DefaultPlayer, Player}, events::channel::Tx,
 };
 
 use self::browse_screen::BrowseScreen;
@@ -29,7 +29,7 @@ pub enum Screen {
 }
 
 impl<'n> State<'n> {
-    pub fn new() -> Result<Self> {
+    pub fn new(tx: Tx, width: usize) -> Result<Self> {
         Ok(Self {
             quit: false,
             player: DefaultPlayer::new()?,
@@ -37,7 +37,7 @@ impl<'n> State<'n> {
             now_playing: NowPlaying::default(),
             notification: None,
             modal: None,
-            visualizer: Visualizer::default(),
+            visualizer: Visualizer::new(tx, width),
         })
     }
 

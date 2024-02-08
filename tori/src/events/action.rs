@@ -3,6 +3,7 @@ use crossterm::event::KeyEvent;
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    Rerender,
     Tick,
     Input(KeyEvent),
     Command(Command),
