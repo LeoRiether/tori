@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub enum Command {
     #[default]
     Nop,
+    Esc,
     Quit,
     NextSong,
     PrevSong,

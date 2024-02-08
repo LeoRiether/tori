@@ -8,7 +8,7 @@ use crate::{
     app::modal::Modal,
     component::{Notification, NowPlaying, Visualizer},
     error::Result,
-    player::{DefaultPlayer, Player}, events::channel::Tx,
+    player::{DefaultPlayer, Player}, events::{channel::Tx, Action}, ui::Listener,
 };
 
 use self::browse_screen::BrowseScreen;
@@ -16,6 +16,7 @@ use self::browse_screen::BrowseScreen;
 /// Holds most of the state of the application, like a kind of database
 pub struct State<'n> {
     pub quit: bool,
+    pub listeners: Vec<Listener<Action>>,
     pub player: DefaultPlayer,
     pub screen: Screen,
     pub now_playing: NowPlaying,
@@ -32,6 +33,7 @@ impl<'n> State<'n> {
     pub fn new(tx: Tx, width: usize) -> Result<Self> {
         Ok(Self {
             quit: false,
+            listeners: Vec::new(),
             player: DefaultPlayer::new()?,
             screen: Screen::BrowseScreen(BrowseScreen::new()?),
             now_playing: NowPlaying::default(),

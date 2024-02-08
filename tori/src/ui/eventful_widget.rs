@@ -4,10 +4,13 @@ use tui::prelude::*;
 /// Listener signals that we should emit a message of type `M` when `event` occurs.
 pub struct Listener<M> {
     pub event: UIEvent,
-    pub emitter: Box<dyn Fn(TermEvent) -> M>,
+    pub emitter: Box<dyn Fn(TermEvent) -> M + Send + Sync>,
 }
 
-pub fn on<M>(event: UIEvent, emitter: impl Fn(TermEvent) -> M + 'static) -> Listener<M> {
+pub fn on<M, F>(event: UIEvent, emitter: F) -> Listener<M>
+where
+    F: Fn(TermEvent) -> M + Send + Sync + 'static,
+{
     Listener {
         event,
         emitter: Box::new(emitter),

@@ -4,19 +4,25 @@ use crate::{
     config::Config,
     error::Result,
     events::{channel::Tx, Action, Command},
-    input::Input,
+    input::{Input, InputResponse},
     player::Player,
     state::{browse_screen::Focus, Screen, State},
     util::copy_to_clipboard,
 };
-use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind, MouseEventKind};
+use crossterm::event::{Event as TermEvent, KeyEvent, KeyEventKind, MouseEventKind};
 
 pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Action>> {
     Ok(match ev {
-        TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &state.screen {
-            Screen::BrowseScreen(screen) => match &screen.focus {
-                Focus::Playlists | Focus::Songs => Some(transform_normal_mode_key(key)),
-                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => Some(Action::Input(key)),
+        TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &mut state.screen {
+            Screen::BrowseScreen(screen) => match &mut screen.focus {
+                Focus::Playlists | Focus::Songs => transform_normal_mode_key(key),
+                Focus::PlaylistsFilter(filter) | Focus::SongsFilter(filter) => {
+                    let event_handled = filter.handle_event(key);
+                    match event_handled {
+                        InputResponse::Handled => Some(Action::RefreshPlaylists),
+                        InputResponse::NotHandled => transform_normal_mode_key(key),
+                    }
+                }
             },
         },
         TermEvent::Mouse(mouse) => match mouse.kind {
@@ -35,10 +41,10 @@ pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Actio
 
 /// Transforms a key event into the corresponding action, if there is one.
 /// Assumes state is in normal mode
-fn transform_normal_mode_key(key_event: KeyEvent) -> Action {
+fn transform_normal_mode_key(key_event: KeyEvent) -> Option<Action> {
     match Config::global().keybindings.get_from_event(key_event) {
-        Some(cmd) if cmd != Command::Nop => Action::Command(cmd),
-        _ => Action::Input(key_event),
+        Some(cmd) if cmd != Command::Nop => Some(Action::Command(cmd)),
+        _ => None,
     }
 }
 
@@ -48,26 +54,6 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
         Rerender => {
             // just triggered a rerender
         }
-
-        Input(key) => match &mut state.screen {
-            Screen::BrowseScreen(screen) => match &mut screen.focus {
-                Focus::PlaylistsFilter(filter) | Focus::SongsFilter(filter) => {
-                    match key.code {
-                        KeyCode::Esc => {
-                            let focus = mem::take(&mut screen.focus);
-                            screen.focus = match focus {
-                                Focus::PlaylistsFilter(_) => Focus::Playlists,
-                                Focus::SongsFilter(_) => Focus::Songs,
-                                _ => focus,
-                            };
-                        }
-                        _ => filter.handle_event(key),
-                    }
-                    screen.refresh_playlists()?;
-                }
-                _ => {}
-            },
-        },
 
         ScrollDown => match &mut state.screen {
             Screen::BrowseScreen(screen) => match &screen.focus {
@@ -113,6 +99,10 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
             let Screen::BrowseScreen(screen) = &mut state.screen;
             screen.refresh_songs()?;
         }
+        RefreshPlaylists => {
+            let Screen::BrowseScreen(screen) = &mut state.screen;
+            screen.refresh_playlists()?;
+        }
         SelectSong(i) => {
             let Screen::BrowseScreen(screen) = &mut state.screen;
             screen.shown_songs.select(Some(i));
@@ -136,6 +126,18 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         Quit => {
             state.quit();
         }
+
+        Esc => match &mut state.screen {
+            Screen::BrowseScreen(screen) => {
+                let focus = mem::take(&mut screen.focus);
+                screen.focus = match focus {
+                    Focus::PlaylistsFilter(_) => Focus::Playlists,
+                    Focus::SongsFilter(_) => Focus::Songs,
+                    _ => focus,
+                };
+                return Ok(Some(Action::RefreshPlaylists));
+            }
+        },
 
         SeekForward => {
             state.player.seek(10.)?;

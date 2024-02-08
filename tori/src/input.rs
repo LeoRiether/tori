@@ -4,6 +4,13 @@ use tui::{
     widgets::{Block, Paragraph, Widget},
 };
 
+#[derive(Debug, Default, Clone, Copy)]
+pub enum InputResponse {
+    #[default]
+    NotHandled,
+    Handled,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Input {
     pub value: String,
@@ -11,7 +18,7 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn handle_event(&mut self, key: KeyEvent) {
+    pub fn handle_event(&mut self, key: KeyEvent) -> InputResponse {
         use KeyCode::*;
         match key.code {
             Char(c) => {
@@ -60,8 +67,9 @@ impl Input {
             End => {
                 self.cursor = self.value.len();
             }
-            _ => {}
+            _ => return InputResponse::NotHandled,
         }
+        InputResponse::Handled
     }
 
     fn move_cursor(&mut self, x: isize) {
@@ -71,6 +79,27 @@ impl Input {
         while !self.value.is_char_boundary(self.cursor) {
             self.cursor = inc(self.cursor);
         }
+    }
+
+    pub fn split_at_cursor(&self) -> (&str, &str, &str) {
+        let (left, right) = self.value.split_at(self.cursor);
+
+        let (cursor, right) = right
+            .char_indices()
+            .next()
+            .map(|(i, _)| right.split_at(i))
+            .unwrap_or(("", right));
+
+        (left, cursor, right)
+    }
+
+    pub fn styled(&self, style: Style) -> Line {
+        let (left, cursor, right) = self.split_at_cursor();
+        Line::from(vec![
+            Span::styled(left, style),
+            Span::styled(cursor, style.reversed().underlined()),
+            Span::styled(right, style),
+        ])
     }
 }
 
@@ -102,21 +131,7 @@ impl<'a> InputWidget<'a> {
 
 impl<'a> Widget for InputWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let input = self.input;
-        let (left, right) = input.value.split_at(input.cursor);
-
-        let (cursor, right) = right
-            .char_indices()
-            .next()
-            .map(|(i, _)| right.split_at(i))
-            .unwrap_or(("", right));
-
-        let mut paragraph = Paragraph::new(Line::from(vec![
-            Span::styled(left, self.style),
-            Span::styled(cursor, Style::default().add_modifier(Modifier::REVERSED)),
-            right.into(),
-        ]));
-
+        let mut paragraph = Paragraph::new(self.input.styled(self.style));
         if let Some(block) = self.block {
             paragraph = paragraph.block(block);
         }

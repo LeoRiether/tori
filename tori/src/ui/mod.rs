@@ -18,8 +18,9 @@ use crate::{
 };
 use tui::{prelude::*, widgets::Borders};
 
-pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Action>> {
-    let mut l = Vec::new();
+pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) {
+    let mut l = std::mem::take(&mut state.listeners);
+    l.clear();
 
     state.visualizer.render(area, buf);
 
@@ -37,9 +38,10 @@ pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Actio
         m.render(area, buf)
     }
 
-    l
+    state.listeners = l;
 }
 
+/// Draws the screen that allows the user to browse their playlists and songs.
 fn browse_screen(
     screen: &mut BrowseScreen,
     area: Rect,
@@ -51,6 +53,7 @@ fn browse_screen(
     songs_pane(screen, right, buf, l);
 }
 
+/// Draws the pane that shows the user's playlists contained in the browse screen.
 fn playlists_pane(
     screen: &mut BrowseScreen,
     area: Rect,
@@ -100,6 +103,7 @@ fn playlists_pane(
     screen.shown_playlists.state = list.get_state();
 }
 
+/// Draws the pane that shows the songs of a playlist inside the browse screen
 fn songs_pane(
     screen: &mut BrowseScreen,
     area: Rect,
