@@ -25,7 +25,10 @@ pub struct State<'n> {
     pub visualizer: Visualizer,
 }
 
+#[derive(Default)]
 pub enum Screen {
+    #[default]
+    None,
     BrowseScreen(BrowseScreen),
 }
 

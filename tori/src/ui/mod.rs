@@ -28,6 +28,7 @@ pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) {
     state.now_playing.render(bottom, buf, &mut l);
 
     match &mut state.screen {
+        Screen::None => unreachable!(),
         Screen::BrowseScreen(screen) => browse_screen(screen, screen_area, buf, &mut l),
     }
 
