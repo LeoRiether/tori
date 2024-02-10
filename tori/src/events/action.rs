@@ -12,4 +12,5 @@ pub enum Action {
     RefreshPlaylists,
     SelectSong(usize),
     SelectPlaylist(usize),
+    CloseModal,
 }

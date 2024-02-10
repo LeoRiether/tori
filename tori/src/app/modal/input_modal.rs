@@ -1,9 +1,8 @@
-use super::{get_modal_chunk, Message, Modal};
+use super::{get_modal_chunk, Modal};
 
-use std::{borrow::Cow, mem};
-
-use crossterm::event::{KeyCode, Event};
+use crossterm::event::{Event, KeyCode};
 use std::sync::Mutex;
+use std::{borrow::Cow, mem};
 use tui::{
     layout::Alignment,
     prelude::*,
@@ -12,93 +11,72 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
-use crate::error::Result;
+use crate::events::channel::Tx;
+use crate::{error::Result, events::Action, input::Input};
 
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
-pub struct InputModal<'t> {
-    title: Cow<'t, str>,
-    cursor: usize,
+pub struct InputModal<F> {
+    title: Cow<'static, str>,
+    input: Input,
     scroll: Mutex<u16>,
-    input: String,
     style: Style,
+    on_commit: Option<F>,
 }
 
-impl<'t> InputModal<'t> {
-    pub fn new(title: impl Into<Cow<'t, str>>) -> Self {
+impl<F> InputModal<F>
+where
+    F: FnOnce(String) -> Action + Send + Sync,
+{
+    pub fn new(title: impl Into<Cow<'static, str>>) -> Self {
         Self {
             title: title.into(),
-            cursor: 0,
             scroll: Mutex::new(0),
-            input: String::default(),
+            input: Input::default(),
             style: Style::default().fg(Color::LightBlue),
+            on_commit: None,
         }
     }
 
     pub fn set_input(mut self, input: String) -> Self {
-        self.input = input;
-        self.cursor = self.input.len();
+        self.input.value = input;
+        self.input.cursor = self.input.value.len();
         self
     }
 
-    fn move_cursor(&mut self, x: isize) {
-        let inc = |y: usize| (y as isize + x).min(self.input.len() as isize).max(0) as usize;
-        self.cursor = inc(self.cursor);
+    pub fn style(mut self, style: Style) -> Self {
+        self.style = style;
+        self
+    }
 
-        while !self.input.is_char_boundary(self.cursor) {
-            self.cursor = inc(self.cursor);
-        }
+    pub fn on_commit(mut self, action: F) -> Self {
+        self.on_commit = Some(action);
+        self
     }
 }
 
-impl<'t> Modal for InputModal<'t> {
-    fn apply_style(&mut self, style: Style) {
-        self.style = style;
-    }
+impl<F> Modal for InputModal<F>
+where
+    F: FnOnce(String) -> Action + Send + Sync,
+{
+    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
+        let key = match event {
+            Event::Key(key) => key,
+            _ => return Ok(None),
+        };
 
-    fn handle_event(&mut self, event: Event) -> Result<Message> {
-        use KeyCode::*;
-        if let Event::Key(event) = event {
-            match event.code {
-                Char(c) => {
-                    self.input.insert(self.cursor, c);
-                    self.move_cursor(1);
-                }
-                Backspace => {
-                    if self.cursor > 0 {
-                        self.move_cursor(-1);
-                        self.input.remove(self.cursor);
-                    }
-                }
-                Delete => {
-                    if self.cursor < self.input.len() {
-                        self.input.remove(self.cursor);
-                    }
-                }
-                Left => {
-                    self.move_cursor(-1);
-                }
-                Right => {
-                    self.move_cursor(1);
-                }
-                Home => {
-                    self.cursor = 0;
-                }
-                End => {
-                    self.cursor = self.input.len();
-                }
-                Esc => {
-                    self.input.clear();
-                    return Ok(Message::Quit);
-                }
-                Enter => {
-                    let input = mem::take(&mut self.input);
-                    return Ok(Message::Commit(input));
-                }
-                _ => {}
+        Ok(match key.code {
+            KeyCode::Esc => Some(Action::CloseModal),
+            KeyCode::Enter => {
+                let input = mem::take(&mut self.input).value;
+                tx.send(Action::CloseModal);
+                self.on_commit.take().map(|f| f(input))
             }
-        }
-        Ok(Message::Nothing)
+            _ => {
+                self.input.handle_event(key);
+                None
+            }
+        })
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
@@ -114,7 +92,7 @@ impl<'t> Modal for InputModal<'t> {
             .border_style(self.style);
 
         // split input as [left, cursor, right]
-        let (left, right) = self.input.split_at(self.cursor);
+        let (left, right) = self.input.value.split_at(self.input.cursor);
         let mut indices = right.char_indices();
         let (in_cursor, right) = indices
             .next()
@@ -139,67 +117,18 @@ impl<'t> Modal for InputModal<'t> {
     }
 }
 
-impl<'t> InputModal<'t> {
+impl<F> InputModal<F> {
     /// Updates and calculates the Paragraph's scroll based on the current cursor and input
     fn calculate_scroll(&self, chunk_width: u16) -> u16 {
         let mut scroll = self.scroll.lock().unwrap();
-        if self.cursor as u16 > *scroll + chunk_width - 1 {
-            *scroll = self.cursor as u16 + 1 - chunk_width;
+        if self.input.cursor as u16 > *scroll + chunk_width - 1 {
+            *scroll = self.input.cursor as u16 + 1 - chunk_width;
         }
 
-        if (self.cursor as u16) <= *scroll {
-            *scroll = (self.cursor as u16).saturating_sub(1);
+        if (self.input.cursor as u16) <= *scroll {
+            *scroll = (self.input.cursor as u16).saturating_sub(1);
         }
 
         *scroll
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_modal_cursor_ascii() {
-        let mut modal = InputModal::new("modal cursor");
-        modal.input = "Hello World!".into();
-        assert_eq!(modal.cursor, 0);
-
-        modal.move_cursor(1);
-        assert_eq!(modal.cursor, 1);
-
-        modal.move_cursor(1);
-        assert_eq!(modal.cursor, 2);
-
-        modal.move_cursor(-1);
-        assert_eq!(modal.cursor, 1);
-
-        modal.move_cursor(-1);
-        assert_eq!(modal.cursor, 0);
-
-        modal.move_cursor(-1);
-        assert_eq!(modal.cursor, 0);
-
-        modal.move_cursor(1000);
-        assert_eq!(modal.cursor, modal.input.len());
-    }
-
-    #[test]
-    fn test_modal_cursor_unicode() {
-        let mut modal = InputModal::new("modal cursor");
-        modal.input = "おはよう".into();
-        assert_eq!(modal.cursor, 0);
-
-        modal.move_cursor(1);
-        assert_eq!(modal.cursor, 3);
-
-        modal.move_cursor(1);
-        assert_eq!(modal.cursor, 6);
-
-        modal.move_cursor(-1);
-        assert_eq!(modal.cursor, 3);
-
-        modal.move_cursor(-1);
-        assert_eq!(modal.cursor, 0);
     }
 }

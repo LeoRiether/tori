@@ -80,6 +80,10 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                 state.notification = None;
             }
         }
+
+        CloseModal => {
+            state.modal = None;
+        }
     }
 
     Ok(None)

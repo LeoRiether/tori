@@ -1,19 +1,19 @@
-use super::{get_modal_chunk, Message, Modal};
+use super::Modal;
 
 use crossterm::event::Event;
 use tui::{
     layout::{Alignment, Constraint},
+    prelude::*,
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table, Widget},
-    prelude::*,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     config::{shortcuts::InputStr, Config},
     error::Result,
-    events::Command,
+    events::{channel::Tx, Action, Command},
 };
 
 /// A modal box that asks for user input
@@ -60,19 +60,21 @@ impl HelpModal {
 }
 
 impl Modal for HelpModal {
-    fn apply_style(&mut self, _style: Style) {}
-
-    fn handle_event(&mut self, event: Event) -> Result<Message> {
+    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
         if let Event::Key(_) = event {
-            return Ok(Message::Quit);
+            return Ok(Some(Action::CloseModal));
         }
-        Ok(Message::Nothing)
+        Ok(None)
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
-        let mut chunk = get_modal_chunk(area);
-        chunk.y = 3;
-        chunk.height = area.height.saturating_sub(6);
+        let width = (area.width / 2).max(70).min(area.width);
+        let mut chunk = Rect {
+            x: area.width.saturating_sub(width) / 2,
+            width,
+            y: 3,
+            height: area.height.saturating_sub(6),
+        };
 
         let block = Block::default()
             .title(" Help ")
