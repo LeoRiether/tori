@@ -1,8 +1,9 @@
 use crate::{
+    config::Config,
     error::Result,
     events::{channel::Tx, Action, Command},
     player::Player,
-    state::{browse_screen::Focus, Screen, State}, config::Config,
+    state::{browse_screen::Focus, Screen, State},
 };
 use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
@@ -156,7 +157,23 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
         PlayFromModal => todo!(),
         OpenInEditor => todo!(),
         Search => todo!(),
+
+        GotoStart => match &mut state.screen {
+            Screen::BrowseScreen(screen) => match &screen.focus {
+                Focus::Playlists => screen.shown_playlists.select_first(),
+                Focus::Songs => screen.shown_songs.select_first(),
+                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            },
+        },
+        GotoEnd => match &mut state.screen {
+            Screen::BrowseScreen(screen) => match &screen.focus {
+                Focus::Playlists => screen.shown_playlists.select_last(),
+                Focus::Songs => screen.shown_songs.select_last(),
+                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            },
+        },
     }
+
     Ok(None)
 }
 

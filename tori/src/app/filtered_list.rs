@@ -76,6 +76,14 @@ impl<St: Selectable> FilteredList<St> {
         });
     }
 
+    pub fn select_first(&mut self) {
+        self.state.select(self.items.first().copied());
+    }
+
+    pub fn select_last(&mut self) {
+        self.state.select(self.items.last().copied());
+    }
+
     pub fn select(&mut self, i: Option<usize>) {
         self.state.select(i);
     }
