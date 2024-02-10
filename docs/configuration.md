@@ -37,8 +37,8 @@ Here's the default configuration file:
 ```yaml
 playlists_dir: {audio_dir described in the above table}
 visualizer_gradient:
-  - [46, 20, 66]
-  - [16, 30, 71]
+  - "#2e1442"
+  - "#101e47"
 keybindings:
   '?': OpenHelpModal
   C-c: Quit

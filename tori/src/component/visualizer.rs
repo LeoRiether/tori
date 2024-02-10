@@ -14,13 +14,9 @@ use std::{
 };
 
 use rand::{thread_rng, Rng};
-use tui::{
-    layout::Rect,
-    prelude::*,
-    style::{Color, Style},
-};
+use tui::{layout::Rect, prelude::*, style::Style};
 
-use crate::{config::Config, error::Result};
+use crate::{color::Color, config::Config, error::Result};
 
 macro_rules! cava_config {
     () => {
@@ -101,25 +97,13 @@ impl Visualizer {
 
         let state = self.0.as_ref().unwrap();
 
-        let lerp = |from: u8, to: u8, perc: f64| {
-            (from as f64 + perc * (to as f64 - from as f64)).round() as u8
-        };
-        let lerp_grad = |gradient: [(u8, u8, u8); 2], perc| {
-            Color::Rgb(
-                lerp(gradient[0].0, gradient[1].0, perc),
-                lerp(gradient[0].1, gradient[1].1, perc),
-                lerp(gradient[0].2, gradient[1].2, perc),
-            )
-        };
-
-        let gradient = Config::global().visualizer_gradient;
-
+        let gradient = &Config::global().visualizer_gradient[..];
         let data = state.data.lock().unwrap();
         let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
         let size = *buffer.area();
         for i in 0..columns {
             let perc = i as f64 / columns as f64;
-            let style = Style::default().bg(lerp_grad(gradient, perc));
+            let style = Style::default().bg(Color::lerp_many(gradient, perc).into());
             let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
 
             let area = Rect {
