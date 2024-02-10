@@ -1,7 +1,5 @@
-use crate::{command, error::Result, events, player::Player, rect_ops::RectOps};
+use crate::{error::Result, events, player::Player, rect_ops::RectOps};
 
-mod now_playing;
-use now_playing::NowPlaying;
 use tui::layout::Rect;
 
 use super::{
@@ -22,7 +20,6 @@ pub enum Selected {
 pub struct AppScreen<'a> {
     browse: BrowseScreen<'a>,
     playlist: PlaylistScreen,
-    now_playing: NowPlaying,
     selected: Selected,
 }
 
@@ -31,7 +28,6 @@ impl<'a> AppScreen<'a> {
         Ok(Self {
             browse: BrowseScreen::new()?,
             playlist: PlaylistScreen::default(),
-            now_playing: NowPlaying::default(),
             selected: Selected::default(),
         })
     }
@@ -47,51 +43,50 @@ impl<'a> AppScreen<'a> {
         }
     }
 
-    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
-        use command::Command::*;
+    fn handle_command(&mut self, app: &mut App, cmd: events::Command) -> Result<()> {
+        use events::Command::*;
         match cmd {
             Quit => {
-                app.quit();
             }
             SeekForward => {
-                app.player.seek(10.)?;
-                self.now_playing.update(&app.player);
+                app.state.player.seek(10.)?;
+                
             }
             SeekBackward => {
-                app.player.seek(-10.)?;
-                self.now_playing.update(&app.player);
+                app.state.player.seek(-10.)?;
+                
             }
             NextSong => {
-                app.player
+                app.state.player
                     .playlist_next()
-                    .unwrap_or_else(|_| app.notify_err("No next song"));
-                self.now_playing.update(&app.player);
+                    .unwrap_or_else(|_| app.state.notify_err("No next song"));
+                
             }
             PrevSong => {
-                app.player
+                app.state.player
                     .playlist_previous()
-                    .unwrap_or_else(|_| app.notify_err("No previous song"));
-                self.now_playing.update(&app.player);
+                    .unwrap_or_else(|_| app.state.notify_err("No previous song"));
+                
             }
             TogglePause => {
-                app.player.toggle_pause()?;
-                self.now_playing.update(&app.player);
+                app.state.player.toggle_pause()?;
+                
             }
             ToggleLoop => {
-                app.player.toggle_loop_file()?;
-                self.now_playing.update(&app.player);
+                app.state.player.toggle_loop_file()?;
+                
             }
             VolumeUp => {
-                app.player.add_volume(5)?;
-                self.now_playing.update(&app.player);
+                app.state.player.add_volume(5)?;
+                
             }
             VolumeDown => {
-                app.player.add_volume(-5)?;
-                self.now_playing.update(&app.player);
+                app.state.player.add_volume(-5)?;
+                
             }
             Mute => {
-                app.player.toggle_mute()?;
-                self.now_playing.update(&app.player);
+                app.state.player.toggle_mute()?;
+                
             }
             _ => self.pass_event_down(app, events::Event::Command(cmd))?,
         }
@@ -122,7 +117,7 @@ impl<'a> Component for AppScreen<'a> {
             Selected::Playlist => self.playlist.render(frame, vchunks.0, ()),
         }
 
-        self.now_playing.render(frame, vchunks.1, ());
+        
     }
 
     fn handle_event(&mut self, app: &mut App, event: events::Event) -> Result<()> {
@@ -135,13 +130,13 @@ impl<'a> Component for AppScreen<'a> {
                     self.select(Selected::Browse);
                 }
                 KeyCode::Char('2') if self.mode() == Mode::Normal => {
-                    self.playlist.update(&app.player)?;
+                    self.playlist.update(&app.state.player)?;
                     self.select(Selected::Playlist);
                 }
                 _ => self.pass_event_down(app, event)?,
             },
-            SecondTick => {
-                self.now_playing.update(&app.player);
+            Tick => {
+                
                 self.pass_event_down(app, event)?;
             }
             _ => self.pass_event_down(app, event)?,
@@ -165,7 +160,7 @@ impl<'a> MouseHandler for AppScreen<'a> {
             };
         }
         if vchunks.1.contains(event.column, event.row) {
-            return self.now_playing.handle_mouse(app, vchunks.1, event);
+            return Ok(()) // ?
         }
 
         Ok(())

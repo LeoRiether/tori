@@ -16,7 +16,8 @@ struct Args {
     config: Option<String>,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let args: Args = argh::from_env();
@@ -33,7 +34,7 @@ fn main() -> Result<()> {
     make_sure_playlist_dir_exists();
 
     let mut app = App::new()?;
-    app.run()
+    app.run().await
 }
 
 fn make_sure_playlist_dir_exists() {

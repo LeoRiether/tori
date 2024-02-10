@@ -1,9 +1,6 @@
 use super::App;
 use crate::{error::Result, events};
-use std::io;
-use tui::{backend::CrosstermBackend, layout::Rect, Frame};
-
-pub(crate) type MyBackend = CrosstermBackend<io::Stdout>;
+use tui::{layout::Rect, Frame};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i8)]

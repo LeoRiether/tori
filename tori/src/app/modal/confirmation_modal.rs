@@ -4,8 +4,8 @@ use crossterm::event::KeyCode;
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
-    Frame,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
+    prelude::*,
 };
 
 use crate::{
@@ -48,9 +48,8 @@ impl Modal for ConfirmationModal {
         Ok(Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut Frame) {
-        let size = frame.size();
-        let chunk = get_modal_chunk(size);
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let chunk = get_modal_chunk(area);
 
         let block = Block::default()
             .title_alignment(Alignment::Center)
@@ -63,8 +62,8 @@ impl Modal for ConfirmationModal {
             .style(self.style)
             .alignment(Alignment::Center);
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
+        Clear.render(chunk, buf);
+        paragraph.render(chunk, buf);
     }
 
     fn mode(&self) -> Mode {

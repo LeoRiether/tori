@@ -16,6 +16,7 @@ use std::{
 use rand::{thread_rng, Rng};
 use tui::{
     layout::Rect,
+    prelude::*,
     style::{Color, Style},
 };
 
@@ -64,15 +65,84 @@ impl Default for ThreadHandle {
     }
 }
 
-pub struct Visualizer {
+#[derive(Default)]
+pub struct Visualizer(pub Option<VisualizerState>);
+
+impl Visualizer {
+    pub fn toggle(&mut self, width: usize) -> Result<()> {
+        if self.0.take().is_none() {
+            self.0 = Some(VisualizerState::new(width)?);
+        }
+        Ok(())
+    }
+
+    pub fn update(&mut self) -> Result<()> {
+        if let Some(mut state) = self.0.take() {
+            match state.thread_handle() {
+                ThreadHandle::Stopped(Ok(())) => {
+                    self.0 = None;
+                }
+                ThreadHandle::Stopped(Err(e)) => {
+                    self.0 = None;
+                    return Err(format!("The visualizer process exited with error: {}", e).into());
+                }
+                _ => {
+                    self.0 = Some(state);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn render(&self, _: Rect, buffer: &mut Buffer) {
+        if self.0.is_none() {
+            return;
+        }
+
+        let state = self.0.as_ref().unwrap();
+
+        let lerp = |from: u8, to: u8, perc: f64| {
+            (from as f64 + perc * (to as f64 - from as f64)).round() as u8
+        };
+        let lerp_grad = |gradient: [(u8, u8, u8); 2], perc| {
+            Color::Rgb(
+                lerp(gradient[0].0, gradient[1].0, perc),
+                lerp(gradient[0].1, gradient[1].1, perc),
+                lerp(gradient[0].2, gradient[1].2, perc),
+            )
+        };
+
+        let gradient = Config::global().visualizer_gradient;
+
+        let data = state.data.lock().unwrap();
+        let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
+        let size = *buffer.area();
+        for i in 0..columns {
+            let perc = i as f64 / columns as f64;
+            let style = Style::default().bg(lerp_grad(gradient, perc));
+            let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
+
+            let area = Rect {
+                x: 2 * i as u16,
+                y: size.height.saturating_sub(height),
+                width: 1,
+                height,
+            };
+            buffer.set_style(area, style);
+        }
+    }
+}
+
+pub struct VisualizerState {
     tmp_path: PathBuf,
     data: Arc<Mutex<Vec<u16>>>,
     stop_flag: Arc<AtomicBool>,
     handle: ThreadHandle,
 }
 
-impl Visualizer {
-    pub fn new(opts: CavaOptions) -> Result<Self> {
+impl VisualizerState {
+    pub fn new(width: usize) -> Result<Self> {
+        let opts = CavaOptions { bars: width / 2 };
         let tmp_path = tori_tempfile(&opts)?;
 
         let mut process = std::process::Command::new("cava")
@@ -124,38 +194,6 @@ impl Visualizer {
         })
     }
 
-    pub fn render(&self, buffer: &mut tui::buffer::Buffer) {
-        let lerp = |from: u8, to: u8, perc: f64| {
-            (from as f64 + perc * (to as f64 - from as f64)).round() as u8
-        };
-        let lerp_grad = |gradient: [(u8, u8, u8); 2], perc| {
-            Color::Rgb(
-                lerp(gradient[0].0, gradient[1].0, perc),
-                lerp(gradient[0].1, gradient[1].1, perc),
-                lerp(gradient[0].2, gradient[1].2, perc),
-            )
-        };
-
-        let gradient = Config::global().visualizer_gradient;
-
-        let data = self.data.lock().unwrap();
-        let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
-        let size = *buffer.area();
-        for i in 0..columns {
-            let perc = i as f64 / columns as f64;
-            let style = Style::default().bg(lerp_grad(gradient, perc));
-            let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
-
-            let area = Rect {
-                x: 2 * i as u16,
-                y: size.height.saturating_sub(height),
-                width: 1,
-                height,
-            };
-            buffer.set_style(area, style);
-        }
-    }
-
     pub fn thread_handle(&mut self) -> &ThreadHandle {
         match mem::take(&mut self.handle) {
             ThreadHandle::Running(handle) if handle.is_finished() => {
@@ -170,7 +208,7 @@ impl Visualizer {
     }
 }
 
-impl Drop for Visualizer {
+impl Drop for VisualizerState {
     fn drop(&mut self) {
         // ~~hopefully~~ stop thread execution
         self.stop_flag.store(true, atomic::Ordering::Relaxed);

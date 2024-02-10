@@ -3,7 +3,7 @@ use super::{
     component::{Component, MouseHandler},
     App, Mode,
 };
-use crate::{command, error::Result, events, player::Player, widgets::Scrollbar};
+use crate::{events, error::Result, player::Player, ui::Scrollbar};
 use std::{thread, time::Duration};
 use tui::{
     layout::{Alignment, Rect},
@@ -39,15 +39,15 @@ impl PlaylistScreen {
     /// [select_prev](PlaylistScreen::select_prev) because mpv takes a while to update the playlist
     /// properties after changing the selection.
     pub fn update_after_delay(&self, app: &App) {
-        let sender = app.channel.sender.clone();
+        let sender = app.channel.tx.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_millis(16));
-            sender.send(events::Event::SecondTick).ok();
+            sender.send(events::Event::Tick).ok();
         });
     }
 
-    fn handle_command(&mut self, app: &mut App, cmd: command::Command) -> Result<()> {
-        use command::Command::*;
+    fn handle_command(&mut self, app: &mut App, cmd: events::Command) -> Result<()> {
+        use events::Command::*;
         match cmd {
             SelectNext | NextSong => self.select_next(app),
             SelectPrev | PrevSong => self.select_prev(app),
@@ -73,16 +73,16 @@ impl PlaylistScreen {
     }
 
     pub fn select_next(&self, app: &mut App) {
-        app.player
+        app.state.player
             .playlist_next()
-            .unwrap_or_else(|_| app.notify_err("No next song"));
+            .unwrap_or_else(|_| app.state.notify_err("No next song"));
         self.update_after_delay(app);
     }
 
     pub fn select_prev(&self, app: &mut App) {
-        app.player
+        app.state.player
             .playlist_previous()
-            .unwrap_or_else(|_| app.notify_err("No previous song"));
+            .unwrap_or_else(|_| app.state.notify_err("No previous song"));
         self.update_after_delay(app);
     }
 }
@@ -129,8 +129,8 @@ impl Component for PlaylistScreen {
         match event {
             Command(cmd) => self.handle_command(app, cmd)?,
             Terminal(event) => self.handle_terminal_event(app, event)?,
-            SecondTick => {
-                self.update(&app.player)?;
+            Tick => {
+                self.update(&app.state.player)?;
             }
             _ => {}
         }

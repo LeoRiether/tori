@@ -4,17 +4,16 @@ use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table},
-    Frame,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table, Widget},
+    prelude::*,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     app::component::Mode,
-    command::Command,
     config::{shortcuts::InputStr, Config},
     error::Result,
-    events::Event,
+    events::{Command, Event},
 };
 
 /// A modal box that asks for user input
@@ -70,11 +69,10 @@ impl Modal for HelpModal {
         Ok(Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut Frame) {
-        let size = frame.size();
-        let mut chunk = get_modal_chunk(size);
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let mut chunk = get_modal_chunk(area);
         chunk.y = 3;
-        chunk.height = frame.size().height.saturating_sub(6);
+        chunk.height = area.height.saturating_sub(6);
 
         let block = Block::default()
             .title(" Help ")
@@ -93,14 +91,14 @@ impl Modal for HelpModal {
             .widths(widths)
             .column_spacing(1);
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
+        Clear.render(chunk, buf);
+        paragraph.render(chunk, buf);
 
         chunk.x += 1;
         chunk.y += 3;
         chunk.width -= 2;
         chunk.height -= 3;
-        frame.render_widget(table, chunk);
+        table.render(chunk, buf);
     }
 
     fn mode(&self) -> Mode {

@@ -1,28 +1,24 @@
 use super::{get_modal_chunk, Message, Modal};
 
-use std::{borrow::Cow, mem};
+use std::{borrow::Cow, cell::Cell, mem};
 
 use crossterm::event::KeyCode;
 use tui::{
     layout::Alignment,
+    prelude::*,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
-    Frame,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
-use crate::{
-    app::component::Mode,
-    error::Result,
-    events::Event,
-};
+use crate::{app::component::Mode, error::Result, events::Event};
 
 /// A modal box that asks for user input
 #[derive(Debug, Default)]
 pub struct InputModal<'t> {
     title: Cow<'t, str>,
     cursor: usize,
-    scroll: u16,
+    scroll: Cell<u16>,
     input: String,
     style: Style,
 }
@@ -32,7 +28,7 @@ impl<'t> InputModal<'t> {
         Self {
             title: title.into(),
             cursor: 0,
-            scroll: 0,
+            scroll: Cell::new(0),
             input: String::default(),
             style: Style::default().fg(Color::LightBlue),
         }
@@ -105,9 +101,8 @@ impl<'t> Modal for InputModal<'t> {
         Ok(Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut Frame) {
-        let size = frame.size();
-        let chunk = get_modal_chunk(size);
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let chunk = get_modal_chunk(area);
         let prefix = " ❯ ";
         let scroll = self.calculate_scroll(chunk.width - prefix.len() as u16);
 
@@ -139,8 +134,8 @@ impl<'t> Modal for InputModal<'t> {
         .scroll((0, scroll))
         .alignment(Alignment::Left);
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
+        Clear.render(chunk, buf);
+        paragraph.render(chunk, buf);
     }
 
     fn mode(&self) -> Mode {
@@ -150,16 +145,18 @@ impl<'t> Modal for InputModal<'t> {
 
 impl<'t> InputModal<'t> {
     /// Updates and calculates the Paragraph's scroll based on the current cursor and input
-    fn calculate_scroll(&mut self, chunk_width: u16) -> u16 {
-        if self.cursor as u16 > self.scroll + chunk_width - 1 {
-            self.scroll = self.cursor as u16 + 1 - chunk_width;
+    fn calculate_scroll(&self, chunk_width: u16) -> u16 {
+        let mut scroll = self.scroll.get();
+        if self.cursor as u16 > scroll + chunk_width - 1 {
+            scroll = self.cursor as u16 + 1 - chunk_width;
         }
 
-        if (self.cursor as u16) <= self.scroll {
-            self.scroll = (self.cursor as u16).saturating_sub(1);
+        if (self.cursor as u16) <= scroll {
+            scroll = (self.cursor as u16).saturating_sub(1);
         }
 
-        self.scroll
+        self.scroll.set(scroll);
+        scroll
     }
 }
 

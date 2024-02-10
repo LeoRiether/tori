@@ -8,7 +8,8 @@ use crossterm::event::Event as CrosstermEvent;
 use tui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
+    prelude::*,
 };
 
 use super::Modal;
@@ -35,10 +36,10 @@ impl Modal for HotkeyModal {
         Ok(super::Message::Nothing)
     }
 
-    fn render(&mut self, frame: &mut tui::Frame) {
-        let mut chunk = super::get_modal_chunk(frame.size());
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let mut chunk = super::get_modal_chunk(area);
         chunk.width = chunk.width.min(30);
-        chunk.x = frame.size().width.saturating_sub(chunk.width) / 2;
+        chunk.x = area.width.saturating_sub(chunk.width) / 2;
 
         let block = Block::default()
             .title(" Hotkey ")
@@ -51,8 +52,8 @@ impl Modal for HotkeyModal {
             .block(block)
             .alignment(Alignment::Center);
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
+        Clear.render(chunk, buf);
+        paragraph.render(chunk, buf);
     }
 
     fn mode(&self) -> Mode {
