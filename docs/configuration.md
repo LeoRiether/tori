@@ -79,9 +79,11 @@ keybindings:
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  '/': Search
   C-f: Search
   g: GotoStart
   G: GotoEnd
+  enter: Play
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:

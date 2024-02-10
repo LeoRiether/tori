@@ -16,7 +16,12 @@ use std::{
 use rand::{thread_rng, Rng};
 use tui::{layout::Rect, prelude::*, style::Style};
 
-use crate::{color::Color, config::Config, error::Result};
+use crate::{
+    color::Color,
+    config::Config,
+    error::Result,
+    events::{channel::Tx, Action},
+};
 
 macro_rules! cava_config {
     () => {
@@ -61,29 +66,41 @@ impl Default for ThreadHandle {
     }
 }
 
-#[derive(Default)]
-pub struct Visualizer(pub Option<VisualizerState>);
+// TODO: use tokio::process
+pub struct Visualizer {
+    pub state: Option<VisualizerState>,
+    pub width: usize,
+    pub tx: Tx,
+}
 
 impl Visualizer {
-    pub fn toggle(&mut self, width: usize) -> Result<()> {
-        if self.0.take().is_none() {
-            self.0 = Some(VisualizerState::new(width)?);
+    pub fn new(tx: Tx, width: usize) -> Self {
+        Self {
+            state: None,
+            width,
+            tx,
+        }
+    }
+
+    pub fn toggle(&mut self) -> Result<()> {
+        if self.state.take().is_none() {
+            self.state = Some(VisualizerState::new(self.tx.clone(), self.width)?);
         }
         Ok(())
     }
 
     pub fn update(&mut self) -> Result<()> {
-        if let Some(mut state) = self.0.take() {
+        if let Some(mut state) = self.state.take() {
             match state.thread_handle() {
                 ThreadHandle::Stopped(Ok(())) => {
-                    self.0 = None;
+                    self.state = None;
                 }
                 ThreadHandle::Stopped(Err(e)) => {
-                    self.0 = None;
+                    self.state = None;
                     return Err(format!("The visualizer process exited with error: {}", e).into());
                 }
                 _ => {
-                    self.0 = Some(state);
+                    self.state = Some(state);
                 }
             }
         }
@@ -91,11 +108,11 @@ impl Visualizer {
     }
 
     pub fn render(&self, _: Rect, buffer: &mut Buffer) {
-        if self.0.is_none() {
+        if self.state.is_none() {
             return;
         }
 
-        let state = self.0.as_ref().unwrap();
+        let state = self.state.as_ref().unwrap();
 
         let gradient = &Config::global().visualizer_gradient[..];
         let data = state.data.lock().unwrap();
@@ -125,7 +142,7 @@ pub struct VisualizerState {
 }
 
 impl VisualizerState {
-    pub fn new(width: usize) -> Result<Self> {
+    pub fn new(tx: Tx, width: usize) -> Result<Self> {
         let opts = CavaOptions { bars: width / 2 };
         let tmp_path = tori_tempfile(&opts)?;
 
@@ -164,6 +181,7 @@ impl VisualizerState {
                     for i in 0..data.len() {
                         data[i] = u16::from_le_bytes([buf[2 * i], buf[2 * i + 1]]);
                     }
+                    tx.send(Action::Rerender)?;
                 }
                 process.kill()?;
                 Ok(())

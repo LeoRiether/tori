@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub enum Command {
     #[default]
     Nop,
+    Esc,
     Quit,
     NextSong,
     PrevSong,
@@ -73,6 +74,9 @@ pub enum Command {
 
     /// Jump to the last item of the selected pane
     GotoEnd,
+
+    /// Play selected song
+    Play,
 }
 
 #[cfg(test)]

@@ -1,19 +1,42 @@
+pub mod browse_screen;
+use browse_screen::browse_screen_action;
+
+use std::mem;
+
 use crate::{
     config::Config,
     error::Result,
     events::{channel::Tx, Action, Command},
+    input::InputResponse,
     player::Player,
     state::{browse_screen::Focus, Screen, State},
 };
-use crossterm::event::{Event as TermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event as TermEvent, KeyEvent, KeyEventKind, MouseEventKind};
 
 pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Action>> {
     Ok(match ev {
-        TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &state.screen {
-            Screen::BrowseScreen(screen) => match &screen.focus {
-                Focus::Playlists | Focus::Songs => Some(transform_normal_mode_key(key)),
-                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => Some(Action::Input(key)),
+        TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &mut state.screen {
+            Screen::None => unreachable!(),
+            Screen::BrowseScreen(screen) => match &mut screen.focus {
+                Focus::Playlists | Focus::Songs => transform_normal_mode_key(key),
+                Focus::PlaylistsFilter(filter) | Focus::SongsFilter(filter) => {
+                    let event_handled = filter.handle_event(key);
+                    match event_handled {
+                        InputResponse::Handled => Some(Action::RefreshPlaylists),
+                        InputResponse::NotHandled => transform_normal_mode_key(key),
+                    }
+                }
             },
+        },
+        TermEvent::Mouse(mouse) => match mouse.kind {
+            MouseEventKind::Down(_) => todo!("Clicks are yet to be implemented!"),
+            MouseEventKind::Up(_) => todo!("Clickups are yet to be implemented!"),
+            MouseEventKind::Drag(_) => todo!("Dragging is yet to be implemented!"),
+            MouseEventKind::ScrollDown => Some(Action::ScrollDown),
+            MouseEventKind::ScrollUp => Some(Action::ScrollUp),
+            MouseEventKind::Moved | MouseEventKind::ScrollLeft | MouseEventKind::ScrollRight => {
+                None
+            }
         },
         _ => None,
     })
@@ -21,17 +44,29 @@ pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Actio
 
 /// Transforms a key event into the corresponding action, if there is one.
 /// Assumes state is in normal mode
-fn transform_normal_mode_key(key_event: KeyEvent) -> Action {
+fn transform_normal_mode_key(key_event: KeyEvent) -> Option<Action> {
     match Config::global().keybindings.get_from_event(key_event) {
-        Some(cmd) if cmd != Command::Nop => Action::Command(cmd),
-        _ => Action::Input(key_event),
+        Some(cmd) if cmd != Command::Nop => Some(Action::Command(cmd)),
+        _ => None,
     }
 }
 
 pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Action>> {
     use Action::*;
     match act {
-        Input(_) => {}
+        Command(cmd) => return handle_command(state, tx, cmd),
+
+        ScrollDown
+        | ScrollUp
+        | SongAdded { .. }
+        | RefreshSongs
+        | RefreshPlaylists
+        | SelectSong(_)
+        | SelectPlaylist(_) => return screen_action(state, tx, act),
+
+        Rerender => {
+            // just triggered a rerender
+        }
 
         Tick => {
             state.now_playing.update(&state.player);
@@ -45,46 +80,23 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                 state.notification = None;
             }
         }
-
-        SongAdded {
-            playlist,
-            song: _song,
-        } => {
-            let Screen::BrowseScreen(screen) = &mut state.screen;
-            if screen.selected_playlist() == Some(playlist.as_str()) {
-                screen.refresh_songs()?;
-                screen
-                    .shown_songs
-                    .select(Some(screen.shown_songs.items.len() - 1));
-            }
-        }
-        RefreshSongs => {
-            let Screen::BrowseScreen(screen) = &mut state.screen;
-            screen.refresh_songs()?;
-        }
-        SelectSong(i) => {
-            let Screen::BrowseScreen(screen) = &mut state.screen;
-            screen.shown_songs.select(Some(i));
-        }
-        SelectPlaylist(i) => {
-            let Screen::BrowseScreen(screen) = &mut state.screen;
-            screen.shown_playlists.select(Some(i));
-            screen.refresh_songs()?;
-        }
-
-        Command(cmd) => return handle_command(state, tx, cmd),
     }
 
     Ok(None)
 }
 
-fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option<Action>> {
+fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<Action>> {
     use Command::*;
     match cmd {
+        Esc | Play | QueueSong | QueueShown | OpenInBrowser | CopyUrl | CopyTitle
+        | NextSortingMode | SelectLeft | SelectNext | SelectRight | SelectPrev | Search
+        | GotoStart | GotoEnd => return screen_action(state, tx, Action::Command(cmd)),
+
         Nop => {}
         Quit => {
             state.quit();
         }
+
         SeekForward => {
             state.player.seek(10.)?;
             return Ok(Some(Action::Tick));
@@ -93,6 +105,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.seek(-10.)?;
             return Ok(Some(Action::Tick));
         }
+
         NextSong => {
             state
                 .player
@@ -107,6 +120,10 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
                 .unwrap_or_else(|_| state.notify_err("No previous song"));
             return Ok(Some(Action::Tick));
         }
+        Shuffle => {
+            state.player.shuffle()?;
+        }
+
         TogglePause => {
             state.player.toggle_pause()?;
             return Ok(Some(Action::Tick));
@@ -115,6 +132,7 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.toggle_loop_file()?;
             return Ok(Some(Action::Tick));
         }
+
         VolumeUp => {
             state.player.add_volume(5)?;
             return Ok(Some(Action::Tick));
@@ -127,79 +145,38 @@ fn handle_command(state: &mut State<'_>, _tx: Tx, cmd: Command) -> Result<Option
             state.player.toggle_mute()?;
             return Ok(Some(Action::Tick));
         }
-        OpenInBrowser => todo!(),
-        CopyUrl => todo!(),
-        CopyTitle => todo!(),
-        ToggleVisualizer => todo!(),
-        NextSortingMode => todo!(),
+
+        ToggleVisualizer => state.visualizer.toggle()?,
+
         OpenHelpModal => todo!(),
         OpenHotkeyModal => todo!(),
+        Add => todo!(),
         Rename => todo!(),
         Delete => todo!(),
+        PlayFromModal => todo!(),
+
         SwapSongDown => todo!(),
         SwapSongUp => todo!(),
-        Shuffle => todo!(),
-        SelectNext => match &mut state.screen {
-            Screen::BrowseScreen(screen) => screen.select_next()?,
-        },
-        SelectPrev => match &mut state.screen {
-            Screen::BrowseScreen(screen) => screen.select_prev()?,
-        },
-        SelectLeft => match &mut state.screen {
-            Screen::BrowseScreen(screen) => screen.focus = Focus::Playlists,
-        },
-        SelectRight => match &mut state.screen {
-            Screen::BrowseScreen(screen) => screen.focus = Focus::Songs,
-        },
-        Add => todo!(),
-        QueueSong => todo!(),
-        QueueShown => todo!(),
-        PlayFromModal => todo!(),
-        OpenInEditor => todo!(),
-        Search => todo!(),
 
-        GotoStart => match &mut state.screen {
-            Screen::BrowseScreen(screen) => match &screen.focus {
-                Focus::Playlists => screen.shown_playlists.select_first(),
-                Focus::Songs => screen.shown_songs.select_first(),
-                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
-            },
-        },
-        GotoEnd => match &mut state.screen {
-            Screen::BrowseScreen(screen) => match &screen.focus {
-                Focus::Playlists => screen.shown_playlists.select_last(),
-                Focus::Songs => screen.shown_songs.select_last(),
-                Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
-            },
-        },
+        OpenInEditor => todo!(),
     }
 
     Ok(None)
 }
 
-fn push_key_to_filter(filter: &mut String, key: KeyEvent) {
-    match key.code {
-        KeyCode::Backspace if key.modifiers & KeyModifiers::ALT != KeyModifiers::NONE => {
-            // Remove trailing whitespace
-            while let Some(c) = filter.pop() {
-                if !c.is_whitespace() {
-                    break;
-                }
-            }
-            // Remove word
-            while let Some(c) = filter.pop() {
-                if c.is_whitespace() {
-                    filter.push(c);
-                    break;
-                }
-            }
-        }
-        KeyCode::Backspace => {
-            filter.pop();
-        }
-        KeyCode::Char(c) => {
-            filter.push(c);
-        }
-        _ => {}
+fn screen_action(state: &mut State<'_>, tx: Tx, action: Action) -> Result<Option<Action>> {
+    let mut screen = mem::take(&mut state.screen);
+
+    let res = match &mut screen {
+        Screen::None => Ok(None),
+        Screen::BrowseScreen(screen) => browse_screen_action(state, screen, tx, action),
+    };
+
+    // If state.screen != None, then the screen action changed the type of screen! We want to keep
+    // this change
+    if let Screen::None = state.screen {
+        state.screen = screen;
     }
+
+    res
 }

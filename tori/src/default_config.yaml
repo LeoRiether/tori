@@ -3,6 +3,7 @@ visualizer_gradient:
   - "#2e1442"
   - "#101e47"
 keybindings:
+  esc: Esc
   '?': OpenHelpModal
   C-c: Quit
   C-d: Quit
@@ -42,6 +43,8 @@ keybindings:
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  '/': Search
   C-f: Search
   g: GotoStart
   G: GotoEnd
+  enter: Play

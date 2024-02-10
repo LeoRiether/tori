@@ -1,4 +1,4 @@
-use crate::{app::filtered_list::FilteredList, config::Config, error::Result, m3u};
+use crate::{app::filtered_list::FilteredList, config::Config, error::Result, input::Input, m3u};
 use std::{io, result::Result as StdResult};
 use tui::widgets::TableState;
 
@@ -19,8 +19,8 @@ pub enum Focus {
     #[default]
     Playlists,
     Songs,
-    PlaylistsFilter(String),
-    SongsFilter(String),
+    PlaylistsFilter(Input),
+    SongsFilter(Input),
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -49,7 +49,7 @@ impl BrowseScreen {
         Ok(me)
     }
 
-    pub fn next_sorting_method(&mut self) {
+    pub fn next_sorting_mode(&mut self) {
         self.sorting_method = self.sorting_method.next();
     }
 
@@ -89,8 +89,8 @@ impl BrowseScreen {
 
     fn filter_playlists(&mut self) {
         match &self.focus {
-            Focus::PlaylistsFilter(filter) if !filter.is_empty() => {
-                let filter = filter.trim_end_matches('\n').to_lowercase();
+            Focus::PlaylistsFilter(filter) if !filter.value.is_empty() => {
+                let filter = filter.value.trim_end_matches('\n').to_lowercase();
                 self.shown_playlists.filter(
                     &self.playlists,
                     |s| s.to_lowercase().contains(&filter),
@@ -145,8 +145,8 @@ impl BrowseScreen {
 
     fn filter_songs(&mut self) {
         match &self.focus {
-            Focus::SongsFilter(filter) if !filter.is_empty() => {
-                let filter = filter.trim_end_matches('\n').to_lowercase();
+            Focus::SongsFilter(filter) if !filter.value.is_empty() => {
+                let filter = filter.value.trim_end_matches('\n').to_lowercase();
                 let pred = |s: &m3u::Song| {
                     s.title.to_lowercase().contains(&filter)
                         || s.path.to_lowercase().contains(&filter)
@@ -176,24 +176,22 @@ impl BrowseScreen {
     /////////////////////////////
     pub fn select_next(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists => {
+            Focus::Playlists | Focus::PlaylistsFilter(_) => {
                 self.shown_playlists.select_next();
                 self.refresh_songs()?;
             }
-            Focus::Songs => self.shown_songs.select_next(),
-            Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_next(),
         }
         Ok(())
     }
 
     pub fn select_prev(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists => {
+            Focus::Playlists | Focus::PlaylistsFilter(_) => {
                 self.shown_playlists.select_prev();
                 self.refresh_songs()?;
             }
-            Focus::Songs => self.shown_songs.select_prev(),
-            Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_prev(),
         }
         Ok(())
     }

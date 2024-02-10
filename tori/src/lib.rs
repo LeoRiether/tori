@@ -15,3 +15,4 @@ mod events;
 mod rect_ops;
 mod util;
 mod color;
+mod input;

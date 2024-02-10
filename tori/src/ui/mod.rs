@@ -18,8 +18,9 @@ use crate::{
 };
 use tui::{prelude::*, widgets::Borders};
 
-pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Action>> {
-    let mut l = Vec::new();
+pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) {
+    let mut l = std::mem::take(&mut state.listeners);
+    l.clear();
 
     state.visualizer.render(area, buf);
 
@@ -27,6 +28,7 @@ pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Actio
     state.now_playing.render(bottom, buf, &mut l);
 
     match &mut state.screen {
+        Screen::None => unreachable!(),
         Screen::BrowseScreen(screen) => browse_screen(screen, screen_area, buf, &mut l),
     }
 
@@ -37,9 +39,10 @@ pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Actio
         m.render(area, buf)
     }
 
-    l
+    state.listeners = l;
 }
 
+/// Draws the screen that allows the user to browse their playlists and songs.
 fn browse_screen(
     screen: &mut BrowseScreen,
     area: Rect,
@@ -51,12 +54,18 @@ fn browse_screen(
     songs_pane(screen, right, buf, l);
 }
 
+/// Draws the pane that shows the user's playlists contained in the browse screen.
 fn playlists_pane(
     screen: &mut BrowseScreen,
     area: Rect,
     buf: &mut Buffer,
     l: &mut Vec<Listener<Action>>,
 ) {
+    let title = match &screen.focus {
+        Focus::PlaylistsFilter(f) => format!(" /{} ", f.value),
+        _ => " playlists ".to_string(),
+    };
+
     let border_style = if matches!(screen.focus, Focus::PlaylistsFilter(_) | Focus::Playlists) {
         Style::default().fg(Color::LightBlue)
     } else {
@@ -83,18 +92,19 @@ fn playlists_pane(
         .collect();
 
     let mut list = List::default()
-        .title(" playlists ".to_string())
+        .title(title)
         .items(playlists)
         .state(screen.shown_playlists.state.clone())
         .help_message(help)
         .border_style(border_style)
         .borders(Borders::ALL & !Borders::RIGHT)
         .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black))
-        .click_event(|i| Action::SelectPlaylist(i));
+        .click_event(Action::SelectPlaylist);
     list.render(area, buf, l);
     screen.shown_playlists.state = list.get_state();
 }
 
+/// Draws the pane that shows the songs of a playlist inside the browse screen
 fn songs_pane(
     screen: &mut BrowseScreen,
     area: Rect,
@@ -108,7 +118,7 @@ fn songs_pane(
     };
 
     let title = match &screen.focus {
-        Focus::SongsFilter(filter) => format!(" /{}{} ", filter, sorting),
+        Focus::SongsFilter(filter) => format!(" /{}{} ", filter.value, sorting),
         _ => screen
             .selected_playlist()
             .map(|p| format!(" {} ", p))
