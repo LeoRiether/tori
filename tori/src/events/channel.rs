@@ -1,21 +1,24 @@
-use super::Event;
+use super::Action;
+use crossterm::event::Event as TermEvent;
 use std::{
     sync::{Arc, Mutex},
     thread, time,
 };
 use tokio::{
-    sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver},
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
 };
 
-pub type Tx = UnboundedSender<Event>;
-pub type Rx = UnboundedReceiver<Event>;
+pub type Tx = UnboundedSender<Action>;
+pub type Rx = UnboundedReceiver<Action>;
 
 /// Channel creates a tokio mpsc channel and spawns two event emitters: one for user input events,
 /// another for ticks that happen every second
 pub struct Channel {
     pub tx: Tx,
     pub rx: Rx,
+
+    pub crossterm_rx: UnboundedReceiver<TermEvent>,
 
     /// Whoever owns this mutex can receive events from crossterm::event::read().
     ///
@@ -35,21 +38,23 @@ impl Default for Channel {
 impl Channel {
     pub fn new() -> Self {
         let (tx, rx) = unbounded_channel();
+        let (crossterm_tx, crossterm_rx) = unbounded_channel();
         let receiving_crossterm = Arc::new(Mutex::new(()));
 
-        spawn_terminal_event_getter(tx.clone(), receiving_crossterm.clone());
+        spawn_terminal_event_getter(crossterm_tx.clone(), receiving_crossterm.clone());
         spawn_ticks(tx.clone());
 
         Self {
             tx,
             rx,
+            crossterm_rx,
             receiving_crossterm,
         }
     }
 }
 
 fn spawn_terminal_event_getter(
-    tx: Tx,
+    tx: UnboundedSender<TermEvent>,
     receiving_crossterm: Arc<Mutex<()>>,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || loop {
@@ -61,7 +66,7 @@ fn spawn_terminal_event_getter(
         };
 
         if let Ok(event) = crossterm::event::read() {
-            tx.send(Event::Terminal(event)).unwrap();
+            tx.send(event).unwrap();
         }
     })
 }
@@ -70,7 +75,7 @@ fn spawn_ticks(tx: Tx) -> JoinHandle<()> {
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(time::Duration::from_secs(1)).await;
-            let sent = tx.send(Event::Tick);
+            let sent = tx.send(Action::Tick);
 
             // Stop spawning ticks if the receiver has been dropped. This prevents a
             // 'called `Result::unwrap()` on an `Err` value: SendError { .. }' panic when Ctrl+C is

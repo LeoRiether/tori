@@ -32,6 +32,10 @@ keybindings:
   j: SelectNext
   k: SelectPrev
   l: SelectRight
+  left: SelectLeft
+  down: SelectNext
+  up: SelectPrev
+  right: SelectRight
   a: Add
   u: QueueSong
   C-q: QueueShown

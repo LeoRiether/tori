@@ -45,7 +45,7 @@ impl SortingMethod {
 impl BrowseScreen {
     pub fn new() -> Result<Self> {
         let mut me = Self::default();
-        me.reload_playlists()?;
+        me.refresh_playlists()?;
         Ok(me)
     }
 
@@ -53,8 +53,18 @@ impl BrowseScreen {
         self.sorting_method = self.sorting_method.next();
     }
 
-    // TODO: definitely rethink this
-    pub fn reload_playlists(&mut self) -> Result<()> {
+    /////////////////////////////////////
+    //        Refresh playlists        //
+    /////////////////////////////////////
+    pub fn refresh_playlists(&mut self) -> Result<()> {
+        self.load_playlists()?;
+        self.filter_playlists();
+        self.update_selected_playlist();
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    fn load_playlists(&mut self) -> Result<()> {
         let dir = std::fs::read_dir(&Config::global().playlists_dir)
             .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
@@ -74,59 +84,10 @@ impl BrowseScreen {
             .map(extract_playlist_name)
             .collect::<Result<_>>()?;
         self.playlists.sort();
-        self.refresh_shown();
-
-        // Try to reuse previous state
-        let state = self.shown_playlists.state.clone();
-        if matches!(state.selected(), Some(i) if i < self.playlists.len()) {
-            self.shown_playlists.state = state;
-        } else if self.shown_playlists.items.is_empty() {
-            self.shown_playlists.state.select(None);
-        } else {
-            self.shown_playlists.state.select(Some(0));
-        }
-
-        self.pull_songs()?;
-        self.refresh_shown();
         Ok(())
     }
 
-    fn pull_songs(&mut self) -> Result<()> {
-        let playlist_name = match self.selected_playlist() {
-            Some(name) => name,
-            None => {
-                self.songs = Vec::new();
-                self.shown_songs = Default::default();
-                return Ok(());
-            }
-        };
-
-        let path = Config::playlist_path(playlist_name);
-
-        let file = std::fs::File::open(&path)
-            .map_err(|_| format!("Couldn't open playlist file {}", path.display()))?;
-
-        let songs = m3u::Parser::from_reader(file).all_songs()?;
-        let state = self.shown_songs.state.clone();
-
-        // Update stuff
-        self.songs = songs;
-        self.refresh_shown();
-
-        // Try to reuse previous state
-        if matches!(state.selected(), Some(i) if i < self.songs.len()) {
-            self.shown_songs.state = state;
-        } else if self.shown_songs.items.is_empty() {
-            self.shown_songs.state.select(None);
-        } else {
-            self.shown_songs.state.select(Some(0));
-        }
-
-        Ok(())
-    }
-
-    fn refresh_shown(&mut self) {
-        // Refresh playlists
+    fn filter_playlists(&mut self) {
         match &self.focus {
             Focus::PlaylistsFilter(filter) if !filter.is_empty() => {
                 let filter = filter.trim_end_matches('\n').to_lowercase();
@@ -140,8 +101,49 @@ impl BrowseScreen {
                 .shown_playlists
                 .filter(&self.playlists, |_| true, |i, j| i.cmp(&j)),
         }
+    }
 
-        // Refresh songs
+    fn update_selected_playlist(&mut self) {
+        // Try to reuse previous state
+        let state = self.shown_playlists.state.clone();
+        if matches!(state.selected(), Some(i) if i < self.playlists.len()) {
+            self.shown_playlists.state = state;
+        } else if self.shown_playlists.items.is_empty() {
+            self.shown_playlists.state.select(None);
+        } else {
+            self.shown_playlists.state.select(Some(0));
+        }
+    }
+
+    /////////////////////////////////
+    //        Refresh songs        //
+    /////////////////////////////////
+    pub fn refresh_songs(&mut self) -> Result<()> {
+        self.load_songs()?;
+        self.filter_songs();
+        self.update_selected_song();
+        Ok(())
+    }
+
+    fn load_songs(&mut self) -> Result<()> {
+        let playlist_name = match self.selected_playlist() {
+            Some(name) => name,
+            None => {
+                self.songs = Vec::new();
+                self.shown_songs = Default::default();
+                return Ok(());
+            }
+        };
+
+        let path = Config::playlist_path(playlist_name);
+        let file = std::fs::File::open(&path)
+            .map_err(|_| format!("Couldn't open playlist file {}", path.display()))?;
+
+        self.songs = m3u::Parser::from_reader(file).all_songs()?;
+        Ok(())
+    }
+
+    fn filter_songs(&mut self) {
         match &self.focus {
             Focus::SongsFilter(filter) if !filter.is_empty() => {
                 let filter = filter.trim_end_matches('\n').to_lowercase();
@@ -158,11 +160,25 @@ impl BrowseScreen {
         }
     }
 
+    fn update_selected_song(&mut self) {
+        let state = self.shown_songs.state.clone();
+        if matches!(state.selected(), Some(i) if i < self.songs.len()) {
+            self.shown_songs.state = state;
+        } else if self.shown_songs.items.is_empty() {
+            self.shown_songs.state.select(None);
+        } else {
+            self.shown_songs.state.select(Some(0));
+        }
+    }
+
+    /////////////////////////////
+    //        Selectors        //
+    /////////////////////////////
     pub fn select_next(&mut self) -> Result<()> {
         match self.focus {
             Focus::Playlists => {
                 self.shown_playlists.select_next();
-                self.pull_songs()?;
+                self.refresh_songs()?;
             }
             Focus::Songs => self.shown_songs.select_next(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
@@ -174,7 +190,7 @@ impl BrowseScreen {
         match self.focus {
             Focus::Playlists => {
                 self.shown_playlists.select_prev();
-                self.pull_songs()?;
+                self.refresh_songs()?;
             }
             Focus::Songs => self.shown_songs.select_prev(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}

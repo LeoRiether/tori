@@ -1,8 +1,6 @@
 use crate::{
-    app::component::Mode,
     config::shortcuts::InputStr,
     error::Result,
-    events::Event,
 };
 use crossterm::event::Event as CrosstermEvent;
 use tui::{
@@ -26,8 +24,8 @@ pub struct HotkeyModal {
 impl Modal for HotkeyModal {
     fn apply_style(&mut self, _style: Style) {}
 
-    fn handle_event(&mut self, event: Event) -> Result<super::Message> {
-        if let Event::Terminal(CrosstermEvent::Key(key)) = event {
+    fn handle_event(&mut self, event: CrosstermEvent) -> Result<super::Message> {
+        if let CrosstermEvent::Key(key) = event {
             if let crossterm::event::KeyCode::Esc = key.code {
                 return Ok(super::Message::Quit);
             }
@@ -56,7 +54,7 @@ impl Modal for HotkeyModal {
         paragraph.render(chunk, buf);
     }
 
-    fn mode(&self) -> Mode {
-        Mode::Insert
+    fn mode(&self) -> ! {
+        todo!()
     }
 }

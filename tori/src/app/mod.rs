@@ -3,40 +3,31 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::{
-    io,
-    time::{self, Duration, Instant},
+use std::{io, sync::Arc};
+use tokio::{
+    select,
+    sync::{mpsc, Mutex},
 };
-use tokio::select;
 use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
-    app::component::Mode, error::Result, events::channel::Channel, state::State, ui::ui,
-    update::update,
+    error::Result,
+    events::channel::Channel,
+    state::State,
+    ui::ui,
+    update::{handle_event, update},
 };
 
-pub mod app_screen;
-pub mod browse_screen;
-pub mod component;
 pub mod filtered_list;
 pub mod modal;
-pub mod playlist_screen;
-
-use crate::events::Event;
 
 type MyBackend = CrosstermBackend<io::Stdout>;
 
-const FRAME_DELAY_MS: u16 = 16;
-const HIGH_EVENT_TIMEOUT: u16 = 1000;
-const LOW_EVENT_TIMEOUT: u16 = 17;
-
 /// Controls the application main loop
 pub struct App<'n> {
-    pub state: State<'n>,
+    pub state: Arc<Mutex<State<'n>>>,
     pub channel: Channel,
     pub terminal: Terminal<MyBackend>,
-    next_render: time::Instant,
-    next_poll_timeout: u16,
 }
 
 impl<'a> App<'a> {
@@ -45,81 +36,99 @@ impl<'a> App<'a> {
         let backend = CrosstermBackend::new(stdout);
 
         Ok(App {
-            state: State::new()?,
+            state: Arc::new(Mutex::new(State::new()?)),
             channel: Channel::new(),
             terminal: Terminal::new(backend)?,
-            next_render: time::Instant::now(),
-            next_poll_timeout: LOW_EVENT_TIMEOUT,
         })
     }
 
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         chain_hook();
         setup_terminal()?;
 
-        while !self.state.quit {
-            self.render()
-                .map_err(|e| self.state.notify_err(format!("Rendering error: {e}")))
-                .ok();
+        tokio_scoped::scope(|scope| {
+            let App {
+                state: state_,
+                mut channel,
+                mut terminal,
+            } = self;
 
-            if let Some(ev) = self.recv_event().await {
-                let tx = self.channel.tx.clone();
-                match update(&mut self.state, tx, ev) {
-                    Ok(Some(ev)) => self.channel.tx.send(ev).expect("Failed to send event"),
-                    Ok(None) => {}
-                    Err(e) => self.state.notify_err(e.to_string()),
+            let (render_tx_, mut render_rx) = mpsc::channel::<()>(1);
+
+            // Updating task
+            let state = state_.clone();
+            let render_tx = render_tx_.clone();
+            scope.spawn(async move {
+                while !state.lock().await.quit {
+                    App::recv(&state, &mut channel).await;
+                    render_tx
+                        .send(())
+                        .await
+                        .expect("Failed to send render event");
                 }
-            }
-        }
+            });
+
+            // Rendering task
+            let state = state_.clone();
+            scope.spawn(async move {
+                while !state.lock().await.quit {
+                    if render_rx.recv().await.is_some() {
+                        let mut state = state.lock().await;
+                        App::render(&mut terminal, &mut state)
+                            .map_err(|e| state.notify_err(format!("Rendering error: {e}")))
+                            .ok();
+                    }
+                }
+            });
+
+            // Trigger first render immediately
+            let render_tx = render_tx_.clone();
+            scope.spawn(async move {
+                render_tx
+                    .send(())
+                    .await
+                    .expect("Failed to send render event");
+            });
+        });
 
         reset_terminal()?;
         Ok(())
     }
 
-    #[inline]
-    fn render(&mut self) -> Result<()> {
-        if Instant::now() >= self.next_render {
-            self.terminal.draw(|frame| {
-                let area = frame.size();
-                let buf = frame.buffer_mut();
-                ui(&mut self.state, area, buf);
-            })?;
-
-            self.next_render = time::Instant::now()
-                .checked_add(Duration::from_millis(FRAME_DELAY_MS as u64))
-                .unwrap();
-        }
-        Ok(())
-    }
-
-    async fn recv_event(&mut self) -> Option<Event> {
-        // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
-        // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
-        // immediately after the last event, which triggers a fast render.
-        let timeout = Duration::from_millis(self.next_poll_timeout as u64);
-
+    async fn recv(state: &Mutex<State<'_>>, channel: &mut Channel) {
         select! {
-            e = self.channel.rx.recv() => {
-                self.next_poll_timeout = FRAME_DELAY_MS;
-                if let Some(e) = e {
-                    if should_handle_event(&e) {
-                        return Some(e);
+            crossterm_event = channel.crossterm_rx.recv() => {
+                if let Some(ev) = crossterm_event {
+                    let mut state = state.lock().await;
+                    match handle_event(&mut state, ev) {
+                        Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
+                        Ok(None) => {}
+                        Err(e) => state.notify_err(e.to_string()),
                     }
                 }
             }
-            _ = tokio::time::sleep(timeout) => {
-                self.next_poll_timeout = self.suitable_event_timeout();
+
+            action = channel.rx.recv() => {
+                if let Some(ev) = action {
+                    let mut state = state.lock().await;
+                    match update(&mut state, channel.tx.clone(), ev) {
+                        Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
+                        Ok(None) => {}
+                        Err(e) => state.notify_err(e.to_string()),
+                    }
+                }
             }
         }
-        None
     }
 
-    #[inline]
-    fn suitable_event_timeout(&self) -> u16 {
-        match self.state.visualizer.0 {
-            Some(_) => LOW_EVENT_TIMEOUT,
-            None => HIGH_EVENT_TIMEOUT,
-        }
+    fn render(terminal: &mut Terminal<MyBackend>, state: &mut State<'_>) -> Result<()> {
+        terminal.draw(|frame| {
+            let area = frame.size();
+            let buf = frame.buffer_mut();
+            ui(state, area, buf);
+        })?;
+
+        Ok(())
     }
 }
 
@@ -143,15 +152,4 @@ pub fn reset_terminal() -> Result<()> {
     disable_raw_mode()?;
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
-}
-
-fn should_handle_event(event: &Event) -> bool {
-    match event {
-        Event::Terminal(CrosstermEvent::Key(key)) if key.kind == KeyEventKind::Release => {
-            // WARN: we ignore every key release event for now because of a crossterm 0.26
-            // quirk: https://github.com/crossterm-rs/crossterm/pull/745
-            false
-        }
-        _ => true,
-    }
 }

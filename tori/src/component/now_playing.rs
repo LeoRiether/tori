@@ -1,7 +1,6 @@
 use crate::{
-    events::Event,
     player::Player,
-    ui::{self, eventful_widget::Listener, EventfulWidget},
+    ui::{self, eventful_widget::Listener, EventfulWidget}, events::Action,
 };
 use tui::{
     prelude::*,
@@ -36,8 +35,8 @@ impl NowPlaying {
     }
 }
 
-impl EventfulWidget<Event> for NowPlaying {
-    fn render(&mut self, area: Rect, buf: &mut Buffer, l: &mut Vec<Listener<Event>>) {
+impl EventfulWidget<Action> for NowPlaying {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, l: &mut Vec<Listener<Action>>) {
         let (playback_left_str, playback_right_str) = playback_strs(self);
         let chunks = subcomponent_chunks(self, area);
 

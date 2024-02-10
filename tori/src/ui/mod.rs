@@ -9,7 +9,7 @@ pub use list::*;
 
 use crate::{
     config::Config,
-    events::{Action::*, Command, Event},
+    events::{Action, Command},
     rect_ops::RectOps,
     state::{
         browse_screen::{BrowseScreen, Focus, SortingMethod},
@@ -18,7 +18,7 @@ use crate::{
 };
 use tui::{prelude::*, widgets::Borders};
 
-pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Event>> {
+pub fn ui(state: &mut State, area: Rect, buf: &mut Buffer) -> Vec<Listener<Action>> {
     let mut l = Vec::new();
 
     state.visualizer.render(area, buf);
@@ -44,7 +44,7 @@ fn browse_screen(
     screen: &mut BrowseScreen,
     area: Rect,
     buf: &mut Buffer,
-    l: &mut Vec<Listener<Event>>,
+    l: &mut Vec<Listener<Action>>,
 ) {
     let (left, right) = area.split_vertically_p(0.15);
     playlists_pane(screen, left, buf, l);
@@ -55,7 +55,7 @@ fn playlists_pane(
     screen: &mut BrowseScreen,
     area: Rect,
     buf: &mut Buffer,
-    l: &mut Vec<Listener<Event>>,
+    l: &mut Vec<Listener<Action>>,
 ) {
     let border_style = if matches!(screen.focus, Focus::PlaylistsFilter(_) | Focus::Playlists) {
         Style::default().fg(Color::LightBlue)
@@ -90,7 +90,7 @@ fn playlists_pane(
         .border_style(border_style)
         .borders(Borders::ALL & !Borders::RIGHT)
         .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black))
-        .click_event(|i| Event::Action(SelectPlaylist(i)));
+        .click_event(|i| Action::SelectPlaylist(i));
     list.render(area, buf, l);
     screen.shown_playlists.state = list.get_state();
 }
@@ -99,7 +99,7 @@ fn songs_pane(
     screen: &mut BrowseScreen,
     area: Rect,
     buf: &mut Buffer,
-    l: &mut Vec<Listener<Event>>,
+    l: &mut Vec<Listener<Action>>,
 ) {
     let sorting = match screen.sorting_method {
         SortingMethod::Index => "",
@@ -156,7 +156,7 @@ fn songs_pane(
         .borders(Borders::ALL)
         .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
         .highlight_symbol(" ◇")
-        .click_event(|i| Event::Action(SelectSong(i)));
+        .click_event(|i| Action::SelectSong(i));
     list.render(area, buf, l);
     screen.shown_songs.state = list.get_state();
 }
