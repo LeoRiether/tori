@@ -100,8 +100,4 @@ impl Modal for HelpModal {
         chunk.height -= 3;
         table.render(chunk, buf);
     }
-
-    fn mode(&self) -> ! {
-        todo!()
-    }
 }

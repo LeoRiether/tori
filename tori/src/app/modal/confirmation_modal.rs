@@ -60,8 +60,4 @@ impl Modal for ConfirmationModal {
         Clear.render(chunk, buf);
         paragraph.render(chunk, buf);
     }
-
-    fn mode(&self) -> ! {
-        todo!()
-    }
 }

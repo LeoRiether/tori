@@ -137,10 +137,6 @@ impl<'t> Modal for InputModal<'t> {
         Clear.render(chunk, buf);
         paragraph.render(chunk, buf);
     }
-
-    fn mode(&self) -> ! {
-        todo!()
-    }
 }
 
 impl<'t> InputModal<'t> {

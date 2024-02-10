@@ -40,7 +40,6 @@ where
     fn apply_style(&mut self, style: Style);
     fn handle_event(&mut self, event: Event) -> Result<Message>;
     fn render(&self, area: Rect, buf: &mut Buffer);
-    fn mode(&self) -> !;
 }
 
 impl Default for Box<dyn Modal> {
