@@ -5,30 +5,32 @@ use std::{
     result::Result as StdResult,
 };
 
-use crate::{app::App, config::Config, error::Result, m3u};
+use crate::{
+    config::Config,
+    error::Result,
+    events::{action::Level, channel::Tx, Action},
+    m3u,
+};
 
 /// Adds a song to an existing playlist
-pub fn add_song(app: &mut App, playlist: &str, song_path: String) {
-    todo!("gotta rewrite add_song!")
-    // app.state.notify_info(format!("Adding {}...", song_path));
-    //
-    // if surely_invalid_path(&song_path) {
-    //     app.state.notify_err(format!("Failed to add song path '{}'. Doesn't look like a URL and is not a valid path in your filesystem.", song_path));
-    //     return;
-    // }
-    //
-    // let sender = app.channel.tx.clone();
-    // let playlist = playlist.to_string();
-    // thread::spawn(move || {
-    //     add_song_recursively(&song_path, &playlist);
-    //
-    //     // Extract last part (separated by '/') of the song_path
-    //     let mut rsplit = song_path.trim_end_matches('/').rsplit('/');
-    //     let song = rsplit.next().unwrap_or(&song_path).to_string();
-    //
-    //     let event = Event::Action(Action::SongAdded { playlist, song });
-    //     sender.send(event).expect("Failed to send internal event");
-    // });
+pub async fn add_song(tx: Tx, playlist: String, song_path: String) -> Result<()> {
+    tx.send(Action::Notify(
+        Level::Info,
+        format!("Adding {}...", song_path),
+    ))?;
+
+    if surely_invalid_path(&song_path) {
+        return Err(format!("Failed to add song path '{}'. Doesn't look like a URL and is not a valid path in your filesystem.", song_path).into());
+    }
+
+    add_song_recursively(&song_path, &playlist);
+
+    // Extract last part (separated by '/') of the song_path
+    let mut rsplit = song_path.trim_end_matches('/').rsplit('/');
+    let song = rsplit.next().unwrap_or(&song_path).to_string();
+
+    tx.send(Action::SongAdded { playlist, song })?;
+    Ok(())
 }
 
 /// Adds songs from some path. If the path points to a directory, it'll traverse the directory
