@@ -1,20 +1,18 @@
 use crate::{
     config::shortcuts::InputStr,
     error::Result,
+    events::{channel::Tx, Action},
 };
-use crossterm::event::Event as CrosstermEvent;
+use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
+    prelude::*,
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
-    prelude::*,
 };
 
 use super::Modal;
 
-///////////////////////////////
-//        HotkeyModal        //
-///////////////////////////////
 /// Shows what keys the user is pressing
 #[derive(Debug, Default)]
 pub struct HotkeyModal {
@@ -22,16 +20,14 @@ pub struct HotkeyModal {
 }
 
 impl Modal for HotkeyModal {
-    fn apply_style(&mut self, _style: Style) {}
-
-    fn handle_event(&mut self, event: CrosstermEvent) -> Result<super::Message> {
-        if let CrosstermEvent::Key(key) = event {
-            if let crossterm::event::KeyCode::Esc = key.code {
-                return Ok(super::Message::Quit);
+    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
+        if let Event::Key(key) = event {
+            if let KeyCode::Esc = key.code {
+                return Ok(Some(Action::CloseModal));
             }
             self.text = InputStr::from(key).0;
         }
-        Ok(super::Message::Nothing)
+        Ok(None)
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
@@ -52,9 +48,5 @@ impl Modal for HotkeyModal {
 
         Clear.render(chunk, buf);
         paragraph.render(chunk, buf);
-    }
-
-    fn mode(&self) -> ! {
-        todo!()
     }
 }

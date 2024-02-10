@@ -7,9 +7,36 @@ pub enum Action {
     ScrollDown,
     ScrollUp,
     Command(Command),
-    SongAdded { playlist: String, song: String },
     RefreshSongs,
     RefreshPlaylists,
     SelectSong(usize),
     SelectPlaylist(usize),
+    CloseModal,
+    AddPlaylist {
+        name: String,
+    },
+    RenamePlaylist {
+        playlist: String,
+        new_name: String,
+    },
+    DeletePlaylist {
+        playlist: String,
+    },
+    AddSongToPlaylist {
+        playlist: String,
+        song: String,
+    },
+    SongAdded {
+        playlist: String,
+        song: String,
+    },
+    RenameSong {
+        playlist: String,
+        index: usize,
+        new_name: String,
+    },
+    DeleteSong {
+        playlist: String,
+        index: usize,
+    },
 }

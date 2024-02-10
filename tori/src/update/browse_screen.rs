@@ -1,6 +1,9 @@
 use std::mem;
 
+use tui::style::{Color, Style};
+
 use crate::{
+    app::modal::{ConfirmationModal, InputModal, Modal},
     error::Result,
     events::{channel::Tx, Action, Command},
     input::Input,
@@ -141,6 +144,99 @@ fn browse_screen_command(
             Focus::Songs => screen.shown_songs.select_last(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
+
+        Add => match &screen.focus {
+            Focus::Playlists | Focus::PlaylistsFilter(_) => {
+                state.modal = InputModal::new(" Add playlist ")
+                    .style(Style::default().fg(Color::LightBlue))
+                    .on_commit(|name| Action::AddPlaylist { name })
+                    .some_box();
+            }
+            Focus::Songs | Focus::SongsFilter(_) => {
+                let playlist = match screen.selected_playlist() {
+                    None => {
+                        state.notify_err("Can't add a song without a playlist selected");
+                        return Ok(None);
+                    }
+                    Some(p) => p.to_string(),
+                };
+
+                state.modal = InputModal::new(" Add song to playlist ")
+                    .style(Style::default().fg(Color::LightBlue))
+                    .on_commit(move |song| Action::AddSongToPlaylist { song, playlist })
+                    .some_box();
+            }
+        },
+        Rename => {
+            let playlist = match screen.selected_playlist() {
+                None => {
+                    state.notify_err("Can't rename a song without a playlist selected");
+                    return Ok(None);
+                }
+                Some(p) => p.to_string(),
+            };
+            match &screen.focus {
+                Focus::Playlists | Focus::PlaylistsFilter(_) => {
+                    state.modal = InputModal::new(" Rename playlist ")
+                        .style(Style::default().fg(Color::LightBlue))
+                        .on_commit(move |new_name| Action::RenamePlaylist { playlist, new_name })
+                        .some_box();
+                }
+                Focus::Songs | Focus::SongsFilter(_) => {
+                    let index = match screen.shown_songs.selected_item() {
+                        None => {
+                            state.notify_err("Can't rename a song without one selected");
+                            return Ok(None);
+                        }
+                        Some(i) => i,
+                    };
+
+                    state.modal = InputModal::new(" Rename song ")
+                        .style(Style::default().fg(Color::LightBlue))
+                        .on_commit(move |new_name| Action::RenameSong {
+                            playlist: playlist.clone(),
+                            index,
+                            new_name,
+                        })
+                        .some_box();
+                }
+            }
+        }
+        Delete => {
+            let playlist = match screen.selected_playlist() {
+                None => {
+                    state.notify_err("Can't delete a song without a playlist selected");
+                    return Ok(None);
+                }
+                Some(p) => p.to_string(),
+            };
+            match &screen.focus {
+                Focus::Playlists | Focus::PlaylistsFilter(_) => {
+                    state.modal = ConfirmationModal::new(" Delete playlist ")
+                        .style(Style::default().fg(Color::LightRed))
+                        .on_yes(move || Action::DeletePlaylist { playlist })
+                        .some_box();
+                }
+                Focus::Songs | Focus::SongsFilter(_) => {
+                    let index = match screen.shown_songs.selected_item() {
+                        None => {
+                            state.notify_err("Can't delete a song without one selected");
+                            return Ok(None);
+                        }
+                        Some(i) => i,
+                    };
+
+                    state.modal = ConfirmationModal::new(" Delete song ")
+                        .style(Style::default().fg(Color::LightRed))
+                        .on_yes(move || Action::DeleteSong {
+                            playlist: playlist.clone(),
+                            index,
+                        })
+                        .some_box();
+                }
+            }
+        }
+
         _ => {}
     }
 

@@ -18,6 +18,13 @@ pub struct Input {
 }
 
 impl Input {
+    pub fn new(value: impl Into<String>) -> Input {
+        Input {
+            value: value.into(),
+            cursor: 0,
+        }
+    }
+
     pub fn handle_event(&mut self, key: KeyEvent) -> InputResponse {
         use KeyCode::*;
         match key.code {
@@ -137,5 +144,54 @@ impl<'a> Widget for InputWidget<'a> {
         }
 
         paragraph.render(area, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_cursor_ascii() {
+        let mut input = Input::new("input cursor");
+        input.value = "Hello World!".into();
+        assert_eq!(input.cursor, 0);
+
+        input.move_cursor(1);
+        assert_eq!(input.cursor, 1);
+
+        input.move_cursor(1);
+        assert_eq!(input.cursor, 2);
+
+        input.move_cursor(-1);
+        assert_eq!(input.cursor, 1);
+
+        input.move_cursor(-1);
+        assert_eq!(input.cursor, 0);
+
+        input.move_cursor(-1);
+        assert_eq!(input.cursor, 0);
+
+        input.move_cursor(1000);
+        assert_eq!(input.cursor, input.value.len());
+    }
+
+    #[test]
+    fn test_input_cursor_unicode() {
+        let mut input = Input::new("input cursor");
+        input.value = "おはよう".into();
+        assert_eq!(input.cursor, 0);
+
+        input.move_cursor(1);
+        assert_eq!(input.cursor, 3);
+
+        input.move_cursor(1);
+        assert_eq!(input.cursor, 6);
+
+        input.move_cursor(-1);
+        assert_eq!(input.cursor, 3);
+
+        input.move_cursor(-1);
+        assert_eq!(input.cursor, 0);
     }
 }

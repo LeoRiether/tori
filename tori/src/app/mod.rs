@@ -104,7 +104,7 @@ impl<'a> App<'a> {
             crossterm_event = channel.crossterm_rx.recv() => {
                 if let Some(ev) = crossterm_event {
                     let mut state = state.lock().await;
-                    match handle_event(&mut state, ev) {
+                    match handle_event(&mut state, channel.tx.clone(), ev) {
                         Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
                         Ok(None) => {}
                         Err(e) => state.notify_err(e.to_string()),

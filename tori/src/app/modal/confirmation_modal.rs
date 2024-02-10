@@ -1,4 +1,4 @@
-use super::{get_modal_chunk, Message, Modal};
+use super::{get_modal_chunk, Modal};
 
 use crossterm::event::{Event, KeyCode};
 use tui::{
@@ -8,39 +8,56 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
-use crate::error::Result;
+use crate::{
+    error::Result,
+    events::{channel::Tx, Action},
+};
 
 /// A confirmation modal box that asks for user yes/no input
 #[derive(Debug, Default)]
-pub struct ConfirmationModal {
+pub struct ConfirmationModal<C> {
     title: String,
     style: Style,
+    on_yes: Option<C>,
 }
 
-impl ConfirmationModal {
+impl<C> ConfirmationModal<C> {
     pub fn new(title: &str) -> Self {
         Self {
             title: format!("\n{} (y/n)", title),
             style: Style::default().fg(Color::LightBlue),
+            on_yes: None,
         }
+    }
+
+    pub fn style(mut self, style: Style) -> Self {
+        self.style = style;
+        self
+    }
+
+    pub fn on_yes(mut self, action: C) -> Self {
+        self.on_yes = Some(action);
+        self
     }
 }
 
-impl Modal for ConfirmationModal {
-    fn apply_style(&mut self, style: Style) {
-        self.style = style;
-    }
-
-    fn handle_event(&mut self, event: Event) -> Result<Message> {
+impl<C> Modal for ConfirmationModal<C>
+where
+    C: FnOnce() -> Action + Send + Sync,
+{
+    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
         use KeyCode::*;
         if let Event::Key(event) = event {
-            return match event.code {
-                Backspace | Esc | Char('q') | Char('n') | Char('N') => Ok(Message::Quit),
-                Enter | Char('y') | Char('Y') => Ok(Message::Commit("y".into())),
-                _ => Ok(Message::Nothing),
-            };
+            return Ok(match event.code {
+                Backspace | Esc | Char('q') | Char('n') | Char('N') => Some(Action::CloseModal),
+                Enter | Char('y') | Char('Y') => {
+                    tx.send(Action::CloseModal);
+                    self.on_yes.take().map(|f| f())
+                }
+                _ => None,
+            });
         }
-        Ok(Message::Nothing)
+        Ok(None)
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
@@ -59,9 +76,5 @@ impl Modal for ConfirmationModal {
 
         Clear.render(chunk, buf);
         paragraph.render(chunk, buf);
-    }
-
-    fn mode(&self) -> ! {
-        todo!()
     }
 }

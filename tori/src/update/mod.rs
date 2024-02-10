@@ -6,14 +6,19 @@ use std::mem;
 use crate::{
     config::Config,
     error::Result,
-    events::{channel::Tx, Action, Command},
+    events::{action::Level, channel::Tx, Action, Command},
     input::InputResponse,
+    m3u::playlist_management,
     player::Player,
     state::{browse_screen::Focus, Screen, State},
 };
 use crossterm::event::{Event as TermEvent, KeyEvent, KeyEventKind, MouseEventKind};
 
-pub fn handle_event(state: &mut State<'_>, ev: TermEvent) -> Result<Option<Action>> {
+pub fn handle_event(state: &mut State<'_>, tx: Tx, ev: TermEvent) -> Result<Option<Action>> {
+    if let Some(modal) = &mut state.modal {
+        return modal.handle_event(tx, ev);
+    }
+
     Ok(match ev {
         TermEvent::Key(key) if key.kind != KeyEventKind::Release => match &mut state.screen {
             Screen::None => unreachable!(),
@@ -80,6 +85,73 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                 state.notification = None;
             }
         }
+
+        Notify(level, msg) => {
+            match level {
+                Level::Ok => state.notify_ok(msg),
+                Level::Info => state.notify_info(msg),
+                Level::Error => state.notify_err(msg),
+            };
+        }
+
+        CloseModal => {
+            state.modal = None;
+        }
+        AddPlaylist { name } => {
+            match playlist_management::create_playlist(&name) {
+                Ok(()) => state.notify_ok(format!("Playlist {name} created")),
+                Err(e) => state.notify_err(format!("Error creating playlist: {e:?}")),
+            };
+            return Ok(Some(Action::RefreshPlaylists));
+        }
+        RenamePlaylist { playlist, new_name } => {
+            match playlist_management::rename_playlist(&playlist, &new_name) {
+                Ok(()) => state.notify_ok(format!("Playlist {playlist} renamed to {new_name}")),
+                Err(e) => state.notify_err(format!("Error renaming playlist: {e:?}")),
+            }
+            return Ok(Some(Action::RefreshPlaylists));
+        }
+        DeletePlaylist { playlist } => {
+            match playlist_management::delete_playlist(&playlist) {
+                Ok(()) => state.notify_ok(format!("Playlist {playlist} deleted")),
+                Err(e) => state.notify_err(format!("Error deleting playlist: {e:?}")),
+            };
+            return Ok(Some(Action::RefreshPlaylists));
+        }
+        AddSongToPlaylist { playlist, song } => {
+            tokio::task::spawn(async move {
+                let res =
+                    playlist_management::add_song(tx.clone(), playlist.clone(), song.clone()).await;
+                match res {
+                    Ok(()) => tx
+                        .send(Action::Notify(
+                            Level::Info,
+                            format!("Added {song} to {playlist} playlist"),
+                        ))
+                        .ok(),
+                    Err(e) => tx.send(Notify(Level::Error, format!("{:?}", e))).ok(),
+                };
+                tx.send(RefreshSongs).ok();
+            });
+        }
+        RenameSong {
+            playlist,
+            index,
+            new_name,
+        } => {
+            match playlist_management::rename_song(&playlist, index, &new_name) {
+                Ok(()) => {}
+                Err(e) => state.notify_err(format!("Error renaming song: {e:?}")),
+            };
+            return Ok(Some(Action::RefreshSongs));
+        }
+        DeleteSong { playlist, index } => {
+            match playlist_management::delete_song(&playlist, index) {
+                Ok(()) => {}
+                Err(e) => state.notify_err(format!("Error deleting song: {e:?}")),
+            }
+            return Ok(Some(Action::RefreshSongs));
+        }
     }
 
     Ok(None)
@@ -90,7 +162,9 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
     match cmd {
         Esc | Play | QueueSong | QueueShown | OpenInBrowser | CopyUrl | CopyTitle
         | NextSortingMode | SelectLeft | SelectNext | SelectRight | SelectPrev | Search
-        | GotoStart | GotoEnd => return screen_action(state, tx, Action::Command(cmd)),
+        | GotoStart | GotoEnd | Add | Rename | Delete => {
+            return screen_action(state, tx, Action::Command(cmd))
+        }
 
         Nop => {}
         Quit => {
@@ -150,9 +224,6 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
 
         OpenHelpModal => todo!(),
         OpenHotkeyModal => todo!(),
-        Add => todo!(),
-        Rename => todo!(),
-        Delete => todo!(),
         PlayFromModal => todo!(),
 
         SwapSongDown => todo!(),
