@@ -153,11 +153,11 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
         Add => todo!(),
         Rename => todo!(),
         Delete => todo!(),
+        PlayFromModal => todo!(),
 
         SwapSongDown => todo!(),
         SwapSongUp => todo!(),
 
-        PlayFromModal => todo!(),
         OpenInEditor => todo!(),
     }
 

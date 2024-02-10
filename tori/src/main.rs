@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
 
     make_sure_playlist_dir_exists();
 
-    let mut app = App::new()?;
+    let app = App::new()?;
     app.run().await
 }
 

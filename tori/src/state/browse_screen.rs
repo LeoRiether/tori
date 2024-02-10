@@ -1,4 +1,4 @@
-use crate::{app::filtered_list::FilteredList, config::Config, error::Result, m3u, input::Input};
+use crate::{app::filtered_list::FilteredList, config::Config, error::Result, input::Input, m3u};
 use std::{io, result::Result as StdResult};
 use tui::widgets::TableState;
 
@@ -176,24 +176,22 @@ impl BrowseScreen {
     /////////////////////////////
     pub fn select_next(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists => {
+            Focus::Playlists | Focus::PlaylistsFilter(_) => {
                 self.shown_playlists.select_next();
                 self.refresh_songs()?;
             }
-            Focus::Songs => self.shown_songs.select_next(),
-            Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_next(),
         }
         Ok(())
     }
 
     pub fn select_prev(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists => {
+            Focus::Playlists | Focus::PlaylistsFilter(_) => {
                 self.shown_playlists.select_prev();
                 self.refresh_songs()?;
             }
-            Focus::Songs => self.shown_songs.select_prev(),
-            Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
+            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_prev(),
         }
         Ok(())
     }
