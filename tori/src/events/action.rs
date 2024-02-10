@@ -1,16 +1,29 @@
 use super::Command;
 
+#[derive(Debug, Default, Clone)]
+pub enum Level {
+    #[default]
+    Ok,
+    Info,
+    Error,
+}
+
 #[derive(Debug, Clone)]
 pub enum Action {
     Rerender,
     Tick,
+    Command(Command),
+
+    Notify(Level, String),
+
     ScrollDown,
     ScrollUp,
-    Command(Command),
+
     RefreshSongs,
     RefreshPlaylists,
     SelectSong(usize),
     SelectPlaylist(usize),
+
     CloseModal,
     AddPlaylist {
         name: String,
