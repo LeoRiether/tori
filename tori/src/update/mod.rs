@@ -4,6 +4,7 @@ use browse_screen::browse_screen_action;
 use std::mem;
 
 use crate::{
+    app::modal::{HelpModal, HotkeyModal, InputModal, Modal},
     config::Config,
     error::Result,
     events::{action::Level, channel::Tx, Action, Command},
@@ -92,6 +93,10 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                 Level::Info => state.notify_info(msg),
                 Level::Error => state.notify_err(msg),
             };
+        }
+
+        Play(song) => {
+            state.player.play(&song)?;
         }
 
         CloseModal => {
@@ -222,11 +227,17 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
 
         ToggleVisualizer => state.visualizer.toggle()?,
 
-        OpenHelpModal => todo!(),
-        OpenHotkeyModal => todo!(),
-        PlayFromModal => todo!(),
+        OpenHelpModal => {
+            state.modal = HelpModal::new().some_box();
+        }
+        OpenHotkeyModal => {
+            state.modal = HotkeyModal::default().some_box();
+        }
+        PlayFromModal => {
+            state.modal = InputModal::new(" Play ").on_commit(Action::Play).some_box();
+        }
 
-        OpenInEditor => todo!(),
+        OpenInEditor => todo!("OpenInEditor is not yet implemented"),
     }
 
     Ok(None)
