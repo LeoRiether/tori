@@ -162,7 +162,7 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
     match cmd {
         Esc | Play | QueueSong | QueueShown | OpenInBrowser | CopyUrl | CopyTitle
         | NextSortingMode | SelectLeft | SelectNext | SelectRight | SelectPrev | Search
-        | GotoStart | GotoEnd | Add | Rename | Delete => {
+        | GotoStart | GotoEnd | Add | Rename | Delete | SwapSongDown | SwapSongUp => {
             return screen_action(state, tx, Action::Command(cmd))
         }
 
@@ -225,9 +225,6 @@ fn handle_command(state: &mut State<'_>, tx: Tx, cmd: Command) -> Result<Option<
         OpenHelpModal => todo!(),
         OpenHotkeyModal => todo!(),
         PlayFromModal => todo!(),
-
-        SwapSongDown => todo!(),
-        SwapSongUp => todo!(),
 
         OpenInEditor => todo!(),
     }
