@@ -162,7 +162,7 @@ fn browse_screen_command(
                     Some(p) => p.to_string(),
                 };
 
-                state.modal = InputModal::new(" Add song to playlist ")
+                state.modal = InputModal::new(" Add song ")
                     .style(Style::default().fg(Color::LightBlue))
                     .on_commit(move |song| Action::AddSongToPlaylist { song, playlist })
                     .some_box();
