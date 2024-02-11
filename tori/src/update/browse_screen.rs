@@ -7,6 +7,7 @@ use crate::{
     error::Result,
     events::{channel::Tx, Action, Command},
     input::Input,
+    m3u::playlist_management,
     player::Player,
     state::{
         browse_screen::{BrowseScreen, Focus},
@@ -161,7 +162,7 @@ fn browse_screen_command(
                     Some(p) => p.to_string(),
                 };
 
-                state.modal = InputModal::new(" Add song to playlist ")
+                state.modal = InputModal::new(" Add song ")
                     .style(Style::default().fg(Color::LightBlue))
                     .on_commit(move |song| Action::AddSongToPlaylist { song, playlist })
                     .some_box();
@@ -233,6 +234,29 @@ fn browse_screen_command(
                             index,
                         })
                         .some_box();
+                }
+            }
+        }
+
+        SwapSongUp => {
+            if let Some(playlist) = screen.selected_playlist() {
+                if let Some(i) = screen.selected_song_index() {
+                    if i > 0 {
+                        playlist_management::swap_song(playlist, i - 1)?;
+                        screen.songs.swap(i - 1, i);
+                        screen.shown_songs.select_prev();
+                    }
+                }
+            }
+        }
+        SwapSongDown => {
+            if let Some(playlist) = screen.selected_playlist() {
+                if let Some(i) = screen.selected_song_index() {
+                    if i + 1 < screen.songs.len() {
+                        playlist_management::swap_song(playlist, i)?;
+                        screen.songs.swap(i, i + 1);
+                        screen.shown_songs.select_next();
+                    }
                 }
             }
         }

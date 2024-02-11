@@ -20,7 +20,7 @@ pub struct HotkeyModal {
 }
 
 impl Modal for HotkeyModal {
-    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
+    fn handle_event(&mut self, _tx: Tx, event: Event) -> Result<Option<Action>> {
         if let Event::Key(key) = event {
             if let KeyCode::Esc = key.code {
                 return Ok(Some(Action::CloseModal));

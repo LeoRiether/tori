@@ -19,6 +19,7 @@ pub enum Action {
     ScrollDown,
     ScrollUp,
 
+    Play(String),
     RefreshSongs,
     RefreshPlaylists,
     SelectSong(usize),
