@@ -12,7 +12,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     error::Result,
-    events::channel::Channel,
+    events::{action::Level, channel::Channel, Action},
     state::State,
     ui::ui,
     update::{handle_event, update},
@@ -58,6 +58,7 @@ impl<'a> App<'a> {
             } = self;
 
             let (render_tx_, mut render_rx) = mpsc::channel::<()>(1);
+            let tx = channel.tx.clone();
 
             // Updating task
             let state = state_.clone();
@@ -77,10 +78,14 @@ impl<'a> App<'a> {
             scope.spawn(async move {
                 while !state.lock().await.quit {
                     if render_rx.recv().await.is_some() {
-                        let mut state = state.lock().await;
-                        App::render(&mut terminal, &mut state)
-                            .map_err(|e| state.notify_err(format!("Rendering error: {e}")))
+                        let res = App::render(&mut terminal, &state).await;
+                        if let Err(e) = res {
+                            tx.send(Action::Notify(
+                                Level::Error,
+                                format!("Rendering error: {e}"),
+                            ))
                             .ok();
+                        }
                     }
                 }
             });
@@ -128,11 +133,13 @@ impl<'a> App<'a> {
         }
     }
 
-    fn render(terminal: &mut Terminal<MyBackend>, state: &mut State<'_>) -> Result<()> {
-        terminal.draw(|frame| {
+    async fn render(terminal: &mut Terminal<MyBackend>, state: &Mutex<State<'_>>) -> Result<()> {
+        let mut state = state.lock().await;
+        terminal.draw(move |frame| {
             let area = frame.size();
             let buf = frame.buffer_mut();
-            ui(state, area, buf);
+            ui(&mut state, area, buf);
+            drop(state); // just to make sure the lock isn't held for too long
         })?;
 
         Ok(())
