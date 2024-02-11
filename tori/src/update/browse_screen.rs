@@ -29,16 +29,16 @@ pub fn browse_screen_action(
         ScrollDown => match &screen.focus {
             Focus::Playlists => {
                 screen.shown_playlists.select_next();
-                screen.refresh_playlists()?;
-            }
-            Focus::Songs => {
-                screen.shown_songs.select_next();
                 screen.refresh_songs()?;
             }
+            Focus::Songs => screen.shown_songs.select_next(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
         ScrollUp => match &screen.focus {
-            Focus::Playlists => screen.shown_playlists.select_prev(),
+            Focus::Playlists => {
+                screen.shown_playlists.select_prev();
+                screen.refresh_songs()?;
+            }
             Focus::Songs => screen.shown_songs.select_prev(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
