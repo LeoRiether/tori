@@ -99,7 +99,8 @@ fn playlists_pane(
         .border_style(border_style)
         .borders(Borders::ALL & !Borders::RIGHT)
         .highlight_style(Style::default().bg(Color::LightBlue).fg(Color::Black))
-        .click_event(Action::SelectPlaylist);
+        .on_click(Action::SelectPlaylist)
+        .on_drag(Action::SelectPlaylist);
     list.render(area, buf, l);
     screen.shown_playlists.state = list.get_state();
 }
@@ -166,7 +167,8 @@ fn songs_pane(
         .borders(Borders::ALL)
         .highlight_style(Style::default().bg(Color::Yellow).fg(Color::Black))
         .highlight_symbol(" ◇")
-        .click_event(Action::SelectSong);
+        .on_click(Action::SelectAndMaybePlaySong)
+        .on_drag(Action::SelectSong);
     list.render(area, buf, l);
     screen.shown_songs.state = list.get_state();
 }

@@ -27,8 +27,14 @@ pub fn browse_screen_action(
         Action::Command(cmd) => return browse_screen_command(state, screen, tx, cmd),
 
         ScrollDown => match &screen.focus {
-            Focus::Playlists => screen.shown_playlists.select_next(),
-            Focus::Songs => screen.shown_songs.select_next(),
+            Focus::Playlists => {
+                screen.shown_playlists.select_next();
+                screen.refresh_playlists()?;
+            }
+            Focus::Songs => {
+                screen.shown_songs.select_next();
+                screen.refresh_songs()?;
+            }
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
         ScrollUp => match &screen.focus {
@@ -50,10 +56,29 @@ pub fn browse_screen_action(
         }
         RefreshSongs => screen.refresh_songs()?,
         RefreshPlaylists => screen.refresh_playlists()?,
-        SelectSong(i) => screen.shown_songs.select(Some(i)),
+        SelectAndMaybePlaySong(i) => {
+            if screen.shown_songs.selected_item() == Some(i) {
+                // Double click => Play song
+                if let Some(song) = screen.selected_song() {
+                    state.player.play(&song.path)?;
+                }
+            } else {
+                // Select i-th song
+                return Ok(Some(Action::SelectSong(i)));
+            }
+        }
+        SelectSong(i) => {
+            screen.shown_songs.select(Some(i));
+            if let Focus::Playlists | Focus::PlaylistsFilter(_) = screen.focus {
+                screen.focus = Focus::Songs;
+            }
+        }
         SelectPlaylist(i) => {
             screen.shown_playlists.select(Some(i));
             screen.refresh_songs()?;
+            if let Focus::Songs | Focus::SongsFilter(_) = screen.focus {
+                screen.focus = Focus::Playlists;
+            }
         }
 
         _ => {}

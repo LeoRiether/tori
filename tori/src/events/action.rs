@@ -22,6 +22,7 @@ pub enum Action {
     Play(String),
     RefreshSongs,
     RefreshPlaylists,
+    SelectAndMaybePlaySong(usize),
     SelectSong(usize),
     SelectPlaylist(usize),
 

@@ -20,6 +20,7 @@ where
 /// An event a widget can receive
 pub enum UIEvent {
     Click(Rect),
+    Drag(Rect),
 }
 
 /// A widget that registers event listeners

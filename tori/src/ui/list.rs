@@ -1,6 +1,7 @@
-use crate::{ui::Scrollbar, events::Action};
+use crate::{events::Action, ui::Scrollbar};
 
 use super::{on, EventfulWidget, Listener, UIEvent};
+use crossterm::event::Event;
 use std::mem;
 use tui::{
     prelude::*,
@@ -19,7 +20,8 @@ pub struct List<'a, const C: usize> {
     state: TableState,
     items: Vec<[String; C]>,
     help_message: String,
-    click_event: Option<Box<dyn Fn(usize) -> Action>>,
+    on_click: Option<Box<dyn Fn(usize) -> Action + Send + Sync + 'static>>,
+    on_drag: Option<Box<dyn Fn(usize) -> Action + Send + Sync + 'static>>,
 }
 
 impl<'a, const C: usize> EventfulWidget<Action> for List<'a, C> {
@@ -71,19 +73,31 @@ impl<'a, const C: usize> EventfulWidget<Action> for List<'a, C> {
         }
 
         // Event listeners
-        if let Some(click_event) = &self.click_event {
-            let offset = self.state.offset();
-            let height = std::cmp::max(area.height as usize - 2, items_len);
-            for i in offset..offset + height {
-                let event = click_event(i);
-                let rect = Rect {
-                    x: area.x,
-                    y: area.y + 1 + i as u16,
-                    width: area.width - 2,
-                    height: 1,
-                };
-                l.push(on(UIEvent::Click(rect), move |_| event.clone()));
-            }
+        // NOTE: please don't call `render()` more than once with the same `List`, it'll `take()`
+        // the click_event the first time and mess it up the second
+        let offset = self.state.offset();
+        let mut inner_area = area.inner(&Margin {
+            horizontal: 1,
+            vertical: 1,
+        });
+        inner_area.height = std::cmp::min(area.height - 2, items_len as u16);
+        if let Some(on_click) = self.on_click.take() {
+            l.push(on(UIEvent::Click(inner_area), move |ev| {
+                if let Event::Mouse(ev) = ev {
+                    let index = ev.row as usize + offset - inner_area.y as usize;
+                    return on_click(index);
+                }
+                Action::Rerender // no-op?
+            }));
+        }
+        if let Some(on_drag) = self.on_drag.take() {
+            l.push(on(UIEvent::Drag(inner_area), move |ev| {
+                if let Event::Mouse(ev) = ev {
+                    let index = ev.row as usize + offset - inner_area.y as usize;
+                    return on_drag(index);
+                }
+                Action::Rerender // no-op?
+            }));
         }
     }
 }
@@ -133,8 +147,13 @@ impl<'a, const C: usize> List<'a, C> {
         self
     }
 
-    pub fn click_event(mut self, action: impl Fn(usize) -> Action + 'static) -> Self {
-        self.click_event = Some(Box::new(action));
+    pub fn on_click(mut self, action: impl Fn(usize) -> Action + Send + Sync + 'static) -> Self {
+        self.on_click = Some(Box::new(action));
+        self
+    }
+
+    pub fn on_drag(mut self, action: impl Fn(usize) -> Action + Send + Sync + 'static) -> Self {
+        self.on_drag = Some(Box::new(action));
         self
     }
 }

@@ -11,7 +11,9 @@ use crate::{
     input::InputResponse,
     m3u::playlist_management,
     player::Player,
+    rect_ops::RectOps,
     state::{browse_screen::Focus, Screen, State},
+    ui::UIEvent,
 };
 use crossterm::event::{Event as TermEvent, KeyEvent, KeyEventKind, MouseEventKind};
 
@@ -35,9 +37,29 @@ pub fn handle_event(state: &mut State<'_>, tx: Tx, ev: TermEvent) -> Result<Opti
             },
         },
         TermEvent::Mouse(mouse) => match mouse.kind {
-            MouseEventKind::Down(_) => todo!("Clicks are yet to be implemented!"),
-            MouseEventKind::Up(_) => todo!("Clickups are yet to be implemented!"),
-            MouseEventKind::Drag(_) => todo!("Dragging is yet to be implemented!"),
+            MouseEventKind::Down(_) => {
+                for listener in &state.listeners {
+                    if let UIEvent::Click(rect) = listener.event {
+                        if rect.contains(mouse.column, mouse.row) {
+                            let ev = ev.clone();
+                            tx.send((listener.emitter)(ev))?;
+                        }
+                    }
+                }
+                None
+            }
+            MouseEventKind::Drag(_) => {
+                for listener in &state.listeners {
+                    if let UIEvent::Drag(rect) = listener.event {
+                        if rect.contains(mouse.column, mouse.row) {
+                            let ev = ev.clone();
+                            tx.send((listener.emitter)(ev))?;
+                        }
+                    }
+                }
+                None
+            }
+            MouseEventKind::Up(_) => None,
             MouseEventKind::ScrollDown => Some(Action::ScrollDown),
             MouseEventKind::ScrollUp => Some(Action::ScrollUp),
             MouseEventKind::Moved | MouseEventKind::ScrollLeft | MouseEventKind::ScrollRight => {
@@ -67,6 +89,7 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
         | SongAdded { .. }
         | RefreshSongs
         | RefreshPlaylists
+        | SelectAndMaybePlaySong(_)
         | SelectSong(_)
         | SelectPlaylist(_) => return screen_action(state, tx, act),
 

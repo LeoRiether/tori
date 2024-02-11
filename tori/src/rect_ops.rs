@@ -13,7 +13,7 @@ pub trait RectOps {
 
 impl RectOps for Rect {
     fn contains(&self, x: u16, y: u16) -> bool {
-        x >= self.left() && x <= self.right() && y >= self.top() && y <= self.bottom()
+        x >= self.left() && x < self.right() && y >= self.top() && y < self.bottom()
     }
 
     fn split_top(&self, n: u16) -> (Rect, Rect) {
