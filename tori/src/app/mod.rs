@@ -100,22 +100,25 @@ impl<'a> App<'a> {
     }
 
     async fn recv(state: &Mutex<State<'_>>, channel: &mut Channel) {
+        let mut crossterm_events = vec![];
+        let mut actions = vec![];
+
         select! {
-            crossterm_event = channel.crossterm_rx.recv() => {
-                if let Some(ev) = crossterm_event {
-                    let mut state = state.lock().await;
-                    match handle_event(&mut state, channel.tx.clone(), ev) {
-                        Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
-                        Ok(None) => {}
-                        Err(e) => state.notify_err(e.to_string()),
-                    }
+            _ = channel.crossterm_rx.recv_many(&mut crossterm_events, 128) => {
+                for ev in crossterm_events {
+                        let mut state = state.lock().await;
+                        match handle_event(&mut state, channel.tx.clone(), ev) {
+                            Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
+                            Ok(None) => {}
+                            Err(e) => state.notify_err(e.to_string()),
+                        }
                 }
             }
 
-            action = channel.rx.recv() => {
-                if let Some(ev) = action {
+            _ = channel.rx.recv_many(&mut actions, 128) => {
+                for action in actions {
                     let mut state = state.lock().await;
-                    match update(&mut state, channel.tx.clone(), ev) {
+                    match update(&mut state, channel.tx.clone(), action) {
                         Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
                         Ok(None) => {}
                         Err(e) => state.notify_err(e.to_string()),
