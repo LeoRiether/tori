@@ -1,7 +1,9 @@
 use crate::{
+    events::Action,
     player::Player,
-    ui::{self, eventful_widget::Listener, EventfulWidget}, events::Action,
+    ui::{self, eventful_widget::Listener, EventfulWidget},
 };
+use crossterm::event::Event;
 use tui::{
     prelude::*,
     widgets::{Paragraph, Widget},
@@ -130,9 +132,34 @@ impl EventfulWidget<Action> for NowPlaying {
         //        Register listeners        //
         //////////////////////////////////////
         use ui::{on, UIEvent::*};
+        let SubcomponentChunks {
+            volume,
+            playback_bar: playback,
+            ..
+        } = chunks;
+        let percentage = |x: u16, chunk: Rect| (x as f64 - chunk.x as f64) / chunk.width as f64;
+        let set_volume = move |e| {
+            if let Event::Mouse(e) = e {
+                // The volume goes from 0 to 130 btw
+                let mut p = 1.3 * percentage(e.column, volume);
+                if p < 1.0 && 1.3 * percentage(e.column + 1, volume) > 1.0 {
+                    p = 1.0; // clip to 100% volume
+                }
+                return Action::SetVolume(p);
+            }
+            Action::Rerender
+        };
+        let seek = move |e| {
+            if let Event::Mouse(e) = e {
+                return Action::SeekAbsolute(percentage(e.column, playback));
+            }
+            Action::Rerender
+        };
         l.extend([
-            on(Click(chunks.volume), |_| todo!()),
-            on(Click(chunks.playback_bar), |_| todo!()),
+            on(Click(volume), set_volume),
+            on(Drag(volume), set_volume),
+            on(Click(playback), seek),
+            on(Drag(playback), seek),
         ])
     }
 }

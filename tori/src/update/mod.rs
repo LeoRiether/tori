@@ -1,7 +1,8 @@
 pub mod browse_screen;
 use browse_screen::browse_screen_action;
+use tokio::task;
 
-use std::mem;
+use std::{mem, time::Duration};
 
 use crate::{
     app::modal::{HelpModal, HotkeyModal, InputModal, Modal},
@@ -179,6 +180,23 @@ pub fn update(state: &mut State<'_>, tx: Tx, act: Action) -> Result<Option<Actio
                 Err(e) => state.notify_err(format!("Error deleting song: {e:?}")),
             }
             return Ok(Some(Action::RefreshSongs));
+        }
+
+        SetVolume(p) => {
+            state.player.set_volume((100. * p).round() as i64)?;
+            task::spawn(async move {
+                // Wait for the player to actually set the volume
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                tx.send(Action::Tick).ok();
+            });
+        }
+        SeekAbsolute(p) => {
+            state.player.seek_absolute((100. * p).round() as usize)?;
+            task::spawn(async move {
+                // Wait for the player to update the playback position
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                tx.send(Action::Tick).ok();
+            });
         }
     }
 

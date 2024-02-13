@@ -54,4 +54,7 @@ pub enum Action {
         playlist: String,
         index: usize,
     },
+
+    SetVolume(f64),
+    SeekAbsolute(f64),
 }
