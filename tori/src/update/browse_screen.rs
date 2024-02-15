@@ -204,6 +204,7 @@ fn browse_screen_command(
             match &screen.focus {
                 Focus::Playlists | Focus::PlaylistsFilter(_) => {
                     state.modal = InputModal::new(" Rename playlist ")
+                        .set_input(playlist.clone())
                         .style(Style::default().fg(Color::LightBlue))
                         .on_commit(move |new_name| Action::RenamePlaylist { playlist, new_name })
                         .some_box();
@@ -216,8 +217,10 @@ fn browse_screen_command(
                         }
                         Some(i) => i,
                     };
+                    let old_name = screen.songs[index].title.clone();
 
                     state.modal = InputModal::new(" Rename song ")
+                        .set_input(old_name)
                         .style(Style::default().fg(Color::LightBlue))
                         .on_commit(move |new_name| Action::RenameSong {
                             playlist: playlist.clone(),
