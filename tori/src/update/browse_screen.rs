@@ -241,7 +241,7 @@ fn browse_screen_command(
             };
             match &screen.focus {
                 Focus::Playlists | Focus::PlaylistsFilter(_) => {
-                    state.modal = ConfirmationModal::new(" Delete playlist ")
+                    state.modal = ConfirmationModal::new(&format!("Delete playlist '{playlist}'?"))
                         .style(Style::default().fg(Color::LightRed))
                         .on_yes(move || Action::DeletePlaylist { playlist })
                         .some_box();
@@ -255,7 +255,12 @@ fn browse_screen_command(
                         Some(i) => i,
                     };
 
-                    state.modal = ConfirmationModal::new(" Delete song ")
+                    let mut song = screen.songs[index].title.clone();
+                    if song.len() > 25 {
+                        song = song[..25].to_string() + "...";
+                    }
+
+                    state.modal = ConfirmationModal::new(&format!("Delete song '{song}'?"))
                         .style(Style::default().fg(Color::LightRed))
                         .on_yes(move || Action::DeleteSong {
                             playlist: playlist.clone(),
