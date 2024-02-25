@@ -86,7 +86,7 @@ fn playlists_pane(
     );
 
     let playlists: Vec<_> = screen
-        .shown_playlists
+        .shown_playlists()
         .iter()
         .map(|&i| [format!(" {}", screen.playlists[i])])
         .collect();
@@ -94,7 +94,7 @@ fn playlists_pane(
     let mut list = List::default()
         .title(title)
         .items(playlists)
-        .state(screen.shown_playlists.state.clone())
+        .state(screen.shown_playlists().state.clone())
         .help_message(help)
         .border_style(border_style)
         .borders(Borders::ALL & !Borders::RIGHT)
@@ -102,7 +102,7 @@ fn playlists_pane(
         .on_click(Action::SelectPlaylist)
         .on_drag(Action::SelectPlaylist);
     list.render(area, buf, l);
-    screen.shown_playlists.state = list.get_state();
+    screen.set_shown_playlists_state(list.get_state());
 }
 
 /// Draws the pane that shows the songs of a playlist inside the browse screen
@@ -112,7 +112,7 @@ fn songs_pane(
     buf: &mut Buffer,
     l: &mut Vec<Listener<Action>>,
 ) {
-    let sorting = match screen.sorting_method {
+    let sorting = match screen.sorting_method() {
         SortingMethod::Index => "",
         SortingMethod::Title => " [↑ Title]",
         SortingMethod::Duration => " [↑ Duration]",
@@ -146,7 +146,7 @@ fn songs_pane(
     );
 
     let songlist: Vec<_> = screen
-        .shown_songs
+        .shown_songs()
         .iter()
         .map(|&i| {
             let song = &screen.songs[i];
@@ -161,7 +161,7 @@ fn songs_pane(
     let mut list = List::default()
         .title(title)
         .items(songlist)
-        .state(screen.shown_songs.state.clone())
+        .state(screen.shown_songs().state.clone())
         .help_message(help)
         .border_style(border_style)
         .borders(Borders::ALL)
@@ -170,5 +170,5 @@ fn songs_pane(
         .on_click(Action::SelectAndMaybePlaySong)
         .on_drag(Action::SelectSong);
     list.render(area, buf, l);
-    screen.shown_songs.state = list.get_state();
+    screen.set_shown_songs_state(list.get_state());
 }

@@ -27,19 +27,13 @@ pub fn browse_screen_action(
         Action::Command(cmd) => return browse_screen_command(state, screen, tx, cmd),
 
         ScrollDown => match &screen.focus {
-            Focus::Playlists => {
-                screen.shown_playlists.select_next();
-                screen.refresh_songs()?;
-            }
-            Focus::Songs => screen.shown_songs.select_next(),
+            Focus::Playlists => screen.select_next_playlist()?,
+            Focus::Songs => screen.select_next_song(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
         ScrollUp => match &screen.focus {
-            Focus::Playlists => {
-                screen.shown_playlists.select_prev();
-                screen.refresh_songs()?;
-            }
-            Focus::Songs => screen.shown_songs.select_prev(),
+            Focus::Playlists => screen.select_prev_playlist()?,
+            Focus::Songs => screen.select_prev_song(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
 
@@ -49,15 +43,13 @@ pub fn browse_screen_action(
         } => {
             if screen.selected_playlist() == Some(playlist.as_str()) {
                 screen.refresh_songs()?;
-                screen
-                    .shown_songs
-                    .select(Some(screen.shown_songs.items.len() - 1));
+                screen.select_last_song();
             }
         }
         RefreshSongs => screen.refresh_songs()?,
         RefreshPlaylists => screen.refresh_playlists()?,
         SelectAndMaybePlaySong(i) => {
-            if screen.shown_songs.selected_item() == Some(i) {
+            if screen.selected_song_index() == Some(i) {
                 // Double click => Play song
                 if let Some(song) = screen.selected_song() {
                     state.player.play(&song.path)?;
@@ -68,13 +60,13 @@ pub fn browse_screen_action(
             }
         }
         SelectSong(i) => {
-            screen.shown_songs.select(Some(i));
+            screen.select_song(Some(i));
             if let Focus::Playlists | Focus::PlaylistsFilter(_) = screen.focus {
                 screen.focus = Focus::Songs;
             }
         }
         SelectPlaylist(i) => {
-            screen.shown_playlists.select(Some(i));
+            screen.select_playlist(Some(i))?;
             screen.refresh_songs()?;
             if let Focus::Songs | Focus::SongsFilter(_) = screen.focus {
                 screen.focus = Focus::Playlists;
@@ -116,7 +108,7 @@ fn browse_screen_command(
             }
         }
         QueueShown => {
-            for &i in screen.shown_songs.iter() {
+            for &i in screen.shown_songs().iter() {
                 let path = screen.songs[i].path.as_str();
                 state.player.queue(path)?;
             }
@@ -161,13 +153,13 @@ fn browse_screen_command(
         }
 
         GotoStart => match &screen.focus {
-            Focus::Playlists => screen.shown_playlists.select_first(),
-            Focus::Songs => screen.shown_songs.select_first(),
+            Focus::Playlists => screen.select_first_playlist()?,
+            Focus::Songs => screen.select_first_song(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
         GotoEnd => match &screen.focus {
-            Focus::Playlists => screen.shown_playlists.select_last(),
-            Focus::Songs => screen.shown_songs.select_last(),
+            Focus::Playlists => screen.select_last_playlist()?,
+            Focus::Songs => screen.select_last_song(),
             Focus::PlaylistsFilter(_) | Focus::SongsFilter(_) => {}
         },
 
@@ -210,7 +202,7 @@ fn browse_screen_command(
                         .some_box();
                 }
                 Focus::Songs | Focus::SongsFilter(_) => {
-                    let index = match screen.shown_songs.selected_item() {
+                    let index = match screen.selected_song_index() {
                         None => {
                             state.notify_err("Can't rename a song without one selected");
                             return Ok(None);
@@ -247,7 +239,7 @@ fn browse_screen_command(
                         .some_box();
                 }
                 Focus::Songs | Focus::SongsFilter(_) => {
-                    let index = match screen.shown_songs.selected_item() {
+                    let index = match screen.selected_song_index() {
                         None => {
                             state.notify_err("Can't delete a song without one selected");
                             return Ok(None);
@@ -277,7 +269,7 @@ fn browse_screen_command(
                     if i > 0 {
                         playlist_management::swap_song(playlist, i - 1)?;
                         screen.songs.swap(i - 1, i);
-                        screen.shown_songs.select_prev();
+                        screen.select_prev_song();
                     }
                 }
             }
@@ -288,7 +280,7 @@ fn browse_screen_command(
                     if i + 1 < screen.songs.len() {
                         playlist_management::swap_song(playlist, i)?;
                         screen.songs.swap(i, i + 1);
-                        screen.shown_songs.select_next();
+                        screen.select_next_song();
                     }
                 }
             }

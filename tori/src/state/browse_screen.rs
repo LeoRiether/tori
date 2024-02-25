@@ -6,11 +6,11 @@ use tui::widgets::TableState;
 pub struct BrowseScreen {
     pub focus: Focus,
     pub playlists: Vec<String>,
-    pub shown_playlists: FilteredList<TableState>,
+    shown_playlists: FilteredList<TableState>,
 
     pub songs: Vec<m3u::Song>,
-    pub shown_songs: FilteredList<TableState>,
-    pub sorting_method: SortingMethod,
+    shown_songs: FilteredList<TableState>,
+    sorting_method: SortingMethod,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -47,6 +47,10 @@ impl BrowseScreen {
         let mut me = Self::default();
         me.refresh_playlists()?;
         Ok(me)
+    }
+
+    pub fn sorting_method(&self) -> SortingMethod {
+        self.sorting_method
     }
 
     pub fn next_sorting_mode(&mut self) {
@@ -174,26 +178,70 @@ impl BrowseScreen {
     /////////////////////////////
     //        Selectors        //
     /////////////////////////////
+    pub fn select_next_playlist(&mut self) -> Result<()> {
+        self.shown_playlists.select_next();
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    pub fn select_next_song(&mut self) {
+        self.shown_songs.select_next();
+    }
+
     pub fn select_next(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists | Focus::PlaylistsFilter(_) => {
-                self.shown_playlists.select_next();
-                self.refresh_songs()?;
-            }
-            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_next(),
+            Focus::Playlists | Focus::PlaylistsFilter(_) => self.select_next_playlist()?,
+            Focus::Songs | Focus::SongsFilter(_) => self.select_next_song(),
         }
         Ok(())
     }
 
+    pub fn select_prev_playlist(&mut self) -> Result<()> {
+        self.shown_playlists.select_prev();
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    pub fn select_prev_song(&mut self) {
+        self.shown_songs.select_prev();
+    }
+
     pub fn select_prev(&mut self) -> Result<()> {
         match self.focus {
-            Focus::Playlists | Focus::PlaylistsFilter(_) => {
-                self.shown_playlists.select_prev();
-                self.refresh_songs()?;
-            }
-            Focus::Songs | Focus::SongsFilter(_) => self.shown_songs.select_prev(),
+            Focus::Playlists | Focus::PlaylistsFilter(_) => self.select_prev_playlist()?,
+            Focus::Songs | Focus::SongsFilter(_) => self.select_prev_song(),
         }
         Ok(())
+    }
+
+    pub fn select_first_playlist(&mut self) -> Result<()> {
+        self.shown_playlists.select_first();
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    pub fn select_first_song(&mut self) {
+        self.shown_songs.select_first();
+    }
+
+    pub fn select_last_playlist(&mut self) -> Result<()> {
+        self.shown_playlists.select_last();
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    pub fn select_last_song(&mut self) {
+        self.shown_songs.select_last();
+    }
+
+    pub fn select_playlist(&mut self, i: Option<usize>) -> Result<()> {
+        self.shown_playlists.select(i);
+        self.refresh_songs()?;
+        Ok(())
+    }
+
+    pub fn select_song(&mut self, i: Option<usize>) {
+        self.shown_songs.select(i);
     }
 
     pub fn selected_playlist(&self) -> Option<&str> {
@@ -215,6 +263,22 @@ impl BrowseScreen {
 
     pub fn selected_song_index(&self) -> Option<usize> {
         self.shown_songs.selected_item()
+    }
+
+    pub fn shown_playlists(&self) -> &FilteredList<TableState> {
+        &self.shown_playlists
+    }
+
+    pub fn shown_songs(&self) -> &FilteredList<TableState> {
+        &self.shown_songs
+    }
+
+    pub fn set_shown_playlists_state(&mut self, state: TableState) {
+        self.shown_playlists.state = state;
+    }
+
+    pub fn set_shown_songs_state(&mut self, state: TableState) {
+        self.shown_songs.state = state;
     }
 }
 
