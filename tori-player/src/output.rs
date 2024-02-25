@@ -220,6 +220,6 @@ impl<T: AudioOutputSample> AudioOutput for CpalAudioOutputImpl<T> {
     }
 }
 
-pub fn try_open(spec: SignalSpec, duration: Duration) -> Result<Box<dyn AudioOutput>> {
+pub fn _try_open(spec: SignalSpec, duration: Duration) -> Result<Box<dyn AudioOutput>> {
     CpalAudioOutput::try_open(spec, duration)
 }

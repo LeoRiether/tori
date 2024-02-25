@@ -37,8 +37,8 @@ Here's the default configuration file:
 ```yaml
 playlists_dir: {audio_dir described in the above table}
 visualizer_gradient:
-  - [46, 20, 66]
-  - [16, 30, 71]
+  - "#2e1442"
+  - "#101e47"
 keybindings:
   '?': OpenHelpModal
   C-c: Quit
@@ -69,13 +69,21 @@ keybindings:
   j: SelectNext
   k: SelectPrev
   l: SelectRight
+  left: SelectLeft
+  down: SelectNext
+  up: SelectPrev
+  right: SelectRight
   a: Add
   u: QueueSong
   C-q: QueueShown
   p: PlayFromModal
   E: OpenInEditor
   '!': OpenHotkeyModal 
+  '/': Search
   C-f: Search
+  g: GotoStart
+  G: GotoEnd
+  enter: Play
 ```
 
 You can override shortcuts in your config file, or remove some by binding them to `Nop` like so:

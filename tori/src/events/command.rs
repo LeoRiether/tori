@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub enum Command {
     #[default]
     Nop,
+    Esc,
     Quit,
     NextSong,
     PrevSong,
@@ -67,6 +68,15 @@ pub enum Command {
     /// Filter/search the selected pane (playlists or songs).
     /// The same as pressing '/'
     Search,
+
+    /// Jump to the first item of the selected pane
+    GotoStart,
+
+    /// Jump to the last item of the selected pane
+    GotoEnd,
+
+    /// Play selected song
+    Play,
 }
 
 #[cfg(test)]

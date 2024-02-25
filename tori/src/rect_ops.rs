@@ -7,11 +7,13 @@ pub trait RectOps {
     fn split_bottom(&self, n: u16) -> (Rect, Rect);
     fn split_left(&self, n: u16) -> (Rect, Rect);
     fn split_right(&self, n: u16) -> (Rect, Rect);
+    fn split_horizontally_p(&self, p: f64) -> (Rect, Rect);
+    fn split_vertically_p(&self, p: f64) -> (Rect, Rect);
 }
 
 impl RectOps for Rect {
     fn contains(&self, x: u16, y: u16) -> bool {
-        x >= self.left() && x <= self.right() && y >= self.top() && y <= self.bottom()
+        x >= self.left() && x < self.right() && y >= self.top() && y < self.bottom()
     }
 
     fn split_top(&self, n: u16) -> (Rect, Rect) {
@@ -76,5 +78,17 @@ impl RectOps for Rect {
             height: self.height,
         };
         (left, right)
+    }
+
+    // Split the rect horizontally at the given percentage
+    fn split_horizontally_p(&self, p: f64) -> (Rect, Rect) {
+        let n = (self.height as f64 * p).round() as u16;
+        self.split_top(n)
+    }
+
+    // Split the rect vertically at the given percentage
+    fn split_vertically_p(&self, p: f64) -> (Rect, Rect) {
+        let n = (self.width as f64 * p).round() as u16;
+        self.split_left(n)
     }
 }

@@ -1,42 +1,22 @@
-use crate::{
-    app::{
-        component::{Component, Mode},
-        App,
-    },
-    error::Result,
-    events,
-};
 use std::{
     borrow::Cow,
     time::{Duration, Instant},
 };
+
 use tui::{
-    layout::Rect,
+    prelude::*,
     style::{Color, Style},
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
-    Frame,
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap},
 };
 
 const WIDTH: u16 = 40;
 
-#[derive(Debug)]
 pub struct Notification<'t> {
     pub text: Cow<'t, str>,
-    pub show_until: Instant,
+    pub ttl: Instant,
     pub color: Color,
-    height: u16,
-}
-
-impl<'t> Default for Notification<'t> {
-    fn default() -> Self {
-        Self {
-            text: Cow::default(),
-            show_until: Instant::now(),
-            color: Color::White,
-            height: 0,
-        }
-    }
+    pub height: u16,
 }
 
 impl<'t> Notification<'t> {
@@ -48,9 +28,9 @@ impl<'t> Notification<'t> {
         let height = count_lines(&text) + 2;
         Self {
             text,
-            show_until: Instant::now() + duration,
+            ttl: Instant::now() + duration,
+            color: Color::White,
             height,
-            ..Default::default()
         }
     }
 
@@ -60,25 +40,13 @@ impl<'t> Notification<'t> {
     }
 
     pub fn is_expired(&self) -> bool {
-        Instant::now() > self.show_until
-    }
-}
-
-impl<'t> Component for Notification<'t> {
-    type RenderState = ();
-
-    fn mode(&self) -> Mode {
-        Mode::Normal
+        Instant::now() > self.ttl
     }
 
-    fn render(&mut self, frame: &mut Frame, size: Rect, (): ()) {
-        if self.is_expired() {
-            return;
-        }
-
+    pub fn render(&self, area: Rect, buf: &mut Buffer) {
         let chunk = Rect {
-            x: size.width - WIDTH - 3,
-            y: size.height - self.height - 1,
+            x: area.width - WIDTH - 3,
+            y: area.height - self.height - 1,
             width: WIDTH + 2,
             height: self.height,
         };
@@ -93,14 +61,22 @@ impl<'t> Component for Notification<'t> {
             .style(Style::default().fg(self.color))
             .wrap(Wrap { trim: true });
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(text, chunk);
+        Clear.render(chunk, buf);
+        text.render(chunk, buf);
     }
+}
 
-    /// No-op
-    fn handle_event(&mut self, _app: &mut App, _event: events::Event) -> Result<()> {
-        Ok(())
+fn count_lines(text: &str) -> u16 {
+    use reflow::LineComposer;
+
+    let mut count = 0;
+    let span = Span::raw(text);
+    let mut graphemes = span.styled_graphemes(Style::default());
+    let mut word_wrapper = reflow::WordWrapper::new(&mut graphemes, WIDTH, true);
+    while let Some(_line) = word_wrapper.next_line() {
+        count += 1;
     }
+    count
 }
 
 /// Copied from tui::widgets::reflow because the module is private :(
@@ -227,19 +203,6 @@ mod reflow {
             }
         }
     }
-}
-
-fn count_lines(text: &str) -> u16 {
-    use reflow::LineComposer;
-
-    let mut count = 0;
-    let span = Span::raw(text);
-    let mut graphemes = span.styled_graphemes(Style::default());
-    let mut word_wrapper = reflow::WordWrapper::new(&mut graphemes, WIDTH, true);
-    while let Some(_line) = word_wrapper.next_line() {
-        count += 1;
-    }
-    count
 }
 
 #[cfg(test)]

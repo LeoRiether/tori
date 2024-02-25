@@ -1,280 +1,159 @@
 use crossterm::{
-    event::{
-        DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyEvent, KeyEventKind,
-        KeyModifiers,
-    },
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::{borrow::Cow, cell::RefCell, rc::Rc, sync::mpsc};
-use std::{
-    io,
-    time::{self, Duration},
+use std::{io, sync::Arc};
+use tokio::{
+    select,
+    sync::{mpsc, Mutex},
 };
-use tui::{backend::CrosstermBackend, layout::Rect, style::Color, Terminal};
+use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
-    app::component::Mode,
-    command,
-    config::Config,
     error::Result,
-    events::{self, Channel},
-    player::{DefaultPlayer, Player},
-    visualizer::{self, Visualizer},
-    widgets::notification::Notification,
+    events::{action::Level, channel::Channel, Action},
+    state::State,
+    ui::ui,
+    update::{handle_event, update},
 };
 
-pub mod app_screen;
-pub mod browse_screen;
-pub mod component;
 pub mod filtered_list;
 pub mod modal;
-pub mod playlist_screen;
 
-use crate::events::Event;
+type MyBackend = CrosstermBackend<io::Stdout>;
 
-use self::{
-    app_screen::AppScreen,
-    component::{Component, MouseHandler, MyBackend},
-};
-
-const FRAME_DELAY_MS: u16 = 16;
-const HIGH_EVENT_TIMEOUT: u16 = 1000;
-const LOW_EVENT_TIMEOUT: u16 = 17;
-
-pub struct App<'a> {
+/// Controls the application main loop
+pub struct App<'n> {
+    pub state: Arc<Mutex<State<'n>>>,
     pub channel: Channel,
-    terminal: Terminal<MyBackend>,
-    player: DefaultPlayer,
-    next_render: time::Instant,
-    next_poll_timeout: u16,
-    notification: Notification<'a>,
-    visualizer: Option<Visualizer>,
-    screen: Rc<RefCell<AppScreen<'a>>>,
-    quit: bool,
+    pub terminal: Terminal<MyBackend>,
 }
 
 impl<'a> App<'a> {
     pub fn new() -> Result<App<'a>> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
+        let channel = Channel::new();
+        let tx = channel.tx.clone();
         let terminal = Terminal::new(backend)?;
-
-        let player = DefaultPlayer::new()?;
-
-        let screen = Rc::new(RefCell::new(AppScreen::new()?));
-
-        let channel = Channel::default();
-
-        let next_render = time::Instant::now();
-        let next_poll_timeout = LOW_EVENT_TIMEOUT;
-
-        let notification = Notification::default();
+        let frame_width = terminal.size()?.width as usize;
 
         Ok(App {
+            state: Arc::new(Mutex::new(State::new(tx, frame_width)?)),
             channel,
             terminal,
-            player,
-            next_render,
-            next_poll_timeout,
-            notification,
-            visualizer: None,
-            screen,
-            quit: false,
         })
     }
 
-    pub fn run(&mut self) -> Result<()> {
-        self.chain_hook();
+    pub async fn run(self) -> Result<()> {
+        chain_hook();
         setup_terminal()?;
 
-        self.channel.spawn_terminal_event_getter();
-        self.channel.spawn_ticks();
+        tokio_scoped::scope(|scope| {
+            let App {
+                state: state_,
+                mut channel,
+                mut terminal,
+            } = self;
 
-        while !self.quit {
-            self.render()
-                .map_err(|e| self.notify_err(e.to_string()))
-                .ok();
-            self.recv_event()
-                .map_err(|e| self.notify_err(e.to_string()))
-                .ok();
-        }
+            let (render_tx_, mut render_rx) = mpsc::channel::<()>(1);
+            let tx = channel.tx.clone();
+
+            // Updating task
+            let state = state_.clone();
+            let render_tx = render_tx_.clone();
+            scope.spawn(async move {
+                while !state.lock().await.quit {
+                    App::recv(&state, &mut channel).await;
+                    render_tx
+                        .send(())
+                        .await
+                        .expect("Failed to send render event");
+                }
+            });
+
+            // Rendering task
+            let state = state_.clone();
+            scope.spawn(async move {
+                while !state.lock().await.quit {
+                    if render_rx.recv().await.is_some() {
+                        let res = App::render(&mut terminal, &state).await;
+                        if let Err(e) = res {
+                            tx.send(Action::Notify(
+                                Level::Error,
+                                format!("Rendering error: {e}"),
+                            ))
+                            .ok();
+                        }
+                    }
+                }
+            });
+
+            // Trigger first render immediately
+            let render_tx = render_tx_.clone();
+            scope.spawn(async move {
+                render_tx
+                    .send(())
+                    .await
+                    .expect("Failed to send render event");
+            });
+        });
 
         reset_terminal()?;
         Ok(())
     }
 
-    #[inline]
-    fn render(&mut self) -> Result<()> {
-        if time::Instant::now() >= self.next_render {
-            self.terminal.draw(|frame| {
-                let chunk = frame.size();
-                self.screen.borrow_mut().render(frame, chunk, ());
-                self.notification.render(frame, frame.size(), ());
-            })?;
+    async fn recv(state: &Mutex<State<'_>>, channel: &mut Channel) {
+        let mut crossterm_events = vec![];
+        let mut actions = vec![];
 
-            let mut err = None; // kind of ugly, but simplifies &mut self borrows
-            if let Some(ref mut visualizer) = self.visualizer {
-                match visualizer.thread_handle() {
-                    visualizer::ThreadHandle::Stopped(Ok(())) => {
-                        self.visualizer = None;
-                    }
-                    visualizer::ThreadHandle::Stopped(Err(e)) => {
-                        err = Some(format!("The visualizer process exited with error: {}", e));
-                        self.visualizer = None;
-                    }
-                    _ => visualizer.render(self.terminal.current_buffer_mut()),
+        select! {
+            _ = channel.crossterm_rx.recv_many(&mut crossterm_events, 128) => {
+                for ev in crossterm_events {
+                        let mut state = state.lock().await;
+                        match handle_event(&mut state, channel.tx.clone(), ev) {
+                            Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
+                            Ok(None) => {}
+                            Err(e) => state.notify_err(e.to_string()),
+                        }
                 }
             }
 
-            if let Some(err) = err {
-                self.notify_err(err);
-            }
-
-            self.next_render = time::Instant::now()
-                .checked_add(Duration::from_millis(FRAME_DELAY_MS as u64))
-                .unwrap();
-        }
-        Ok(())
-    }
-
-    #[inline]
-    fn recv_event(&mut self) -> Result<()> {
-        // NOTE: Big timeout if the last event was long ago, small timeout otherwise.
-        // This makes it so after a burst of events, like a Ctrl+V, we get a small timeout
-        // immediately after the last event, which triggers a fast render.
-        let timeout = Duration::from_millis(self.next_poll_timeout as u64);
-        match self.channel.receiver.recv_timeout(timeout) {
-            Ok(Event::Terminal(CrosstermEvent::Key(key))) if key.kind == KeyEventKind::Release => {
-                // WARN: we ignore every key release event for now because of a crossterm 0.26
-                // quirk: https://github.com/crossterm-rs/crossterm/pull/745
-                self.next_poll_timeout = FRAME_DELAY_MS;
-            }
-            Ok(event) => {
-                let event = self.transform_event(event);
-                self.handle_event(event)?;
-                self.next_poll_timeout = FRAME_DELAY_MS;
-            }
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                self.next_poll_timeout = self.suitable_event_timeout();
-            }
-            Err(e) => return Err(e.into()),
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    fn suitable_event_timeout(&self) -> u16 {
-        match self.visualizer {
-            Some(_) => LOW_EVENT_TIMEOUT,
-            None => HIGH_EVENT_TIMEOUT,
-        }
-    }
-
-    /// Transforms an event, according to the current app state.
-    fn transform_event(&self, event: Event) -> Event {
-        use Event::*;
-        match event {
-            Terminal(CrosstermEvent::Key(key_event)) => {
-                let has_mods = key_event.modifiers & (KeyModifiers::CONTROL | KeyModifiers::ALT)
-                    != KeyModifiers::NONE;
-                match self.screen.borrow().mode() {
-                    // In insert mode, key events pass through untransformed, unless there's a
-                    // control or alt modifier
-                    Mode::Insert if !has_mods => event,
-
-                    // Otherwise, events may be transformed into commands
-                    _ => self.transform_normal_mode_key(key_event),
+            _ = channel.rx.recv_many(&mut actions, 128) => {
+                for action in actions {
+                    let mut state = state.lock().await;
+                    match update(&mut state, channel.tx.clone(), action) {
+                        Ok(Some(a)) => channel.tx.send(a).expect("Failed to send action"),
+                        Ok(None) => {}
+                        Err(e) => state.notify_err(e.to_string()),
+                    }
                 }
             }
-            _ => event,
         }
     }
 
-    fn handle_event(&mut self, event: events::Event) -> Result<()> {
-        match &event {
-            Event::Command(command::Command::ToggleVisualizer) => {
-                self.toggle_visualizer()?;
-            }
-            Event::Terminal(crossterm::event::Event::Mouse(mouse_event)) => {
-                let screen = self.screen.clone();
-                let chunk = self.frame_size();
-                screen
-                    .borrow_mut()
-                    .handle_mouse(self, chunk, *mouse_event)?;
-            }
-            _otherwise => {
-                let screen = self.screen.clone();
-                screen.borrow_mut().handle_event(self, event)?;
-            }
-        }
+    async fn render(terminal: &mut Terminal<MyBackend>, state: &Mutex<State<'_>>) -> Result<()> {
+        let mut state = state.lock().await;
+        terminal.draw(move |frame| {
+            let area = frame.size();
+            let buf = frame.buffer_mut();
+            ui(&mut state, area, buf);
+            drop(state); // just to make sure the lock isn't held for too long
+        })?;
+
         Ok(())
     }
+}
 
-    /// Transforms a key event into the corresponding command, if there is one.
-    /// Assumes state is in normal mode
-    fn transform_normal_mode_key(&self, key_event: KeyEvent) -> Event {
-        use crate::command::Command::Nop;
-        use crossterm::event::Event::Key;
-        use Event::*;
-        match Config::global().keybindings.get_from_event(key_event) {
-            Some(cmd) if cmd != Nop => Command(cmd),
-            _ => Terminal(Key(key_event)),
-        }
-    }
+fn chain_hook() {
+    let original_hook = std::panic::take_hook();
 
-    fn toggle_visualizer(&mut self) -> Result<()> {
-        if self.visualizer.take().is_none() {
-            let opts = crate::visualizer::CavaOptions {
-                bars: self.terminal.get_frame().size().width as usize / 2,
-            };
-            self.visualizer = Some(Visualizer::new(opts)?);
-        }
-        Ok(())
-    }
-
-    fn chain_hook(&mut self) {
-        let original_hook = std::panic::take_hook();
-
-        std::panic::set_hook(Box::new(move |panic| {
-            reset_terminal().unwrap();
-            original_hook(panic);
-            std::process::exit(1);
-        }));
-    }
-
-    pub fn select_screen(&mut self, screen: app_screen::Selected) {
-        self.screen.borrow_mut().select(screen);
-    }
-
-    pub fn quit(&mut self) {
-        self.quit = true;
-    }
-
-    ////////////////////////////////
-    //        Notification        //
-    ////////////////////////////////
-    pub fn notify_err(&mut self, err: impl Into<Cow<'a, str>>) {
-        self.notification = Notification::new(err, Duration::from_secs(5)).colored(Color::LightRed);
-    }
-
-    pub fn notify_info(&mut self, info: impl Into<Cow<'a, str>>) {
-        self.notification =
-            Notification::new(info, Duration::from_secs(4)).colored(Color::LightCyan);
-    }
-
-    pub fn notify_ok(&mut self, text: impl Into<Cow<'a, str>>) {
-        self.notification =
-            Notification::new(text, Duration::from_secs(4)).colored(Color::LightGreen);
-    }
-
-    /////////////////////////
-    //        Frame        //
-    /////////////////////////
-    pub fn frame_size(&mut self) -> Rect {
-        self.terminal.get_frame().size()
-    }
+    std::panic::set_hook(Box::new(move |panic| {
+        reset_terminal().unwrap();
+        original_hook(panic);
+        std::process::exit(1);
+    }));
 }
 
 pub fn setup_terminal() -> Result<()> {

@@ -14,12 +14,14 @@ use std::{
 };
 
 use rand::{thread_rng, Rng};
-use tui::{
-    layout::Rect,
-    style::{Color, Style},
-};
+use tui::{layout::Rect, prelude::*, style::Style};
 
-use crate::{config::Config, error::Result};
+use crate::{
+    color::Color,
+    config::Config,
+    error::Result,
+    events::{channel::Tx, Action},
+};
 
 macro_rules! cava_config {
     () => {
@@ -64,15 +66,84 @@ impl Default for ThreadHandle {
     }
 }
 
+// TODO: use tokio::process
 pub struct Visualizer {
+    pub state: Option<VisualizerState>,
+    pub width: usize,
+    pub tx: Tx,
+}
+
+impl Visualizer {
+    pub fn new(tx: Tx, width: usize) -> Self {
+        Self {
+            state: None,
+            width,
+            tx,
+        }
+    }
+
+    pub fn toggle(&mut self) -> Result<()> {
+        if self.state.take().is_none() {
+            self.state = Some(VisualizerState::new(self.tx.clone(), self.width)?);
+        }
+        Ok(())
+    }
+
+    pub fn update(&mut self) -> Result<()> {
+        if let Some(mut state) = self.state.take() {
+            match state.thread_handle() {
+                ThreadHandle::Stopped(Ok(())) => {
+                    self.state = None;
+                }
+                ThreadHandle::Stopped(Err(e)) => {
+                    self.state = None;
+                    return Err(format!("The visualizer process exited with error: {}", e).into());
+                }
+                _ => {
+                    self.state = Some(state);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn render(&self, _: Rect, buffer: &mut Buffer) {
+        if self.state.is_none() {
+            return;
+        }
+
+        let state = self.state.as_ref().unwrap();
+
+        let gradient = &Config::global().visualizer_gradient[..];
+        let data = state.data.lock().unwrap();
+        let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
+        let size = *buffer.area();
+        for i in 0..columns {
+            let perc = i as f64 / columns as f64;
+            let style = Style::default().bg(Color::lerp_many(gradient, perc).into());
+            let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
+
+            let area = Rect {
+                x: 2 * i as u16,
+                y: size.height.saturating_sub(height),
+                width: 1,
+                height,
+            };
+            buffer.set_style(area, style);
+        }
+    }
+}
+
+pub struct VisualizerState {
     tmp_path: PathBuf,
     data: Arc<Mutex<Vec<u16>>>,
     stop_flag: Arc<AtomicBool>,
     handle: ThreadHandle,
 }
 
-impl Visualizer {
-    pub fn new(opts: CavaOptions) -> Result<Self> {
+impl VisualizerState {
+    pub fn new(tx: Tx, width: usize) -> Result<Self> {
+        let opts = CavaOptions { bars: width / 2 };
         let tmp_path = tori_tempfile(&opts)?;
 
         let mut process = std::process::Command::new("cava")
@@ -110,6 +181,7 @@ impl Visualizer {
                     for i in 0..data.len() {
                         data[i] = u16::from_le_bytes([buf[2 * i], buf[2 * i + 1]]);
                     }
+                    tx.send(Action::Rerender)?;
                 }
                 process.kill()?;
                 Ok(())
@@ -122,38 +194,6 @@ impl Visualizer {
             stop_flag,
             handle: ThreadHandle::Running(handle),
         })
-    }
-
-    pub fn render(&self, buffer: &mut tui::buffer::Buffer) {
-        let lerp = |from: u8, to: u8, perc: f64| {
-            (from as f64 + perc * (to as f64 - from as f64)).round() as u8
-        };
-        let lerp_grad = |gradient: [(u8, u8, u8); 2], perc| {
-            Color::Rgb(
-                lerp(gradient[0].0, gradient[1].0, perc),
-                lerp(gradient[0].1, gradient[1].1, perc),
-                lerp(gradient[0].2, gradient[1].2, perc),
-            )
-        };
-
-        let gradient = Config::global().visualizer_gradient;
-
-        let data = self.data.lock().unwrap();
-        let columns = std::cmp::min(data.len(), buffer.area().width as usize / 2);
-        let size = *buffer.area();
-        for i in 0..columns {
-            let perc = i as f64 / columns as f64;
-            let style = Style::default().bg(lerp_grad(gradient, perc));
-            let height = (data[i] as u64 * size.height as u64 / MAX_BAR_VALUE as u64) as u16;
-
-            let area = Rect {
-                x: 2 * i as u16,
-                y: size.height.saturating_sub(height),
-                width: 1,
-                height,
-            };
-            buffer.set_style(area, style);
-        }
     }
 
     pub fn thread_handle(&mut self) -> &ThreadHandle {
@@ -170,7 +210,7 @@ impl Visualizer {
     }
 }
 
-impl Drop for Visualizer {
+impl Drop for VisualizerState {
     fn drop(&mut self) {
         // ~~hopefully~~ stop thread execution
         self.stop_flag.store(true, atomic::Ordering::Relaxed);

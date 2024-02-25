@@ -1,21 +1,18 @@
 use crate::{
-    app::component::Mode,
     config::shortcuts::InputStr,
     error::Result,
-    events::Event,
+    events::{channel::Tx, Action},
 };
-use crossterm::event::Event as CrosstermEvent;
+use crossterm::event::{Event, KeyCode};
 use tui::{
     layout::Alignment,
+    prelude::*,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget},
 };
 
 use super::Modal;
 
-///////////////////////////////
-//        HotkeyModal        //
-///////////////////////////////
 /// Shows what keys the user is pressing
 #[derive(Debug, Default)]
 pub struct HotkeyModal {
@@ -23,22 +20,20 @@ pub struct HotkeyModal {
 }
 
 impl Modal for HotkeyModal {
-    fn apply_style(&mut self, _style: Style) {}
-
-    fn handle_event(&mut self, event: Event) -> Result<super::Message> {
-        if let Event::Terminal(CrosstermEvent::Key(key)) = event {
-            if let crossterm::event::KeyCode::Esc = key.code {
-                return Ok(super::Message::Quit);
+    fn handle_event(&mut self, _tx: Tx, event: Event) -> Result<Option<Action>> {
+        if let Event::Key(key) = event {
+            if let KeyCode::Esc = key.code {
+                return Ok(Some(Action::CloseModal));
             }
             self.text = InputStr::from(key).0;
         }
-        Ok(super::Message::Nothing)
+        Ok(None)
     }
 
-    fn render(&mut self, frame: &mut tui::Frame) {
-        let mut chunk = super::get_modal_chunk(frame.size());
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let mut chunk = super::get_modal_chunk(area);
         chunk.width = chunk.width.min(30);
-        chunk.x = frame.size().width.saturating_sub(chunk.width) / 2;
+        chunk.x = area.width.saturating_sub(chunk.width) / 2;
 
         let block = Block::default()
             .title(" Hotkey ")
@@ -51,11 +46,7 @@ impl Modal for HotkeyModal {
             .block(block)
             .alignment(Alignment::Center);
 
-        frame.render_widget(Clear, chunk);
-        frame.render_widget(paragraph, chunk);
-    }
-
-    fn mode(&self) -> Mode {
-        Mode::Insert
+        Clear.render(chunk, buf);
+        paragraph.render(chunk, buf);
     }
 }
