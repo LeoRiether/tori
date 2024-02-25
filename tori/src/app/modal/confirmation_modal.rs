@@ -51,7 +51,7 @@ where
             return Ok(match event.code {
                 Backspace | Esc | Char('q') | Char('n') | Char('N') => Some(Action::CloseModal),
                 Enter | Char('y') | Char('Y') => {
-                    tx.send(Action::CloseModal);
+                    tx.send(Action::CloseModal)?;
                     self.on_yes.take().map(|f| f())
                 }
                 _ => None,

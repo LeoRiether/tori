@@ -11,7 +11,6 @@ macro_rules! log {
 pub fn write(s: &str) {
     let mut f = std::fs::OpenOptions::new()
         .create(true)
-        .write(true)
         .append(true)
         .open("dbg.log")
         .unwrap();

@@ -69,7 +69,7 @@ where
             KeyCode::Esc => Some(Action::CloseModal),
             KeyCode::Enter => {
                 let input = mem::take(&mut self.input).value;
-                tx.send(Action::CloseModal);
+                tx.send(Action::CloseModal)?;
                 self.on_commit.take().map(|f| f(input))
             }
             _ => {

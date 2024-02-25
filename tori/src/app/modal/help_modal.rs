@@ -60,7 +60,7 @@ impl HelpModal {
 }
 
 impl Modal for HelpModal {
-    fn handle_event(&mut self, tx: Tx, event: Event) -> Result<Option<Action>> {
+    fn handle_event(&mut self, _tx: Tx, event: Event) -> Result<Option<Action>> {
         if let Event::Key(_) = event {
             return Ok(Some(Action::CloseModal));
         }
