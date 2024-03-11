@@ -15,7 +15,7 @@ edition = "2021"
 symphonia = { version = "0.5.3", features = ["all-codecs"] }
 cpal = { version = "0.15.2" }
 rb = { version = "0.4.1" }
-rubato = { version = "0.13.0" }
+rubato = { version = "0.15.0" }
 arrayvec = { version = "0.7.2" }
 ac-ffmpeg = { version = "0.18.1" }
 crossbeam-channel = { version = "0.5.8" }
